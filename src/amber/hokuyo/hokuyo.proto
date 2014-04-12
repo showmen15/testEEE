@@ -1,0 +1,85 @@
+package amber.hokuyo_proto;
+option java_package = "pl.edu.agh.amber.amber.hokuyo.proto";
+option java_outer_classname = "HokuyoProto";
+
+import "drivermsg.proto";
+
+extend amber.DriverMsg {
+    optional bool laser_on = 11;
+    optional bool laser_off = 12;
+    optional bool reset = 13;
+
+    optional bool set_motor_speed = 14;
+    optional uint32 motor_speed = 15;
+
+    optional bool set_high_sensitive = 16;
+    optional bool high_sensitive = 17;
+
+    optional bool get_version_info = 18;
+    optional bool get_sensor_state = 19;
+    optional bool get_sensor_specs = 20;
+
+    optional bool get_single_scan = 21;
+    optional uint32 start_step = 22;
+    optional uint32 stop_step = 23;
+    optional uint32 cluster_count = 24;
+
+    optional Response response = 25;
+    optional Version version = 26;
+    optional Specs specs = 27;
+    optional State state = 28;
+    optional Scan scan = 29;
+}
+
+message Response {
+    optional string response = 1;
+}
+
+message Version {
+    optional string response = 1;
+
+    optional string vendor = 2;
+    optional string product = 3;
+
+    optional string firmware = 4;
+    optional string protocol = 5;
+    optional string serial = 6;
+}
+
+message Specs {
+    optional string response = 1;
+
+    optional string model = 2;
+
+    optional uint32 distance_minimum = 3;
+    optional uint32 distance_maximum = 4;
+
+    optional uint32 area_resolution = 5;
+    optional uint32 area_minimum = 6;
+    optional uint32 area_maximum = 7;
+    optional uint32 area_front = 8;
+
+    optional uint32 motor_speed = 9;
+}
+
+message State {
+    optional string response = 1;
+
+    optional string model = 2;
+
+    optional bool laser = 3;
+
+    optional string motor_speed = 4;
+    optional string measure_mode = 5;
+    optional string bit_rate = 6;
+
+    optional string time = 7;
+
+    optional string diagnostic = 8;
+}
+
+message Scan {
+    optional string response = 1;
+
+    optional string scan = 2;
+}

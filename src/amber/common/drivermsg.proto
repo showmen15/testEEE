@@ -1,0 +1,34 @@
+package amber;
+option java_package = "pl.edu.agh.amber.amber.common.proto";
+option java_outer_classname = "CommonProto";
+
+option optimize_for = SPEED;
+
+enum DeviceType { 
+    NINEDOF = 1;
+    ROBOCLAW = 2;
+    STARGAZER = 3;
+    HOKUYO = 4;
+}
+
+message DriverHdr {
+    optional int32 deviceType = 1;
+    optional int32 deviceID = 2;
+    repeated int32 clientIDs = 3 [packed = true];
+}
+
+message DriverMsg {
+    enum MsgType {
+        DATA = 1;
+        PING = 2;
+        PONG = 3;
+        CLIENT_DIED = 4;
+        DRIVER_DIED = 5;
+    }
+
+  required MsgType type     = 2;
+  optional uint32 synNum    = 3;
+  optional uint32 ackNum    = 4;
+  optional uint32 listenerNum = 5;
+  extensions 8 to 63;
+}
