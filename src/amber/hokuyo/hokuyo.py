@@ -1,3 +1,8 @@
+import serial
+import sys
+
+from amber.tools import serial_port
+
 __author__ = 'paoolo'
 
 
@@ -103,3 +108,12 @@ class Hokuyo(object):
         while number_of_scans == 0 or index > 0:
             index -= 1
             yield self.__get_scan(start_step, stop_step, cluster_count)
+
+if __name__ == '__main__':
+    hokuyo_serial = serial.Serial(port='/dev/ttyACM0', baudrate=19200, timeout=0.1)
+    hokuyo_port = serial_port.SerialPort(hokuyo_serial)
+    hokuyo = Hokuyo(hokuyo_port)
+    hokuyo.laser_on()
+    hokuyo.set_high_sensitive(True)
+    print hokuyo.get_single_scan()
+    hokuyo.laser_off()

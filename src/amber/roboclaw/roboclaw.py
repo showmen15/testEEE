@@ -1,7 +1,7 @@
 import serial
 import sys
 
-from navi.tools import serial_port
+from amber.tools import serial_port
 
 
 __author__ = 'paoolo'
@@ -470,6 +470,11 @@ class Roboclaw(object):
         if crc == self.__port.read_byte():
             return val
         return -1
+
+
+class RoboclawController(object):
+    def __init__(self, pipe_in_fd, pipe_out_fd, config_filename):
+        pass
 
 
 REAR_RC_ADDRESS = 128
