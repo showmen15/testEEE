@@ -1,6 +1,7 @@
 import abc
 import logging
 import struct
+import sys
 
 from amber.common import drivermsg_pb2
 
@@ -48,7 +49,7 @@ class AmberPipes(object):
             self.write_msg_to_pipe(pong_header, pong_message)
 
     def __write_to_pipe(self, data):
-        data = struct.pack('=h', len(data)) + data
+        data = struct.pack('>h', len(data)) + data
         self.__write_exact(data)
 
     def write_msg_to_pipe(self, header, message):
@@ -60,8 +61,8 @@ class AmberPipes(object):
 
     def __read_from_pipe(self, size):
         data = self.__read_exact(size)
-        size = struct.unpack('=h', data)
-        data = self.__read_exact(size)
+        size = struct.unpack('>h', data)
+        data = self.__read_exact(size[0])
         return data
 
     def __read_msg_from_pipe(self):
@@ -73,10 +74,10 @@ class AmberPipes(object):
         message = drivermsg_pb2.DriverMsg()
         message.ParseFromString(message_data)
 
-        if message.type == drivermsg_pb2.DriverMsg.MsgType.DATA:
+        if message.type == drivermsg_pb2.DriverMsg.DATA:
             self.__message_handler.handle_data_msg(header, message)
 
-        elif message.type == drivermsg_pb2.DriverMsg.MsgType.CLIENT_DIED:
+        elif message.type == drivermsg_pb2.DriverMsg.CLIENT_DIED:
             if len(header.client_ids) != 1:
                 self.__logger.warning('CLIENT_DIED message came, but clientID not set, ignoring.')
             else:
