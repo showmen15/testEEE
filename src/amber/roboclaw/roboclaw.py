@@ -4,24 +4,24 @@ import sys
 
 from amber.common.amber_pipes import MessageHandler
 from amber.roboclaw import roboclaw_pb2
-from amber.tools import serial_port
+from amber.tools import serial_port, config
 
 
 __author__ = 'paoolo'
 
 LOGGER_NAME = 'Roboclaw.Controller'
 
-SERIAL_PORT = '/dev/ttyO3'
-BAUD_RATE = 38400
+SERIAL_PORT = config.ROBOCLAW_SERIAL_PORT
+BAUD_RATE = config.ROBOCLAW_BAUD_RATE
 TIMEOUT = 0.1
 
-REAR_RC_ADDRESS = 128
-FRONT_RC_ADDRESS = 129
+REAR_RC_ADDRESS = config.ROBOCLAW_REAR_RC_ADDRESS
+FRONT_RC_ADDRESS = config.ROBOCLAW_FRONT_RC_ADDRESS
 
-MOTORS_MAX_QPPS = 13800
-MOTORS_P_CONST = 65536
-MOTORS_I_CONST = 32768
-MOTORS_D_CONST = 16384
+MOTORS_MAX_QPPS = config.ROBOCLAW_MAX_QPPS
+MOTORS_P_CONST = config.ROBOCLAW_P
+MOTORS_I_CONST = config.ROBOCLAW_I
+MOTORS_D_CONST = config.ROBOCLAW_D
 
 
 class Roboclaw(object):

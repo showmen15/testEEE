@@ -3,15 +3,15 @@ import serial
 import sys
 
 from amber.common.amber_pipes import MessageHandler
-from amber.tools import serial_port
+from amber.tools import serial_port, config
 
 
 __author__ = 'paoolo'
 
 LOGGER_NAME = 'Hokuyo.Controller'
 
-SERIAL_PORT = '/dev/ttyACM0'
-BAUD_RATE = 19200
+SERIAL_PORT = config.HOKUYO_SERIAL_PORT
+BAUD_RATE = config.HOKUYO_BAUD_RATE
 TIMEOUT = 0.1
 
 
