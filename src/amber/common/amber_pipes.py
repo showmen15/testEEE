@@ -1,7 +1,6 @@
 import abc
 import logging
 import struct
-import sys
 
 from amber.common import drivermsg_pb2
 
@@ -13,8 +12,14 @@ LOGGER_NAME = 'Amber.Pipes'
 
 
 class MessageHandler(object):
+    def __init__(self, pipe_in, pipe_out):
+        self.__amber_pipes = AmberPipes(self, pipe_in, pipe_out)
+
+    def __call__(self, *args, **kwargs):
+        self.__amber_pipes(*args, **kwargs)
+
     @abc.abstractmethod
-    def handle_data_msg(self, header, message):
+    def handle_data_message(self, header, message):
         pass
 
     @abc.abstractmethod
@@ -26,6 +31,7 @@ class AmberPipes(object):
     def __init__(self, message_handler, pipe_in, pipe_out):
         self.__message_handler = message_handler
         self.__pipe_in, self.__pipe_out = pipe_in, pipe_out
+
         self.__logger = logging.Logger(LOGGER_NAME)
         self.__logger.addHandler(logging.StreamHandler())
 
@@ -33,64 +39,140 @@ class AmberPipes(object):
         self.__logger.info('Pipes thread started.')
         self.__run_process()
 
-    def handle_ping_msg(self, header, message):
-        if not message.has_syn_num():
-            self.__logger.warning('PING message came, but synNum not set, ignoring.')
-        else:
-            pong_message = drivermsg_pb2.DriverMsg()
-            pong_message.type = drivermsg_pb2.DriverMsg.MsgType.PONG
-            pong_message.ack_num = message.syn_num
+    def __run_process(self):
+        while True:
+            self.__read_header_and_message_from_pipe()
 
-            pong_header = drivermsg_pb2.DriverHdr()
-            pong_header.client_ids.append(header.client_ids[0])
+    def __read_header_and_message_from_pipe(self):
+        """
+        Read and parse header and message from pipe.
 
-            self.__logger.debug('Sending PONG message.')
-
-            self.write_msg_to_pipe(pong_header, pong_message)
-
-    def __write_to_pipe(self, data):
-        data = struct.pack('>h', len(data)) + data
-        self.__write_exact(data)
-
-    def write_msg_to_pipe(self, header, message):
-        header_data = header.SerializeToString()
-        self.__write_to_pipe(header_data)
-
-        message_data = message.SerializeToString()
-        self.__write_to_pipe(message_data)
-
-    def __read_from_pipe(self, size):
-        data = self.__read_exact(size)
-        size = struct.unpack('>h', data)
-        data = self.__read_exact(size[0])
-        return data
-
-    def __read_msg_from_pipe(self):
-        header_data = self.__read_from_pipe(LEN_SIZE)
+        :return: nothing
+        """
+        header_data = self.__read_and_unpack_data_from_pipe(LEN_SIZE)
         header = drivermsg_pb2.DriverHdr()
         header.ParseFromString(header_data)
 
-        message_data = self.__read_from_pipe(LEN_SIZE)
+        message_data = self.__read_and_unpack_data_from_pipe(LEN_SIZE)
         message = drivermsg_pb2.DriverMsg()
         message.ParseFromString(message_data)
 
-        if message.type == drivermsg_pb2.DriverMsg.DATA:
-            self.__message_handler.handle_data_msg(header, message)
+        self.__handle_header_and_message(header, message)
 
-        elif message.type == drivermsg_pb2.DriverMsg.CLIENT_DIED:
-            if len(header.client_ids) != 1:
-                self.__logger.warning('CLIENT_DIED message came, but clientID not set, ignoring.')
-            else:
-                self.__message_handler.handle_client_died_msg(header.client_ids[0])
-        else:
-            self.__logger.warning('Unsupported message type, ignoring.')
+    def __read_and_unpack_data_from_pipe(self, size):
+        """
+        Read and unpack data from pipe.
 
-    def __run_process(self):
-        while True:
-            self.__read_msg_from_pipe()
+        :param size: size of length data
+        :return: binary string
+        """
+        data = self.__read_from_pipe(size)
+        size = struct.unpack('!H', data)
+        data = self.__read_from_pipe(size[0])
+        return data
 
-    def __read_exact(self, size):
+    def __read_from_pipe(self, size):
+        """
+        Read binary string from pipe.
+
+        :param size: size of read string
+        :return: binary string
+        """
         return self.__pipe_in.read(size)
 
-    def __write_exact(self, buf):
-        self.__pipe_out.write(buf)
+    def __handle_header_and_message(self, header, message):
+        """
+        Handle any message. Not serviced message are PONG and DRIVER_DIED.
+
+        :param header: object of DriverHdr
+        :param message: object of DriverMsg
+        :return: nothing
+        """
+        if message.type == drivermsg_pb2.DriverMsg.DATA:
+            self.__logger.debug('Received DATA message')
+            self.__message_handler.handle_data_message(header, message)
+
+        elif message.type == drivermsg_pb2.DriverMsg.CLIENT_DIED:
+            self.__logger.debug('Received CLIENT_DIED message')
+            self.__handle_client_died_message(header, message)
+
+        elif message.type == drivermsg_pb2.DriverMsg.PING:
+            self.__logger.debug('Received PING message')
+            self.__handle_ping_message(header, message)
+
+        else:
+            self.__logger.warning('Received unknown type message, ignoring.')
+
+    def __handle_client_died_message(self, header, _):
+        """
+        Handle CLIENT_DIED message which came from mediator.
+        Handling message delegated to message handler.
+
+        :param header: object of DriverHdr
+        :return: nothing
+        """
+        if len(header.clientIDs) != 1:
+            self.__logger.warning('CLIENT_DIED\'s clientID not set, ignoring.')
+
+        else:
+            self.__message_handler.handle_client_died_message(header.client_ids[0])
+
+    def __handle_ping_message(self, header, message):
+        """
+        Handle PING message which came from mediator.
+
+        :param header: object of DriverHdr
+        :param message: object of DriverMsg
+        :return: nothing
+        """
+        if hasattr(message, 'synNum'):
+            self.__logger.warning('PING\'s synNum not set, ignoring.')
+
+        else:
+            pong_message = drivermsg_pb2.DriverMsg()
+            pong_message.type = drivermsg_pb2.DriverMsg.MsgType.PONG
+            pong_message.ackNum = message.synNum
+
+            pong_header = drivermsg_pb2.DriverHdr()
+            pong_header.clientIDs.append(header.client_ids[0])
+
+            self.__logger.debug('Send PONG message')
+
+            self.write_header_and_message_to_pipe(pong_header, pong_message)
+
+    def write_header_and_message_to_pipe(self, header, message):
+        """
+        Serialize and write header and message to pipe.
+
+        :param header: object of DriverHdr
+        :param message: object of DriverMsg
+        :return: nothing
+        """
+        self.__logger.debug('Write header and message to pipe: header="%s", message="%s".' %
+                            (str(header).strip(), str(message).strip()))
+
+        header_data = header.SerializeToString()
+        self.__pack_and_write_data_to_pipe(header_data)
+
+        message_data = message.SerializeToString()
+        self.__pack_and_write_data_to_pipe(message_data)
+
+    def __pack_and_write_data_to_pipe(self, binary_data):
+        """
+        Pack and write data to pipe.
+
+        :param binary_data: binary data as string
+        :return: nothing
+        """
+        binary_data = struct.pack('!H', len(binary_data)) + binary_data
+        self.__write_to_pipe(binary_data)
+
+    def __write_to_pipe(self, binary_string):
+        """
+        Write string binary to pipe.
+
+        :param binary_string: binary string
+        :return: nothing
+        """
+        self.__pipe_out.write(binary_string)
+

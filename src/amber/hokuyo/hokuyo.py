@@ -1,9 +1,18 @@
+import logging
 import serial
 import sys
 
+from amber.common.amber_pipes import MessageHandler
 from amber.tools import serial_port
 
+
 __author__ = 'paoolo'
+
+LOGGER_NAME = 'Hokuyo.Controller'
+
+SERIAL_PORT = '/dev/ttyACM0'
+BAUD_RATE = 19200
+TIMEOUT = 0.1
 
 
 def chunks(l, n):
@@ -109,11 +118,33 @@ class Hokuyo(object):
             index -= 1
             yield self.__get_scan(start_step, stop_step, cluster_count)
 
+
+class HokuyoController(MessageHandler):
+    def __init__(self, pipe_in, pipe_out):
+        super(HokuyoController, self).__init__(pipe_in, pipe_out)
+
+        self.__serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
+        self.__port = serial_port.SerialPort(self.__serial)
+        self.__hokuyo = Hokuyo(self.__serial)
+
+        self.__hokuyo.reset()
+        self.__hokuyo.set_high_sensitive(True)
+
+        self.__logger = logging.Logger(LOGGER_NAME)
+        self.__logger.addHandler(logging.StreamHandler())
+
+        self.__clients = []
+
+    def handle_data_message(self, header, message):
+        # TODO: check client ID, start laser etc.
+        self.__hokuyo.laser_on()
+
+    def handle_client_died_message(self, client_id):
+        # TODO: handle client died - stop hokuyo laser
+        if len(self.__clients) == 0:
+            self.__hokuyo.laser_off()
+
+
 if __name__ == '__main__':
-    hokuyo_serial = serial.Serial(port='/dev/ttyACM0', baudrate=19200, timeout=0.1)
-    hokuyo_port = serial_port.SerialPort(hokuyo_serial)
-    hokuyo = Hokuyo(hokuyo_port)
-    hokuyo.laser_on()
-    hokuyo.set_high_sensitive(True)
-    print hokuyo.get_single_scan()
-    hokuyo.laser_off()
+    controller = HokuyoController(sys.stdin, sys.stdout)
+    controller()

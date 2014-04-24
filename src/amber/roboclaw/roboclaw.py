@@ -1,10 +1,27 @@
+import logging
 import serial
 import sys
 
+from amber.common.amber_pipes import MessageHandler
+from amber.roboclaw import roboclaw_pb2
 from amber.tools import serial_port
 
 
 __author__ = 'paoolo'
+
+LOGGER_NAME = 'Roboclaw.Controller'
+
+SERIAL_PORT = '/dev/ttyO3'
+BAUD_RATE = 38400
+TIMEOUT = 0.1
+
+REAR_RC_ADDRESS = 128
+FRONT_RC_ADDRESS = 129
+
+MOTORS_MAX_QPPS = 13800
+MOTORS_P_CONST = 65536
+MOTORS_I_CONST = 32768
+MOTORS_D_CONST = 16384
 
 
 class Roboclaw(object):
@@ -472,26 +489,46 @@ class Roboclaw(object):
         return -1
 
 
-class RoboclawController(object):
-    def __init__(self, pipe_in_fd, pipe_out_fd, config_filename):
+class RoboclawController(MessageHandler):
+    def __init__(self, pipe_in, pipe_out):
+        super(RoboclawController, self).__init__(pipe_in, pipe_out)
+
+        self.__serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
+        self.__port = serial_port.SerialPort(self.__serial)
+        self.__roboclaw = Roboclaw(self.__port)
+
+        self.__roboclaw.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        self.__roboclaw.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+
+        self.__logger = logging.Logger(LOGGER_NAME)
+        self.__logger.addHandler(logging.StreamHandler())
+
+        self.__clients = []
+
+    def handle_data_message(self, header, message):
+        if message.HasExtension(roboclaw_pb2.currentSpeedRequest):
+            self.__handle_current_speed_request(header, message)
+
+        elif message.HasExtension(roboclaw_pb2.motorsCommand):
+            self.__handle_motors_command(header, message)
+
+        else:
+            self.__logger.warning('No request in message')
+
+    def __handle_current_speed_request(self, header, message):
+        # TODO: read current speed
         pass
 
+    def __handle_motors_command(self, header, message):
+        # TODO: set speed
+        self.__roboclaw.set_mixed_duty(0, 0)
 
-REAR_RC_ADDRESS = 128
-FRONT_RC_ADDRESS = 129
+    def handle_client_died_message(self, client_id):
+        # TODO: handle client died - stop motors if clients is zero
+        if len(self.__clients) == 0:
+            self.__roboclaw.set_mixed_speed(0, 0)
 
-MOTORS_MAX_QPPS = 13800
-MOTORS_P_CONST = 65536
-MOTORS_I_CONST = 32768
-MOTORS_D_CONST = 16384
 
 if __name__ == '__main__':
-    robo_serial = serial.Serial(port="/dev/ttyO3", baudrate=38400, timeout=0.1)
-    robo_port = serial_port.SerialPort(robo_serial)
-    robo = Roboclaw(robo_port)
-    robo.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-    robo.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-    if len(sys.argv) == 3:
-        robo.set_mixed_speed(int(sys.argv[1]), int(sys.argv[2]))
-    else:
-        robo.set_mixed_speed(0, 0)
+    controller = RoboclawController(sys.stdin, sys.stdout)
+    controller()
