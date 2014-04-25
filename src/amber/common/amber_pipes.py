@@ -18,6 +18,9 @@ class MessageHandler(object):
     def __call__(self, *args, **kwargs):
         self.__amber_pipes(*args, **kwargs)
 
+    def get_pipes(self):
+        return self.__amber_pipes
+
     @abc.abstractmethod
     def handle_data_message(self, header, message):
         pass
@@ -115,7 +118,7 @@ class AmberPipes(object):
             self.__logger.warning('CLIENT_DIED\'s clientID not set, ignoring.')
 
         else:
-            self.__message_handler.handle_client_died_message(header.client_ids[0])
+            self.__message_handler.handle_client_died_message(header.clientIDs[0])
 
     def __handle_ping_message(self, header, message):
         """

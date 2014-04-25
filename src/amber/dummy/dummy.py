@@ -1,5 +1,3 @@
-# !/usr/bin/env python
-
 import logging
 import sys
 
@@ -63,7 +61,7 @@ class DummyController(MessageHandler):
 
         driver_hdr.clientIDs.append(header.clientIDs[0])
 
-        self.__amber_pipes.write_header_and_message_to_pipe(driver_hdr, driver_msg)
+        self.get_pipes().write_header_and_message_to_pipe(driver_hdr, driver_msg)
 
     def handle_client_died_message(self, client_id):
         self.__logger.info('Client %d died' % client_id)

@@ -1,6 +1,7 @@
 import logging
 import serial
 import sys
+import os
 
 from amber.common.amber_pipes import MessageHandler
 from amber.roboclaw import roboclaw_pb2
@@ -10,6 +11,9 @@ from amber.tools import serial_port, config
 __author__ = 'paoolo'
 
 LOGGER_NAME = 'Roboclaw.Controller'
+
+pwd = os.path.dirname(os.path.abspath(__file__))
+config.add_config_ini('%s/roboclaw.ini' % pwd)
 
 SERIAL_PORT = config.ROBOCLAW_SERIAL_PORT
 BAUD_RATE = config.ROBOCLAW_BAUD_RATE
