@@ -14,7 +14,7 @@ from amber.common import drivermsg_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='hokuyo.proto',
   package='amber.hokuyo_proto',
-  serialized_pb='\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"\x1c\n\x08Response\x12\x10\n\x08response\x18\x01 \x01(\t\"p\n\x07Version\x12\x10\n\x08response\x18\x01 \x01(\t\x12\x0e\n\x06vendor\x18\x02 \x01(\t\x12\x0f\n\x07product\x18\x03 \x01(\t\x12\x10\n\x08\x66irmware\x18\x04 \x01(\t\x12\x10\n\x08protocol\x18\x05 \x01(\t\x12\x0e\n\x06serial\x18\x06 \x01(\t\"\xca\x01\n\x05Specs\x12\x10\n\x08response\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\t\x12\x18\n\x10\x64istance_minimum\x18\x03 \x01(\r\x12\x18\n\x10\x64istance_maximum\x18\x04 \x01(\r\x12\x17\n\x0f\x61rea_resolution\x18\x05 \x01(\r\x12\x14\n\x0c\x61rea_minimum\x18\x06 \x01(\r\x12\x14\n\x0c\x61rea_maximum\x18\x07 \x01(\r\x12\x12\n\narea_front\x18\x08 \x01(\r\x12\x13\n\x0bmotor_speed\x18\t \x01(\r\"\x96\x01\n\x05State\x12\x10\n\x08response\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\t\x12\r\n\x05laser\x18\x03 \x01(\x08\x12\x13\n\x0bmotor_speed\x18\x04 \x01(\t\x12\x14\n\x0cmeasure_mode\x18\x05 \x01(\t\x12\x10\n\x08\x62it_rate\x18\x06 \x01(\t\x12\x0c\n\x04time\x18\x07 \x01(\t\x12\x12\n\ndiagnostic\x18\x08 \x01(\t\"&\n\x04Scan\x12\x10\n\x08response\x18\x01 \x01(\t\x12\x0c\n\x04scan\x18\x02 \x01(\t:\"\n\x08laser_on\x12\x10.amber.DriverMsg\x18\x0b \x01(\x08:#\n\tlaser_off\x12\x10.amber.DriverMsg\x18\x0c \x01(\x08:\x1f\n\x05reset\x12\x10.amber.DriverMsg\x18\r \x01(\x08:)\n\x0fset_motor_speed\x12\x10.amber.DriverMsg\x18\x0e \x01(\x08:%\n\x0bmotor_speed\x12\x10.amber.DriverMsg\x18\x0f \x01(\r:,\n\x12set_high_sensitive\x12\x10.amber.DriverMsg\x18\x10 \x01(\x08:(\n\x0ehigh_sensitive\x12\x10.amber.DriverMsg\x18\x11 \x01(\x08:*\n\x10get_version_info\x12\x10.amber.DriverMsg\x18\x12 \x01(\x08:*\n\x10get_sensor_state\x12\x10.amber.DriverMsg\x18\x13 \x01(\x08:*\n\x10get_sensor_specs\x12\x10.amber.DriverMsg\x18\x14 \x01(\x08:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18\x15 \x01(\x08:$\n\nstart_step\x12\x10.amber.DriverMsg\x18\x16 \x01(\r:#\n\tstop_step\x12\x10.amber.DriverMsg\x18\x17 \x01(\r:\'\n\rcluster_count\x12\x10.amber.DriverMsg\x18\x18 \x01(\r:@\n\x08response\x12\x10.amber.DriverMsg\x18\x19 \x01(\x0b\x32\x1c.amber.hokuyo_proto.Response:>\n\x07version\x12\x10.amber.DriverMsg\x18\x1a \x01(\x0b\x32\x1b.amber.hokuyo_proto.Version::\n\x05specs\x12\x10.amber.DriverMsg\x18\x1b \x01(\x0b\x32\x19.amber.hokuyo_proto.Specs::\n\x05state\x12\x10.amber.DriverMsg\x18\x1c \x01(\x0b\x32\x19.amber.hokuyo_proto.State:8\n\x04scan\x12\x10.amber.DriverMsg\x18\x1d \x01(\x0b\x32\x18.amber.hokuyo_proto.ScanB2\n#pl.edu.agh.amber.amber.hokuyo.protoB\x0bHokuyoProto')
+  serialized_pb='\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"\"\n\x0fSubscribeAction\x12\x0f\n\x07\x65nabled\x18\x01 \x01(\x08\"\x1c\n\x08Response\x12\x10\n\x08response\x18\x01 \x01(\t\"p\n\x07Version\x12\x10\n\x08response\x18\x01 \x01(\t\x12\x0e\n\x06vendor\x18\x02 \x01(\t\x12\x0f\n\x07product\x18\x03 \x01(\t\x12\x10\n\x08\x66irmware\x18\x04 \x01(\t\x12\x10\n\x08protocol\x18\x05 \x01(\t\x12\x0e\n\x06serial\x18\x06 \x01(\t\"\xca\x01\n\x05Specs\x12\x10\n\x08response\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\t\x12\x18\n\x10\x64istance_minimum\x18\x03 \x01(\r\x12\x18\n\x10\x64istance_maximum\x18\x04 \x01(\r\x12\x17\n\x0f\x61rea_resolution\x18\x05 \x01(\r\x12\x14\n\x0c\x61rea_minimum\x18\x06 \x01(\r\x12\x14\n\x0c\x61rea_maximum\x18\x07 \x01(\r\x12\x12\n\narea_front\x18\x08 \x01(\r\x12\x13\n\x0bmotor_speed\x18\t \x01(\r\"\x96\x01\n\x05State\x12\x10\n\x08response\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\t\x12\r\n\x05laser\x18\x03 \x01(\x08\x12\x13\n\x0bmotor_speed\x18\x04 \x01(\t\x12\x14\n\x0cmeasure_mode\x18\x05 \x01(\t\x12\x10\n\x08\x62it_rate\x18\x06 \x01(\t\x12\x0c\n\x04time\x18\x07 \x01(\t\x12\x12\n\ndiagnostic\x18\x08 \x01(\t\"&\n\x04Scan\x12\x10\n\x08response\x18\x01 \x01(\t\x12\x0c\n\x04scan\x18\x02 \x01(\t:\"\n\x08laser_on\x12\x10.amber.DriverMsg\x18\x0b \x01(\x08:#\n\tlaser_off\x12\x10.amber.DriverMsg\x18\x0c \x01(\x08:\x1f\n\x05reset\x12\x10.amber.DriverMsg\x18\r \x01(\x08:)\n\x0fset_motor_speed\x12\x10.amber.DriverMsg\x18\x0e \x01(\x08:%\n\x0bmotor_speed\x12\x10.amber.DriverMsg\x18\x0f \x01(\r:,\n\x12set_high_sensitive\x12\x10.amber.DriverMsg\x18\x10 \x01(\x08:(\n\x0ehigh_sensitive\x12\x10.amber.DriverMsg\x18\x11 \x01(\x08:*\n\x10get_version_info\x12\x10.amber.DriverMsg\x18\x12 \x01(\x08:*\n\x10get_sensor_state\x12\x10.amber.DriverMsg\x18\x13 \x01(\x08:*\n\x10get_sensor_specs\x12\x10.amber.DriverMsg\x18\x14 \x01(\x08:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18\x15 \x01(\x08:$\n\nstart_step\x12\x10.amber.DriverMsg\x18\x16 \x01(\r:#\n\tstop_step\x12\x10.amber.DriverMsg\x18\x17 \x01(\r:\'\n\rcluster_count\x12\x10.amber.DriverMsg\x18\x18 \x01(\r:@\n\x08response\x12\x10.amber.DriverMsg\x18\x19 \x01(\x0b\x32\x1c.amber.hokuyo_proto.Response:>\n\x07version\x12\x10.amber.DriverMsg\x18\x1a \x01(\x0b\x32\x1b.amber.hokuyo_proto.Version::\n\x05specs\x12\x10.amber.DriverMsg\x18\x1b \x01(\x0b\x32\x19.amber.hokuyo_proto.Specs::\n\x05state\x12\x10.amber.DriverMsg\x18\x1c \x01(\x0b\x32\x19.amber.hokuyo_proto.State:8\n\x04scan\x12\x10.amber.DriverMsg\x18\x1d \x01(\x0b\x32\x18.amber.hokuyo_proto.Scan:N\n\x0fsubscribeAction\x12\x10.amber.DriverMsg\x18\x1e \x01(\x0b\x32#.amber.hokuyo_proto.SubscribeActionB,\n\x1dpl.edu.agh.amber.hokuyo.protoB\x0bHokuyoProto')
 
 
 LASER_ON_FIELD_NUMBER = 11
@@ -169,6 +169,42 @@ scan = _descriptor.FieldDescriptor(
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
+SUBSCRIBEACTION_FIELD_NUMBER = 30
+subscribeAction = _descriptor.FieldDescriptor(
+  name='subscribeAction', full_name='amber.hokuyo_proto.subscribeAction', index=19,
+  number=30, type=11, cpp_type=10, label=1,
+  has_default_value=False, default_value=None,
+  message_type=None, enum_type=None, containing_type=None,
+  is_extension=True, extension_scope=None,
+  options=None)
+
+
+_SUBSCRIBEACTION = _descriptor.Descriptor(
+  name='SubscribeAction',
+  full_name='amber.hokuyo_proto.SubscribeAction',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='enabled', full_name='amber.hokuyo_proto.SubscribeAction.enabled', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=53,
+  serialized_end=87,
+)
 
 
 _RESPONSE = _descriptor.Descriptor(
@@ -194,8 +230,8 @@ _RESPONSE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=53,
-  serialized_end=81,
+  serialized_start=89,
+  serialized_end=117,
 )
 
 
@@ -257,8 +293,8 @@ _VERSION = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=83,
-  serialized_end=195,
+  serialized_start=119,
+  serialized_end=231,
 )
 
 
@@ -341,8 +377,8 @@ _SPECS = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=198,
-  serialized_end=400,
+  serialized_start=234,
+  serialized_end=436,
 )
 
 
@@ -418,8 +454,8 @@ _STATE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=403,
-  serialized_end=553,
+  serialized_start=439,
+  serialized_end=589,
 )
 
 
@@ -453,15 +489,22 @@ _SCAN = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=555,
-  serialized_end=593,
+  serialized_start=591,
+  serialized_end=629,
 )
 
+DESCRIPTOR.message_types_by_name['SubscribeAction'] = _SUBSCRIBEACTION
 DESCRIPTOR.message_types_by_name['Response'] = _RESPONSE
 DESCRIPTOR.message_types_by_name['Version'] = _VERSION
 DESCRIPTOR.message_types_by_name['Specs'] = _SPECS
 DESCRIPTOR.message_types_by_name['State'] = _STATE
 DESCRIPTOR.message_types_by_name['Scan'] = _SCAN
+
+class SubscribeAction(_message.Message):
+  __metaclass__ = _reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _SUBSCRIBEACTION
+
+  # @@protoc_insertion_point(class_scope:amber.hokuyo_proto.SubscribeAction)
 
 class Response(_message.Message):
   __metaclass__ = _reflection.GeneratedProtocolMessageType
@@ -517,7 +560,9 @@ state.message_type = _STATE
 drivermsg_pb2.DriverMsg.RegisterExtension(state)
 scan.message_type = _SCAN
 drivermsg_pb2.DriverMsg.RegisterExtension(scan)
+subscribeAction.message_type = _SUBSCRIBEACTION
+drivermsg_pb2.DriverMsg.RegisterExtension(subscribeAction)
 
 DESCRIPTOR.has_options = True
-DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), '\n#pl.edu.agh.amber.amber.hokuyo.protoB\013HokuyoProto')
+DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), '\n\035pl.edu.agh.amber.hokuyo.protoB\013HokuyoProto')
 # @@protoc_insertion_point(module_scope)

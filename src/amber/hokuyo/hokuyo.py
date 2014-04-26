@@ -180,7 +180,7 @@ class HokuyoController(MessageHandler):
             driver_msg.Extensions[hokuyo_pb2.version].firmware = version[4][5:-2]
             driver_msg.Extensions[hokuyo_pb2.version].protocol = version[5][5:-2]
             driver_msg.Extensions[hokuyo_pb2.version].serial = version[6][5:-2]
-            driver_msg.synNum = message.synNum
+            driver_msg.ackNum = message.synNum
 
             driver_hdr.clientIDs.append(header.clientIDs[0])
 
@@ -203,7 +203,7 @@ class HokuyoController(MessageHandler):
             driver_msg.Extensions[hokuyo_pb2.state].bit_rate = state[6][5:-2]
             driver_msg.Extensions[hokuyo_pb2.state].time = state[7][5:-2]
             driver_msg.Extensions[hokuyo_pb2.state].diagnostic = state[8][5:-2]
-            driver_msg.synNum = message.synNum
+            driver_msg.ackNum = message.synNum
 
             driver_hdr.clientIDs.append(header.clientIDs[0])
 
@@ -227,7 +227,7 @@ class HokuyoController(MessageHandler):
             driver_msg.Extensions[hokuyo_pb2.specs].area_maximum = int(specs[7][5:-2])
             driver_msg.Extensions[hokuyo_pb2.specs].area_front = int(specs[8][5:-2])
             driver_msg.Extensions[hokuyo_pb2.specs].motor_speed = int(specs[9][5:-2])
-            driver_msg.synNum = message.synNum
+            driver_msg.ackNum = message.synNum
 
             driver_hdr.clientIDs.append(header.clientIDs[0])
 
@@ -247,7 +247,7 @@ class HokuyoController(MessageHandler):
 
             driver_msg.type = drivermsg_pb2.DriverMsg.DATA
             driver_msg.Extensions[hokuyo_pb2.scan] = scan
-            driver_msg.synNum = message.synNum
+            driver_msg.ackNum = message.synNum
 
             driver_hdr.clientIDs.append(header.clientIDs[0])
 

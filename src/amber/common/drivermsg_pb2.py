@@ -14,7 +14,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='drivermsg.proto',
   package='amber',
-  serialized_pb='\n\x0f\x64rivermsg.proto\x12\x05\x61mber\"H\n\tDriverHdr\x12\x12\n\ndeviceType\x18\x01 \x01(\x05\x12\x10\n\x08\x64\x65viceID\x18\x02 \x01(\x05\x12\x15\n\tclientIDs\x18\x03 \x03(\x05\x42\x02\x10\x01\"\xb9\x01\n\tDriverMsg\x12&\n\x04type\x18\x02 \x02(\x0e\x32\x18.amber.DriverMsg.MsgType\x12\x0e\n\x06synNum\x18\x03 \x01(\r\x12\x0e\n\x06\x61\x63kNum\x18\x04 \x01(\r\x12\x13\n\x0blistenerNum\x18\x05 \x01(\r\"I\n\x07MsgType\x12\x08\n\x04\x44\x41TA\x10\x01\x12\x08\n\x04PING\x10\x02\x12\x08\n\x04PONG\x10\x03\x12\x0f\n\x0b\x43LIENT_DIED\x10\x04\x12\x0f\n\x0b\x44RIVER_DIED\x10\x05*\x04\x08\x08\x10@*B\n\nDeviceType\x12\x0b\n\x07NINEDOF\x10\x01\x12\x0c\n\x08ROBOCLAW\x10\x02\x12\r\n\tSTARGAZER\x10\x03\x12\n\n\x06HOKUYO\x10\x04\x42\x34\n#pl.edu.agh.amber.amber.common.protoB\x0b\x43ommonProtoH\x01')
+  serialized_pb='\n\x0f\x64rivermsg.proto\x12\x05\x61mber\"H\n\tDriverHdr\x12\x12\n\ndeviceType\x18\x01 \x01(\x05\x12\x10\n\x08\x64\x65viceID\x18\x02 \x01(\x05\x12\x15\n\tclientIDs\x18\x03 \x03(\x05\x42\x02\x10\x01\"\xb9\x01\n\tDriverMsg\x12&\n\x04type\x18\x02 \x02(\x0e\x32\x18.amber.DriverMsg.MsgType\x12\x0e\n\x06synNum\x18\x03 \x01(\r\x12\x0e\n\x06\x61\x63kNum\x18\x04 \x01(\r\x12\x13\n\x0blistenerNum\x18\x05 \x01(\r\"I\n\x07MsgType\x12\x08\n\x04\x44\x41TA\x10\x01\x12\x08\n\x04PING\x10\x02\x12\x08\n\x04PONG\x10\x03\x12\x0f\n\x0b\x43LIENT_DIED\x10\x04\x12\x0f\n\x0b\x44RIVER_DIED\x10\x05*\x04\x08\x08\x10@*B\n\nDeviceType\x12\x0b\n\x07NINEDOF\x10\x01\x12\x0c\n\x08ROBOCLAW\x10\x02\x12\r\n\tSTARGAZER\x10\x03\x12\n\n\x06HOKUYO\x10\x04\x42.\n\x1dpl.edu.agh.amber.common.protoB\x0b\x43ommonProtoH\x01')
 
 _DEVICETYPE = _descriptor.EnumDescriptor(
   name='DeviceType',
@@ -196,7 +196,7 @@ class DriverMsg(_message.Message):
 
 
 DESCRIPTOR.has_options = True
-DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), '\n#pl.edu.agh.amber.amber.common.protoB\013CommonProtoH\001')
+DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), '\n\035pl.edu.agh.amber.common.protoB\013CommonProtoH\001')
 _DRIVERHDR.fields_by_name['clientIDs'].has_options = True
 _DRIVERHDR.fields_by_name['clientIDs']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), '\020\001')
 # @@protoc_insertion_point(module_scope)

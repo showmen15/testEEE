@@ -1,0 +1,3 @@
+[submodule "__common"]
+	path = __common
+	url = git://github.com/dev-amber/amber-common.git

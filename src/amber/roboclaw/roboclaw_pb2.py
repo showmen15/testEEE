@@ -14,7 +14,7 @@ from amber.common import drivermsg_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='roboclaw.proto',
   package='amber.roboclaw_proto',
-  serialized_pb='\n\x0eroboclaw.proto\x12\x14\x61mber.roboclaw_proto\x1a\x0f\x64rivermsg.proto\"m\n\x0bMotorsSpeed\x12\x16\n\x0e\x66rontLeftSpeed\x18\x01 \x01(\x05\x12\x17\n\x0f\x66rontRightSpeed\x18\x02 \x01(\x05\x12\x15\n\rrearLeftSpeed\x18\x03 \x01(\x05\x12\x16\n\x0erearRightSpeed\x18\x04 \x01(\x05:J\n\rmotorsCommand\x12\x10.amber.DriverMsg\x18\n \x01(\x0b\x32!.amber.roboclaw_proto.MotorsSpeed:-\n\x13\x63urrentSpeedRequest\x12\x10.amber.DriverMsg\x18\x0b \x01(\x08:I\n\x0c\x63urrentSpeed\x12\x10.amber.DriverMsg\x18\x0c \x01(\x0b\x32!.amber.roboclaw_proto.MotorsSpeedB6\n%pl.edu.agh.amber.amber.roboclaw.protoB\rRoboclawProto')
+  serialized_pb='\n\x0eroboclaw.proto\x12\x14\x61mber.roboclaw_proto\x1a\x0f\x64rivermsg.proto\"m\n\x0bMotorsSpeed\x12\x16\n\x0e\x66rontLeftSpeed\x18\x01 \x01(\x05\x12\x17\n\x0f\x66rontRightSpeed\x18\x02 \x01(\x05\x12\x15\n\rrearLeftSpeed\x18\x03 \x01(\x05\x12\x16\n\x0erearRightSpeed\x18\x04 \x01(\x05:J\n\rmotorsCommand\x12\x10.amber.DriverMsg\x18\n \x01(\x0b\x32!.amber.roboclaw_proto.MotorsSpeed:-\n\x13\x63urrentSpeedRequest\x12\x10.amber.DriverMsg\x18\x0b \x01(\x08:I\n\x0c\x63urrentSpeed\x12\x10.amber.DriverMsg\x18\x0c \x01(\x0b\x32!.amber.roboclaw_proto.MotorsSpeedB0\n\x1fpl.edu.agh.amber.roboclaw.protoB\rRoboclawProto')
 
 
 MOTORSCOMMAND_FIELD_NUMBER = 10
@@ -106,5 +106,5 @@ currentSpeed.message_type = _MOTORSSPEED
 drivermsg_pb2.DriverMsg.RegisterExtension(currentSpeed)
 
 DESCRIPTOR.has_options = True
-DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), '\n%pl.edu.agh.amber.amber.roboclaw.protoB\rRoboclawProto')
+DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), '\n\037pl.edu.agh.amber.roboclaw.protoB\rRoboclawProto')
 # @@protoc_insertion_point(module_scope)

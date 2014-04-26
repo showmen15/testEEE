@@ -1,5 +1,5 @@
 package amber.hokuyo_proto;
-option java_package = "pl.edu.agh.amber.amber.hokuyo.proto";
+option java_package = "pl.edu.agh.amber.hokuyo.proto";
 option java_outer_classname = "HokuyoProto";
 
 import "drivermsg.proto";
@@ -29,6 +29,12 @@ extend amber.DriverMsg {
     optional Specs specs = 27;
     optional State state = 28;
     optional Scan scan = 29;
+
+    optional SubscribeAction subscribeAction = 30;
+}
+
+message SubscribeAction {
+    optional bool enabled = 1;
 }
 
 message Response {

@@ -70,6 +70,7 @@ class AmberPipes(object):
         :return: binary string
         """
         data = self.__read_from_pipe(size)
+        # FIXME: can generate error, why?
         size = struct.unpack('!H', data)
         data = self.__read_from_pipe(size[0])
         return data
@@ -128,7 +129,7 @@ class AmberPipes(object):
         :param message: object of DriverMsg
         :return: nothing
         """
-        if hasattr(message, 'synNum'):
+        if message.HasField('synNum'):
             self.__logger.warning('PING\'s synNum not set, ignoring.')
 
         else:
@@ -178,4 +179,5 @@ class AmberPipes(object):
         :return: nothing
         """
         self.__pipe_out.write(binary_string)
+        self.__pipe_out.flush()
 

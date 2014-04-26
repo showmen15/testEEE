@@ -57,7 +57,7 @@ class DummyController(MessageHandler):
         driver_msg.type = drivermsg_pb2.DriverMsg.DATA
         driver_msg.Extensions[dummy_pb2.enable] = self.__dummy.enable
         driver_msg.Extensions[dummy_pb2.message] = self.__dummy.message
-        driver_msg.synNum = message.synNum
+        driver_msg.ackNum = message.synNum
 
         driver_hdr.clientIDs.append(header.clientIDs[0])
 
