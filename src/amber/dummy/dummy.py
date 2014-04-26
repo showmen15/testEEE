@@ -1,7 +1,6 @@
 import logging
 import sys
 
-from amber.common import drivermsg_pb2
 from amber.common.amber_pipes import MessageHandler
 from amber.dummy import dummy_pb2
 
@@ -48,20 +47,14 @@ class DummyController(MessageHandler):
         self.__logger.debug('Set message to %s' % value)
         self.__dummy.message = value
 
-    def __handle_get_status(self, header, message):
+    @MessageHandler.handle_and_response
+    def __handle_get_status(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get status')
 
-        driver_msg = drivermsg_pb2.DriverMsg()
-        driver_hdr = drivermsg_pb2.DriverHdr()
+        response_message.Extensions[dummy_pb2.enable] = self.__dummy.enable
+        response_message.Extensions[dummy_pb2.message] = self.__dummy.message
 
-        driver_msg.type = drivermsg_pb2.DriverMsg.DATA
-        driver_msg.Extensions[dummy_pb2.enable] = self.__dummy.enable
-        driver_msg.Extensions[dummy_pb2.message] = self.__dummy.message
-        driver_msg.ackNum = message.synNum
-
-        driver_hdr.clientIDs.append(header.clientIDs[0])
-
-        self.get_pipes().write_header_and_message_to_pipe(driver_hdr, driver_msg)
+        return response_header, response_message
 
     def handle_client_died_message(self, client_id):
         self.__logger.info('Client %d died' % client_id)

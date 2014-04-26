@@ -1,4 +1,5 @@
 import abc
+from functools import wraps
 import logging
 import struct
 
@@ -20,6 +21,24 @@ class MessageHandler(object):
 
     def get_pipes(self):
         return self.__amber_pipes
+
+    @staticmethod
+    def handle_and_response(func):
+        @wraps(func)
+        def wrapped(inst, received_header, received_message):
+            response_header = drivermsg_pb2.DriverHdr()
+            response_message = drivermsg_pb2.DriverMsg()
+
+            response_message.type = drivermsg_pb2.DriverMsg.DATA
+            response_message.ackNum = received_message.synNum
+            response_header, response_message = func(inst, received_header, received_message,
+                                                     response_header, response_message)
+
+            response_header.clientIDs.append(received_header.clientIDs[0])
+
+            inst.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
+
+        return wrapped
 
     @abc.abstractmethod
     def handle_data_message(self, header, message):

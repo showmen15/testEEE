@@ -3,8 +3,6 @@ import serial
 import sys
 import os
 
-from amber.common import drivermsg_pb2
-
 from amber.common.amber_pipes import MessageHandler
 from amber.hokuyo import hokuyo_pb2
 from amber.tools import serial_port, config
@@ -142,6 +140,67 @@ class HokuyoController(MessageHandler):
 
         self.__clients = []
 
+    @MessageHandler.handle_and_response
+    def __handle_get_version_info(self, received_header, received_message, response_header, response_message):
+        self.__logger.debug('Get version info')
+        data = self.__hokuyo.get_version_info()
+        version = data.split('\n')
+
+        response_message.Extensions[hokuyo_pb2.version].response = data
+        response_message.Extensions[hokuyo_pb2.version].vendor = version[2][5:-2]
+        response_message.Extensions[hokuyo_pb2.version].product = version[3][5:-2]
+        response_message.Extensions[hokuyo_pb2.version].firmware = version[4][5:-2]
+        response_message.Extensions[hokuyo_pb2.version].protocol = version[5][5:-2]
+        response_message.Extensions[hokuyo_pb2.version].serial = version[6][5:-2]
+
+        return response_header, response_message
+
+    @MessageHandler.handle_and_response
+    def __handle_get_sensor_state(self, received_header, received_message, response_header, response_message):
+        self.__logger.debug('Get sensor state')
+        data = self.__hokuyo.get_version_info()
+        state = data.split('\n')
+
+        response_message.Extensions[hokuyo_pb2.state].response = data
+        response_message.Extensions[hokuyo_pb2.state].model = state[2][5:-2]
+        # driver_msg.Extensions[hokuyo_pb2.state].laser = state[3][5:-2]
+        response_message.Extensions[hokuyo_pb2.state].motor_speed = state[4][5:-2]
+        response_message.Extensions[hokuyo_pb2.state].measure_mode = state[5][5:-2]
+        response_message.Extensions[hokuyo_pb2.state].bit_rate = state[6][5:-2]
+        response_message.Extensions[hokuyo_pb2.state].time = state[7][5:-2]
+        response_message.Extensions[hokuyo_pb2.state].diagnostic = state[8][5:-2]
+
+        return response_header, response_message
+
+    @MessageHandler.handle_and_response
+    def __handle_get_sensor_specs(self, received_header, received_message, response_header, response_message):
+        self.__logger.debug('Get sensor specs')
+        data = self.__hokuyo.get_sensor_specs()
+        specs = data.split('\n')
+
+        response_message.Extensions[hokuyo_pb2.specs].response = data
+        response_message.Extensions[hokuyo_pb2.specs].model = specs[2][5:-2]
+        response_message.Extensions[hokuyo_pb2.specs].distance_minimum = int(specs[3][5:-2])
+        response_message.Extensions[hokuyo_pb2.specs].distance_maximum = int(specs[4][5:-2])
+        response_message.Extensions[hokuyo_pb2.specs].area_resolution = int(specs[5][5:-2])
+        response_message.Extensions[hokuyo_pb2.specs].area_minimum = int(specs[6][5:-2])
+        response_message.Extensions[hokuyo_pb2.specs].area_maximum = int(specs[7][5:-2])
+        response_message.Extensions[hokuyo_pb2.specs].area_front = int(specs[8][5:-2])
+        response_message.Extensions[hokuyo_pb2.specs].motor_speed = int(specs[9][5:-2])
+
+        return response_header, response_message
+
+    @MessageHandler.handle_and_response
+    def __handle_get_single_scan(self, received_header, received_message, response_header, response_message):
+        self.__logger.debug('Get single scan')
+        data = self.__hokuyo.get_single_scan(received_message.Extensions[hokuyo_pb2.start_step],
+                                             received_message.Extensions[hokuyo_pb2.stop_step],
+                                             received_message.Extensions[hokuyo_pb2.cluster_count])
+
+        response_message.Extensions[hokuyo_pb2.scan].response = data
+
+        return response_header, response_message
+
     def handle_data_message(self, header, message):
         if message.HasExtension(hokuyo_pb2.laser_on):
             self.__logger.debug('Laser on')
@@ -166,92 +225,16 @@ class HokuyoController(MessageHandler):
             self.__hokuyo.set_high_sensitive(value)
 
         elif message.HasExtension(hokuyo_pb2.get_version_info):
-            self.__logger.debug('Get version info')
-            data = self.__hokuyo.get_version_info()
-            version = data.split('\n')
-
-            driver_msg = drivermsg_pb2.DriverMsg()
-            driver_hdr = drivermsg_pb2.DriverHdr()
-
-            driver_msg.type = drivermsg_pb2.DriverMsg.DATA
-            driver_msg.Extensions[hokuyo_pb2.version].response = data
-            driver_msg.Extensions[hokuyo_pb2.version].vendor = version[2][5:-2]
-            driver_msg.Extensions[hokuyo_pb2.version].product = version[3][5:-2]
-            driver_msg.Extensions[hokuyo_pb2.version].firmware = version[4][5:-2]
-            driver_msg.Extensions[hokuyo_pb2.version].protocol = version[5][5:-2]
-            driver_msg.Extensions[hokuyo_pb2.version].serial = version[6][5:-2]
-            driver_msg.ackNum = message.synNum
-
-            driver_hdr.clientIDs.append(header.clientIDs[0])
-
-            self.get_pipes().write_header_and_message_to_pipe(driver_hdr, driver_msg)
+            self.__handle_get_version_info(header, message)
 
         elif message.HasExtension(hokuyo_pb2.get_sensor_state):
-            self.__logger.debug('Get sensor state')
-            data = self.__hokuyo.get_sensor_state()
-            state = data.split('\n')
-
-            driver_msg = drivermsg_pb2.DriverMsg()
-            driver_hdr = drivermsg_pb2.DriverHdr()
-
-            driver_msg.type = drivermsg_pb2.DriverMsg.DATA
-            driver_msg.Extensions[hokuyo_pb2.state].response = data
-            driver_msg.Extensions[hokuyo_pb2.state].model = state[2][5:-2]
-            # driver_msg.Extensions[hokuyo_pb2.state].laser = state[3][5:-2]
-            driver_msg.Extensions[hokuyo_pb2.state].motor_speed = state[4][5:-2]
-            driver_msg.Extensions[hokuyo_pb2.state].measure_mode = state[5][5:-2]
-            driver_msg.Extensions[hokuyo_pb2.state].bit_rate = state[6][5:-2]
-            driver_msg.Extensions[hokuyo_pb2.state].time = state[7][5:-2]
-            driver_msg.Extensions[hokuyo_pb2.state].diagnostic = state[8][5:-2]
-            driver_msg.ackNum = message.synNum
-
-            driver_hdr.clientIDs.append(header.clientIDs[0])
-
-            self.get_pipes().write_header_and_message_to_pipe(driver_hdr, driver_msg)
+            self.__handle_get_sensor_state(header, message)
 
         elif message.HasExtension(hokuyo_pb2.get_sensor_specs):
-            self.__logger.debug('Get sensor specs')
-            data = self.__hokuyo.get_sensor_specs()
-            specs = data.split('\n')
-
-            driver_msg = drivermsg_pb2.DriverMsg()
-            driver_hdr = drivermsg_pb2.DriverHdr()
-
-            driver_msg.type = drivermsg_pb2.DriverMsg.DATA
-            driver_msg.Extensions[hokuyo_pb2.specs].response = data
-            driver_msg.Extensions[hokuyo_pb2.specs].model = specs[2][5:-2]
-            driver_msg.Extensions[hokuyo_pb2.specs].distance_minimum = int(specs[3][5:-2])
-            driver_msg.Extensions[hokuyo_pb2.specs].distance_maximum = int(specs[4][5:-2])
-            driver_msg.Extensions[hokuyo_pb2.specs].area_resolution = int(specs[5][5:-2])
-            driver_msg.Extensions[hokuyo_pb2.specs].area_minimum = int(specs[6][5:-2])
-            driver_msg.Extensions[hokuyo_pb2.specs].area_maximum = int(specs[7][5:-2])
-            driver_msg.Extensions[hokuyo_pb2.specs].area_front = int(specs[8][5:-2])
-            driver_msg.Extensions[hokuyo_pb2.specs].motor_speed = int(specs[9][5:-2])
-            driver_msg.ackNum = message.synNum
-
-            driver_hdr.clientIDs.append(header.clientIDs[0])
-
-            self.get_pipes().write_header_and_message_to_pipe(driver_hdr, driver_msg)
+            self.__handle_get_sensor_specs(header, message)
 
         elif message.HasExtension(hokuyo_pb2.get_single_scan):
-            self.__logger.debug('Get single scan')
-            data = self.__hokuyo.get_single_scan(message.Extensions[hokuyo_pb2.start_step],
-                                                 message.Extensions[hokuyo_pb2.stop_step],
-                                                 message.Extensions[hokuyo_pb2.cluster_count])
-
-            scan = hokuyo_pb2.Scan()
-            scan.response = data
-
-            driver_msg = drivermsg_pb2.DriverMsg()
-            driver_hdr = drivermsg_pb2.DriverHdr()
-
-            driver_msg.type = drivermsg_pb2.DriverMsg.DATA
-            driver_msg.Extensions[hokuyo_pb2.scan] = scan
-            driver_msg.ackNum = message.synNum
-
-            driver_hdr.clientIDs.append(header.clientIDs[0])
-
-            self.get_pipes().write_header_and_message_to_pipe(driver_hdr, driver_msg)
+            self.__handle_get_single_scan(header, message)
 
     def handle_client_died_message(self, client_id):
         # TODO: handle client died - stop hokuyo laser

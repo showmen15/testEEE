@@ -499,10 +499,14 @@ class RoboclawController(MessageHandler):
 
         self.__serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
         self.__port = serial_port.SerialPort(self.__serial)
-        self.__roboclaw = Roboclaw(self.__port)
 
-        self.__roboclaw.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        self.__roboclaw.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        self.__roboclaw_front = Roboclaw(self.__port, FRONT_RC_ADDRESS)
+        self.__roboclaw_rear = Roboclaw(self.__port, REAR_RC_ADDRESS)
+
+        self.__roboclaw_front.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        self.__roboclaw_front.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        self.__roboclaw_rear.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        self.__roboclaw_rear.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
 
         self.__logger = logging.Logger(LOGGER_NAME)
         self.__logger.addHandler(logging.StreamHandler())
@@ -519,18 +523,35 @@ class RoboclawController(MessageHandler):
         else:
             self.__logger.warning('No request in message')
 
-    def __handle_current_speed_request(self, header, message):
-        # TODO: read current speed
-        pass
+    @MessageHandler.handle_and_response
+    def __handle_current_speed_request(self, received_header, received_message, response_header, response_message):
+        self.__logger.debug('Get current speed')
 
-    def __handle_motors_command(self, header, message):
-        # TODO: set speed
-        self.__roboclaw.set_mixed_duty(0, 0)
+        # FIXME: read current speed
+        front_left = self.__roboclaw_front.read_m1_speed()
+        front_right = self.__roboclaw_front.read_m2_speed()
+        rear_left = self.__roboclaw_rear.read_m1_speed()
+        rear_right = self.__roboclaw_rear.read_m2_speed()
+
+        response_message.Extensions[roboclaw_pb2.currentSpeed].frontLeftSpeed = int(front_left)
+        response_message.Extensions[roboclaw_pb2.currentSpeed].frontRightSpeed = int(front_right)
+        response_message.Extensions[roboclaw_pb2.currentSpeed].rearLeftSpeed = int(rear_left)
+        response_message.Extensions[roboclaw_pb2.currentSpeed].rearRightSpeed = int(rear_right)
+
+        return response_header, response_message
+
+    def __handle_motors_command(self, _, message):
+        front_left = message.Extensions[roboclaw_pb2.motorsCommand].frontLeftSpeed
+        front_right = message.Extensions[roboclaw_pb2.motorsCommand].frontRightSpeed
+        rear_left = message.Extensions[roboclaw_pb2.motorsCommand].rearLeftSpeed
+        rear_right = message.Extensions[roboclaw_pb2.motorsCommand].rearRightSpeed
+
+        self.__roboclaw_front.set_mixed_duty(front_left, front_right)
+        self.__roboclaw_rear.set_mixed_duty(rear_left, rear_right)
 
     def handle_client_died_message(self, client_id):
         # TODO: handle client died - stop motors if clients is zero
-        if len(self.__clients) == 0:
-            self.__roboclaw.set_mixed_speed(0, 0)
+        pass
 
 
 if __name__ == '__main__':
