@@ -25,6 +25,8 @@ message DriverMsg {
         PONG = 3;
         CLIENT_DIED = 4;
         DRIVER_DIED = 5;
+        SUBSCRIBE = 6;
+        UNSUBSCRIBE = 7;
     }
 
     required MsgType type     = 2;
