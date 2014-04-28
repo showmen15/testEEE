@@ -2,7 +2,10 @@ import logging
 import serial
 import sys
 import os
+import threading
+import time
 
+from amber.common import drivermsg_pb2
 from amber.common.amber_pipes import MessageHandler
 from amber.hokuyo import hokuyo_pb2
 from amber.tools import serial_port, config
@@ -18,6 +21,9 @@ config.add_config_ini('%s/hokuyo.ini' % pwd)
 SERIAL_PORT = config.HOKUYO_SERIAL_PORT
 BAUD_RATE = config.HOKUYO_BAUD_RATE
 TIMEOUT = 0.1
+
+HIGH_SENSITIVE = config.HOKUYO_HIGH_SENSITIVE_ENABLE
+SPEED_MOTOR = config.HOKUYO_SPEED_MOTOR
 
 
 def chunks(l, n):
@@ -133,12 +139,16 @@ class HokuyoController(MessageHandler):
         self.__hokuyo = Hokuyo(self.__port)
 
         self.__hokuyo.reset()
-        self.__hokuyo.set_high_sensitive(True)
+        # FIXME: laser on only if any client is
+        self.__hokuyo.laser_on()
+        self.__hokuyo.set_high_sensitive(HIGH_SENSITIVE)
+        self.__hokuyo.set_motor_speed(SPEED_MOTOR)
 
         self.__logger = logging.Logger(LOGGER_NAME)
         self.__logger.addHandler(logging.StreamHandler())
 
-        self.__clients = []
+        self.__subscribers = []
+        self.__subscribe_thread = None
 
     @MessageHandler.handle_and_response
     def __handle_get_version_info(self, received_header, received_message, response_header, response_message):
@@ -163,7 +173,7 @@ class HokuyoController(MessageHandler):
 
         response_message.Extensions[hokuyo_pb2.state].response = data
         response_message.Extensions[hokuyo_pb2.state].model = state[2][5:-2]
-        # driver_msg.Extensions[hokuyo_pb2.state].laser = state[3][5:-2]
+        response_message.Extensions[hokuyo_pb2.state].laser = bool(state[3][5:-2])
         response_message.Extensions[hokuyo_pb2.state].motor_speed = state[4][5:-2]
         response_message.Extensions[hokuyo_pb2.state].measure_mode = state[5][5:-2]
         response_message.Extensions[hokuyo_pb2.state].bit_rate = state[6][5:-2]
@@ -202,29 +212,7 @@ class HokuyoController(MessageHandler):
         return response_header, response_message
 
     def handle_data_message(self, header, message):
-        if message.HasExtension(hokuyo_pb2.laser_on):
-            self.__logger.debug('Laser on')
-            self.__hokuyo.laser_on()
-
-        elif message.HasExtension(hokuyo_pb2.laser_off):
-            self.__logger.debug('Laser off')
-            self.__hokuyo.laser_off()
-
-        elif message.HasExtension(hokuyo_pb2.reset):
-            self.__logger.debug('Reset')
-            self.__hokuyo.reset()
-
-        elif message.HasExtension(hokuyo_pb2.set_motor_speed):
-            value = message.Extensions[hokuyo_pb2.motor_speed]
-            self.__logger.debug('Set motor speed to %d' % value)
-            self.__hokuyo.set_motor_speed(value)
-
-        elif message.HasExtension(hokuyo_pb2.set_high_sensitive):
-            value = message.Extensions[hokuyo_pb2.high_sensitive]
-            self.__logger.debug('Set high sensitive to %s' % str(value))
-            self.__hokuyo.set_high_sensitive(value)
-
-        elif message.HasExtension(hokuyo_pb2.get_version_info):
+        if message.HasExtension(hokuyo_pb2.get_version_info):
             self.__handle_get_version_info(header, message)
 
         elif message.HasExtension(hokuyo_pb2.get_sensor_state):
@@ -236,9 +224,57 @@ class HokuyoController(MessageHandler):
         elif message.HasExtension(hokuyo_pb2.get_single_scan):
             self.__handle_get_single_scan(header, message)
 
+        else:
+            self.__logger.warning('No request in message')
+
+    def handle_subscribe_message(self, header, message):
+        self.__logger.debug('Subscribe action')
+
+        no_subscribers = (len(self.__subscribers) == 0)
+        self.__subscribers.extend(header.clientIDs)
+
+        if no_subscribers or self.__subscribe_thread is None:
+            self.__subscribe_thread = threading.Thread(target=self.__run)
+            self.__subscribe_thread.start()
+
+    def handle_unsubscribe_message(self, header, message):
+        self.__logger.debug('Unsubscribe action')
+
+        map(lambda client_id: self.__remove_subscriber(client_id), header.clientIDs)
+
     def handle_client_died_message(self, client_id):
-        # TODO: handle client died - stop hokuyo laser
-        pass
+        self.__logger.info('Client %d died' % client_id)
+
+        self.__remove_subscriber(client_id)
+
+    def __remove_subscriber(self, client_id):
+        try:
+            self.__subscribers.remove(client_id)
+        except ValueError:
+            self.__logger.warning('Client %d does not registered as subscriber' % client_id)
+
+    def __run(self):
+        while len(self.__subscribers) > 0:
+            response_header = drivermsg_pb2.DriverHdr()
+            response_message = drivermsg_pb2.DriverMsg()
+
+            response_message.type = drivermsg_pb2.DriverMsg.DATA
+            response_message.ackNum = 0
+
+            response_header.clientIDs.extend(self.__subscribers)
+
+            scan = self.__hokuyo.get_single_scan()
+
+            angles = sorted(scan.keys())
+            distances = map(scan.get, angles)
+
+            response_message.Extensions[hokuyo_pb2.scan].angles = angles
+            response_message.Extensions[hokuyo_pb2.scan].distances = distances
+
+            self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
+
+            # It must be less than 0.1s
+            time.sleep(0.095)
 
 
 if __name__ == '__main__':

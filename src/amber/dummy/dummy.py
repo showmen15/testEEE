@@ -83,13 +83,13 @@ class DummyController(MessageHandler):
 
     def handle_unsubscribe_message(self, header, message):
         self.__logger.debug('Unsubscribe action')
-
-        for client_id in header.clientIDs:
-            self.__subscribers.remove(client_id)
+        map(lambda client_id: self.__remove_subscriber(client_id), header.clientIDs)
 
     def handle_client_died_message(self, client_id):
         self.__logger.info('Client %d died' % client_id)
+        self.__remove_subscriber(client_id)
 
+    def __remove_subscriber(self, client_id):
         try:
             self.__subscribers.remove(client_id)
         except ValueError:
