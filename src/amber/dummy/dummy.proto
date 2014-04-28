@@ -7,18 +7,5 @@ import "drivermsg.proto";
 extend amber.DriverMsg {
     optional bool enable = 11;
     optional string message = 12;
-
-    optional Response response = 13;
-
-    optional SubscribeAction subscribeAction = 14;
-
-    optional bool get_status = 15;
-}
-
-message SubscribeAction {
-    optional bool enabled = 1;
-}
-
-message Response {
-    optional string response = 1;
+    optional bool get_status = 13;
 }

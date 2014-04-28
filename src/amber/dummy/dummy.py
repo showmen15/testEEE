@@ -1,8 +1,12 @@
 import logging
 import sys
+import threading
 import time
 
-from amber.common.amber_pipes import MessageHandler, SubscribeMessageHandler
+from amber.common import drivermsg_pb2
+
+from amber.common.amber_pipes import MessageHandler
+
 from amber.dummy import dummy_pb2
 
 
@@ -24,10 +28,13 @@ class Dummy(object):
         self.enable = False
 
 
-class DummyController(SubscribeMessageHandler):
+class DummyController(MessageHandler):
     def __init__(self, pipe_in, pipe_out):
         super(DummyController, self).__init__(pipe_in, pipe_out)
         self.__dummy = Dummy()
+
+        self.__subscribers = []
+        self.__subscribe_thread = None
 
         self.__logger = logging.Logger(LOGGER_NAME)
         self.__logger.addHandler(logging.StreamHandler())
@@ -41,9 +48,6 @@ class DummyController(SubscribeMessageHandler):
 
         elif message.HasExtension(dummy_pb2.get_status):
             self.__handle_get_status(header, message)
-
-        elif message.HasExtension(dummy_pb2.subscribeAction):
-            self.handle_subscribe_action(header, message)
 
         else:
             self.__logger.warning('No request in message')
@@ -67,14 +71,45 @@ class DummyController(SubscribeMessageHandler):
 
         return response_header, response_message
 
-    def handle_response_for_subscription(self, response_header, response_message):
-        self.__logger.debug('Send response for subscription')
+    def handle_subscribe_message(self, header, message):
+        self.__logger.debug('Subscribe action')
 
-        time.sleep(1)
+        no_subscribers = (len(self.__subscribers) == 0)
+        self.__subscribers.extend(header.clientIDs)
 
-        response_message.Extensions[dummy_pb2.response].response = 'Response'
+        if no_subscribers or self.__subscribe_thread is None:
+            self.__subscribe_thread = threading.Thread(target=self.__run)
+            self.__subscribe_thread.start()
 
-        return response_header, response_message
+    def handle_unsubscribe_message(self, header, message):
+        self.__logger.debug('Unsubscribe action')
+
+        for client_id in header.clientIDs:
+            self.__subscribers.remove(client_id)
+
+    def handle_client_died_message(self, client_id):
+        self.__logger.info('Client %d died' % client_id)
+
+        try:
+            self.__subscribers.remove(client_id)
+        except ValueError:
+            self.__logger.warning('Client %d does not registered as subscriber' % client_id)
+
+    def __run(self):
+        while len(self.__subscribers) > 0:
+            response_header = drivermsg_pb2.DriverHdr()
+            response_message = drivermsg_pb2.DriverMsg()
+
+            response_message.type = drivermsg_pb2.DriverMsg.DATA
+            response_message.ackNum = 0
+
+            response_header.clientIDs.extend(self.__subscribers)
+
+            response_message.Extensions[dummy_pb2.message] = 'Response'
+
+            self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
+
+            time.sleep(1)
 
 
 if __name__ == '__main__':

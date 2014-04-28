@@ -2,7 +2,6 @@ import abc
 from functools import wraps
 import logging
 import struct
-import threading
 
 from amber.common import drivermsg_pb2
 
@@ -25,6 +24,14 @@ class MessageHandler(object):
         pass
 
     @abc.abstractmethod
+    def handle_subscribe_message(self, header, message):
+        pass
+
+    @abc.abstractmethod
+    def handle_unsubscribe_message(self, header, message):
+        pass
+
+    @abc.abstractmethod
     def handle_client_died_message(self, client_id):
         pass
 
@@ -38,69 +45,17 @@ class MessageHandler(object):
             response_header = drivermsg_pb2.DriverHdr()
             response_message = drivermsg_pb2.DriverMsg()
 
-            response_header, response_message = func(inst, received_header, received_message,
-                                                     response_header, response_message)
-
             response_message.type = drivermsg_pb2.DriverMsg.DATA
             response_message.ackNum = received_message.synNum
 
             response_header.clientIDs.extend(received_header.clientIDs)
 
+            response_header, response_message = func(inst, received_header, received_message,
+                                                     response_header, response_message)
+
             inst.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
         return wrapped
-
-
-class SubscribeMessageHandler(MessageHandler):
-    def __init__(self, pipe_in, pipe_out):
-        super(SubscribeMessageHandler, self).__init__(pipe_in, pipe_out)
-
-        self.__subscribers = []
-        self.__subscriber_thread = None
-
-        self.__logger = logging.Logger(LOGGER_NAME)
-        self.__logger.addHandler(logging.StreamHandler())
-
-    @abc.abstractmethod
-    def handle_data_message(self, header, message):
-        pass
-
-    @abc.abstractmethod
-    def handle_response_for_subscription(self, response_header, response_message):
-        pass
-
-    def handle_client_died_message(self, client_id):
-        self.__logger.info('Client %d died' % client_id)
-        try:
-            self.__subscribers.remove(client_id)
-        except ValueError:
-            self.__logger.warning('Client %d does not registered as subscriber' % client_id)
-
-        if len(self.__subscribers) == 0:
-            self.__subscriber_thread = None
-
-    def handle_subscribe_action(self, received_header, received_message):
-        # FIXME: create subscription action as a driver type message
-        self.__logger.debug('Subscribe action')
-        self.__subscribers.extend(received_header.clientIDs)
-
-        if self.__subscriber_thread is None:
-            self.__subscriber_thread = threading.Thread(target=self.__run)
-            self.__subscriber_thread.start()
-
-    def __run(self):
-        while len(self.__subscribers) > 0:
-            response_header = drivermsg_pb2.DriverHdr()
-            response_message = drivermsg_pb2.DriverMsg()
-
-            response_header, response_message = self.handle_response_for_subscription(response_header, response_message)
-
-            response_message.type = drivermsg_pb2.DriverMsg.DATA
-            response_message.ackNum = 0
-
-            response_header.clientIDs.extend(self.__subscribers)
-
-            self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
 
 class AmberPipes(object):
@@ -117,23 +72,27 @@ class AmberPipes(object):
 
     def __run_process(self):
         while True:
-            self.__read_header_and_message_from_pipe()
+            header, message = self.__read_header_and_message_from_pipe()
+            self.__handle_header_and_message(header, message)
+
+    def __read_data_from_pipe(self, container):
+        data = self.__read_and_unpack_data_from_pipe(LEN_SIZE)
+        container.ParseFromString(data)
+        return container
 
     def __read_header_and_message_from_pipe(self):
         """
         Read and parse header and message from pipe.
 
-        :return: nothing
+        :return: header and message
         """
-        header_data = self.__read_and_unpack_data_from_pipe(LEN_SIZE)
         header = drivermsg_pb2.DriverHdr()
-        header.ParseFromString(header_data)
-
-        message_data = self.__read_and_unpack_data_from_pipe(LEN_SIZE)
         message = drivermsg_pb2.DriverMsg()
-        message.ParseFromString(message_data)
 
-        self.__handle_header_and_message(header, message)
+        header = self.__read_data_from_pipe(header)
+        message = self.__read_data_from_pipe(message)
+
+        return header, message
 
     def __read_and_unpack_data_from_pipe(self, size):
         """
@@ -168,6 +127,14 @@ class AmberPipes(object):
         if message.type == drivermsg_pb2.DriverMsg.DATA:
             self.__logger.debug('Received DATA message')
             self.__message_handler.handle_data_message(header, message)
+
+        elif message.type == drivermsg_pb2.DriverMsg.SUBSCRIBE:
+            self.__logger.debug('Received SUBSCRIBE message')
+            self.__message_handler.handle_subscribe_message(header, message)
+
+        elif message.type == drivermsg_pb2.DriverMsg.UNSUBSCRIBE:
+            self.__logger.debug('Received UNSUBSCRIBE message')
+            self.__message_handler.handle_unsubscribe_message(header, message)
 
         elif message.type == drivermsg_pb2.DriverMsg.CLIENT_DIED:
             self.__logger.debug('Received CLIENT_DIED message')
