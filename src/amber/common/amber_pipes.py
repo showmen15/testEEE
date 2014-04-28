@@ -2,6 +2,7 @@ import abc
 from functools import wraps
 import logging
 import struct
+import threading
 
 from amber.common import drivermsg_pb2
 
@@ -19,6 +20,14 @@ class MessageHandler(object):
     def __call__(self, *args, **kwargs):
         self.__amber_pipes(*args, **kwargs)
 
+    @abc.abstractmethod
+    def handle_data_message(self, header, message):
+        pass
+
+    @abc.abstractmethod
+    def handle_client_died_message(self, client_id):
+        pass
+
     def get_pipes(self):
         return self.__amber_pipes
 
@@ -29,24 +38,69 @@ class MessageHandler(object):
             response_header = drivermsg_pb2.DriverHdr()
             response_message = drivermsg_pb2.DriverMsg()
 
-            response_message.type = drivermsg_pb2.DriverMsg.DATA
-            response_message.ackNum = received_message.synNum
             response_header, response_message = func(inst, received_header, received_message,
                                                      response_header, response_message)
 
-            response_header.clientIDs.append(received_header.clientIDs[0])
+            response_message.type = drivermsg_pb2.DriverMsg.DATA
+            response_message.ackNum = received_message.synNum
+
+            response_header.clientIDs.extend(received_header.clientIDs)
 
             inst.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
         return wrapped
+
+
+class SubscribeMessageHandler(MessageHandler):
+    def __init__(self, pipe_in, pipe_out):
+        super(SubscribeMessageHandler, self).__init__(pipe_in, pipe_out)
+
+        self.__subscribers = []
+        self.__subscriber_thread = None
+
+        self.__logger = logging.Logger(LOGGER_NAME)
+        self.__logger.addHandler(logging.StreamHandler())
 
     @abc.abstractmethod
     def handle_data_message(self, header, message):
         pass
 
     @abc.abstractmethod
-    def handle_client_died_message(self, client_id):
+    def handle_response_for_subscription(self, response_header, response_message):
         pass
+
+    def handle_client_died_message(self, client_id):
+        self.__logger.info('Client %d died' % client_id)
+        try:
+            self.__subscribers.remove(client_id)
+        except ValueError:
+            self.__logger.warning('Client %d does not registered as subscriber' % client_id)
+
+        if len(self.__subscribers) == 0:
+            self.__subscriber_thread = None
+
+    def handle_subscribe_action(self, received_header, received_message):
+        # FIXME: create subscription action as a driver type message
+        self.__logger.debug('Subscribe action')
+        self.__subscribers.extend(received_header.clientIDs)
+
+        if self.__subscriber_thread is None:
+            self.__subscriber_thread = threading.Thread(target=self.__run)
+            self.__subscriber_thread.start()
+
+    def __run(self):
+        while len(self.__subscribers) > 0:
+            response_header = drivermsg_pb2.DriverHdr()
+            response_message = drivermsg_pb2.DriverMsg()
+
+            response_header, response_message = self.handle_response_for_subscription(response_header, response_message)
+
+            response_message.type = drivermsg_pb2.DriverMsg.DATA
+            response_message.ackNum = 0
+
+            response_header.clientIDs.extend(self.__subscribers)
+
+            self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
 
 class AmberPipes(object):
@@ -140,24 +194,24 @@ class AmberPipes(object):
         else:
             self.__message_handler.handle_client_died_message(header.clientIDs[0])
 
-    def __handle_ping_message(self, header, message):
+    def __handle_ping_message(self, ping_header, ping_message):
         """
         Handle PING message which came from mediator.
 
-        :param header: object of DriverHdr
-        :param message: object of DriverMsg
+        :param ping_header: object of DriverHdr
+        :param ping_message: object of DriverMsg
         :return: nothing
         """
-        if message.HasField('synNum'):
+        if ping_message.HasField('synNum'):
             self.__logger.warning('PING\'s synNum not set, ignoring.')
 
         else:
             pong_message = drivermsg_pb2.DriverMsg()
             pong_message.type = drivermsg_pb2.DriverMsg.MsgType.PONG
-            pong_message.ackNum = message.synNum
+            pong_message.ackNum = ping_message.synNum
 
             pong_header = drivermsg_pb2.DriverHdr()
-            pong_header.clientIDs.append(header.client_ids[0])
+            pong_header.clientIDs.extend(ping_header.clientIDs)
 
             self.__logger.debug('Send PONG message')
 
