@@ -22,8 +22,8 @@ SERIAL_PORT = config.HOKUYO_SERIAL_PORT
 BAUD_RATE = config.HOKUYO_BAUD_RATE
 TIMEOUT = 0.1
 
-HIGH_SENSITIVE = config.HOKUYO_HIGH_SENSITIVE_ENABLE
-SPEED_MOTOR = config.HOKUYO_SPEED_MOTOR
+HIGH_SENSITIVE = bool(config.HOKUYO_HIGH_SENSITIVE_ENABLE)
+SPEED_MOTOR = int(config.HOKUYO_SPEED_MOTOR)
 
 
 def chunks(l, n):
@@ -96,19 +96,19 @@ class Hokuyo(object):
         distances = {}
 
         result = self.__get_result(4 if multiple else 3)
-        if result[-1] == '\n' and result[-2] != '\n':
-            count = ((stop_step - start_step) * 3 * 67) / (64 * cluster_count)
-            result += self.__port.read(count)
 
-            result = result.split('\n')
-            result = map(lambda line: line[:-1], result[3:-2])
-            result = ''.join(result)
+        count = ((stop_step - start_step) * 3 * 67) / (64 * cluster_count)
+        result += self.__port.read(count)
 
-            i = 0
-            start = (-119.885 + 0.35208516886930985 * cluster_count * (start_step - 44))
-            for chunk in chunks(result, 3):
-                distances[- ((0.35208516886930985 * cluster_count * i) + start)] = decode(chunk)
-                i += 1
+        result = result.split('\n')
+        result = map(lambda line: line[:-1], result[3:-2])
+        result = ''.join(result)
+
+        i = 0
+        start = (-119.885 + 0.35208516886930985 * cluster_count * (start_step - 44))
+        for chunk in chunks(result, 3):
+            distances[- ((0.35208516886930985 * cluster_count * i) + start)] = decode(chunk)
+            i += 1
 
         return distances
 
@@ -203,11 +203,8 @@ class HokuyoController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_single_scan(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get single scan')
-        data = self.__hokuyo.get_single_scan(received_message.Extensions[hokuyo_pb2.start_step],
-                                             received_message.Extensions[hokuyo_pb2.stop_step],
-                                             received_message.Extensions[hokuyo_pb2.cluster_count])
 
-        response_message.Extensions[hokuyo_pb2.scan].response = data
+        response_message = self.__fill_scan(response_message)
 
         return response_header, response_message
 
@@ -262,19 +259,23 @@ class HokuyoController(MessageHandler):
             response_message.ackNum = 0
 
             response_header.clientIDs.extend(self.__subscribers)
-
-            scan = self.__hokuyo.get_single_scan()
-
-            angles = sorted(scan.keys())
-            distances = map(scan.get, angles)
-
-            response_message.Extensions[hokuyo_pb2.scan].angles = angles
-            response_message.Extensions[hokuyo_pb2.scan].distances = distances
+            response_message = self.__fill_scan(response_message)
 
             self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
             # It must be less than 0.1s
             time.sleep(0.095)
+
+    def __fill_scan(self, response_message):
+        scan = self.__hokuyo.get_single_scan()
+
+        angles = sorted(scan.keys())
+        distances = map(scan.get, angles)
+
+        response_message.Extensions[hokuyo_pb2.scan].angles.extend(angles)
+        response_message.Extensions[hokuyo_pb2.scan].distances.extend(distances)
+
+        return response_message
 
 
 if __name__ == '__main__':
