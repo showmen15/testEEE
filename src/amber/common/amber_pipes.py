@@ -103,7 +103,7 @@ class AmberPipes(object):
         """
         data = self.__read_from_pipe(size)
         # FIXME: can generate error, why?
-        size = struct.unpack('!H', data)
+        size = struct.unpack('!h', data)
         data = self.__read_from_pipe(size[0])
         return data
 
@@ -208,7 +208,7 @@ class AmberPipes(object):
         :param binary_data: binary data as string
         :return: nothing
         """
-        binary_data = struct.pack('!H', len(binary_data)) + binary_data
+        binary_data = struct.pack('!h', len(binary_data)) + binary_data
         self.__write_to_pipe(binary_data)
 
     def __write_to_pipe(self, binary_string):
