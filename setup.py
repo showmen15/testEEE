@@ -20,7 +20,7 @@ setup(
                  'amber.tests': 'src/amber/tests',
                  'amber.tools': 'src/amber/tools'},
     install_requires=required,
-    version='1.2',
+    version='1.3',
     description='Amber drivers in python',
     author=u'Paweł Suder',
     author_email='pawel@suder.info',
