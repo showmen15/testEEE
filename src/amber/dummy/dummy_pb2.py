@@ -14,29 +14,29 @@ from amber.common import drivermsg_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='dummy.proto',
   package='amber.dummy_proto',
-  serialized_pb='\n\x0b\x64ummy.proto\x12\x11\x61mber.dummy_proto\x1a\x0f\x64rivermsg.proto: \n\x06\x65nable\x12\x10.amber.DriverMsg\x18\x0b \x01(\x08:!\n\x07message\x12\x10.amber.DriverMsg\x18\x0c \x01(\t:$\n\nget_status\x12\x10.amber.DriverMsg\x18\r \x01(\x08\x42*\n\x1cpl.edu.agh.amber.dummy.protoB\nDummyProto')
+  serialized_pb='\n\x0b\x64ummy.proto\x12\x11\x61mber.dummy_proto\x1a\x0f\x64rivermsg.proto: \n\x06\x65nable\x12\x10.amber.DriverMsg\x18\x33 \x01(\x08:!\n\x07message\x12\x10.amber.DriverMsg\x18\x34 \x01(\t:$\n\nget_status\x12\x10.amber.DriverMsg\x18\x35 \x01(\x08\x42*\n\x1cpl.edu.agh.amber.dummy.protoB\nDummyProto')
 
 
-ENABLE_FIELD_NUMBER = 11
+ENABLE_FIELD_NUMBER = 51
 enable = _descriptor.FieldDescriptor(
   name='enable', full_name='amber.dummy_proto.enable', index=0,
-  number=11, type=8, cpp_type=7, label=1,
+  number=51, type=8, cpp_type=7, label=1,
   has_default_value=False, default_value=False,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-MESSAGE_FIELD_NUMBER = 12
+MESSAGE_FIELD_NUMBER = 52
 message = _descriptor.FieldDescriptor(
   name='message', full_name='amber.dummy_proto.message', index=1,
-  number=12, type=9, cpp_type=9, label=1,
+  number=52, type=9, cpp_type=9, label=1,
   has_default_value=False, default_value=unicode("", "utf-8"),
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-GET_STATUS_FIELD_NUMBER = 13
+GET_STATUS_FIELD_NUMBER = 53
 get_status = _descriptor.FieldDescriptor(
   name='get_status', full_name='amber.dummy_proto.get_status', index=2,
-  number=13, type=8, cpp_type=7, label=1,
+  number=53, type=8, cpp_type=7, label=1,
   has_default_value=False, default_value=False,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,

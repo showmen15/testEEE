@@ -5,7 +5,7 @@ option java_outer_classname = "DummyProto";
 import "drivermsg.proto";
 
 extend amber.DriverMsg {
-    optional bool enable = 11;
-    optional string message = 12;
-    optional bool get_status = 13;
+    optional bool enable = 51;
+    optional string message = 52;
+    optional bool get_status = 53;
 }

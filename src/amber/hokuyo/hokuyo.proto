@@ -5,15 +5,15 @@ option java_outer_classname = "HokuyoProto";
 import "drivermsg.proto";
 
 extend amber.DriverMsg {
-    optional bool get_version_info = 11;
-    optional bool get_sensor_state = 12;
-    optional bool get_sensor_specs = 13;
-    optional bool get_single_scan = 14;
+    optional bool get_version_info = 41;
+    optional bool get_sensor_state = 42;
+    optional bool get_sensor_specs = 43;
+    optional bool get_single_scan = 44;
 
-    optional Version version = 15;
-    optional Specs specs = 16;
-    optional State state = 17;
-    optional Scan scan = 18;
+    optional Version version = 45;
+    optional Specs specs = 46;
+    optional State state = 47;
+    optional Scan scan = 48;
 }
 
 message Version {

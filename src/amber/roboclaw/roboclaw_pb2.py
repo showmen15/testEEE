@@ -14,29 +14,29 @@ from amber.common import drivermsg_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='roboclaw.proto',
   package='amber.roboclaw_proto',
-  serialized_pb='\n\x0eroboclaw.proto\x12\x14\x61mber.roboclaw_proto\x1a\x0f\x64rivermsg.proto\"m\n\x0bMotorsSpeed\x12\x16\n\x0e\x66rontLeftSpeed\x18\x01 \x01(\x05\x12\x17\n\x0f\x66rontRightSpeed\x18\x02 \x01(\x05\x12\x15\n\rrearLeftSpeed\x18\x03 \x01(\x05\x12\x16\n\x0erearRightSpeed\x18\x04 \x01(\x05:J\n\rmotorsCommand\x12\x10.amber.DriverMsg\x18\n \x01(\x0b\x32!.amber.roboclaw_proto.MotorsSpeed:-\n\x13\x63urrentSpeedRequest\x12\x10.amber.DriverMsg\x18\x0b \x01(\x08:I\n\x0c\x63urrentSpeed\x12\x10.amber.DriverMsg\x18\x0c \x01(\x0b\x32!.amber.roboclaw_proto.MotorsSpeedB0\n\x1fpl.edu.agh.amber.roboclaw.protoB\rRoboclawProto')
+  serialized_pb='\n\x0eroboclaw.proto\x12\x14\x61mber.roboclaw_proto\x1a\x0f\x64rivermsg.proto\"m\n\x0bMotorsSpeed\x12\x16\n\x0e\x66rontLeftSpeed\x18\x01 \x01(\x05\x12\x17\n\x0f\x66rontRightSpeed\x18\x02 \x01(\x05\x12\x15\n\rrearLeftSpeed\x18\x03 \x01(\x05\x12\x16\n\x0erearRightSpeed\x18\x04 \x01(\x05:J\n\rmotorsCommand\x12\x10.amber.DriverMsg\x18\x14 \x01(\x0b\x32!.amber.roboclaw_proto.MotorsSpeed:-\n\x13\x63urrentSpeedRequest\x12\x10.amber.DriverMsg\x18\x15 \x01(\x08:I\n\x0c\x63urrentSpeed\x12\x10.amber.DriverMsg\x18\x16 \x01(\x0b\x32!.amber.roboclaw_proto.MotorsSpeedB0\n\x1fpl.edu.agh.amber.roboclaw.protoB\rRoboclawProto')
 
 
-MOTORSCOMMAND_FIELD_NUMBER = 10
+MOTORSCOMMAND_FIELD_NUMBER = 20
 motorsCommand = _descriptor.FieldDescriptor(
   name='motorsCommand', full_name='amber.roboclaw_proto.motorsCommand', index=0,
-  number=10, type=11, cpp_type=10, label=1,
+  number=20, type=11, cpp_type=10, label=1,
   has_default_value=False, default_value=None,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-CURRENTSPEEDREQUEST_FIELD_NUMBER = 11
+CURRENTSPEEDREQUEST_FIELD_NUMBER = 21
 currentSpeedRequest = _descriptor.FieldDescriptor(
   name='currentSpeedRequest', full_name='amber.roboclaw_proto.currentSpeedRequest', index=1,
-  number=11, type=8, cpp_type=7, label=1,
+  number=21, type=8, cpp_type=7, label=1,
   has_default_value=False, default_value=False,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-CURRENTSPEED_FIELD_NUMBER = 12
+CURRENTSPEED_FIELD_NUMBER = 22
 currentSpeed = _descriptor.FieldDescriptor(
   name='currentSpeed', full_name='amber.roboclaw_proto.currentSpeed', index=2,
-  number=12, type=11, cpp_type=10, label=1,
+  number=22, type=11, cpp_type=10, label=1,
   has_default_value=False, default_value=None,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,

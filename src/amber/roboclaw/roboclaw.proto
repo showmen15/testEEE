@@ -5,9 +5,9 @@ option java_outer_classname = "RoboclawProto";
 import "drivermsg.proto";
 
 extend amber.DriverMsg {
-    optional MotorsSpeed motorsCommand = 10;
-    optional bool currentSpeedRequest = 11;
-    optional MotorsSpeed currentSpeed = 12;
+    optional MotorsSpeed motorsCommand = 20;
+    optional bool currentSpeedRequest = 21;
+    optional MotorsSpeed currentSpeed = 22;
 }
 
 message MotorsSpeed {

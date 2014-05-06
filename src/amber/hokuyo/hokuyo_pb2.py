@@ -14,69 +14,69 @@ from amber.common import drivermsg_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='hokuyo.proto',
   package='amber.hokuyo_proto',
-  serialized_pb='\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"p\n\x07Version\x12\x10\n\x08response\x18\x01 \x01(\t\x12\x0e\n\x06vendor\x18\x02 \x01(\t\x12\x0f\n\x07product\x18\x03 \x01(\t\x12\x10\n\x08\x66irmware\x18\x04 \x01(\t\x12\x10\n\x08protocol\x18\x05 \x01(\t\x12\x0e\n\x06serial\x18\x06 \x01(\t\"\xca\x01\n\x05Specs\x12\x10\n\x08response\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\t\x12\x18\n\x10\x64istance_minimum\x18\x03 \x01(\r\x12\x18\n\x10\x64istance_maximum\x18\x04 \x01(\r\x12\x17\n\x0f\x61rea_resolution\x18\x05 \x01(\r\x12\x14\n\x0c\x61rea_minimum\x18\x06 \x01(\r\x12\x14\n\x0c\x61rea_maximum\x18\x07 \x01(\r\x12\x12\n\narea_front\x18\x08 \x01(\r\x12\x13\n\x0bmotor_speed\x18\t \x01(\r\"\x96\x01\n\x05State\x12\x10\n\x08response\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\t\x12\r\n\x05laser\x18\x03 \x01(\x08\x12\x13\n\x0bmotor_speed\x18\x04 \x01(\t\x12\x14\n\x0cmeasure_mode\x18\x05 \x01(\t\x12\x10\n\x08\x62it_rate\x18\x06 \x01(\t\x12\x0c\n\x04time\x18\x07 \x01(\t\x12\x12\n\ndiagnostic\x18\x08 \x01(\t\"1\n\x04Scan\x12\x12\n\x06\x61ngles\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tdistances\x18\x02 \x03(\x05\x42\x02\x10\x01:*\n\x10get_version_info\x12\x10.amber.DriverMsg\x18\x0b \x01(\x08:*\n\x10get_sensor_state\x12\x10.amber.DriverMsg\x18\x0c \x01(\x08:*\n\x10get_sensor_specs\x12\x10.amber.DriverMsg\x18\r \x01(\x08:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18\x0e \x01(\x08:>\n\x07version\x12\x10.amber.DriverMsg\x18\x0f \x01(\x0b\x32\x1b.amber.hokuyo_proto.Version::\n\x05specs\x12\x10.amber.DriverMsg\x18\x10 \x01(\x0b\x32\x19.amber.hokuyo_proto.Specs::\n\x05state\x12\x10.amber.DriverMsg\x18\x11 \x01(\x0b\x32\x19.amber.hokuyo_proto.State:8\n\x04scan\x12\x10.amber.DriverMsg\x18\x12 \x01(\x0b\x32\x18.amber.hokuyo_proto.ScanB,\n\x1dpl.edu.agh.amber.hokuyo.protoB\x0bHokuyoProto')
+  serialized_pb='\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"p\n\x07Version\x12\x10\n\x08response\x18\x01 \x01(\t\x12\x0e\n\x06vendor\x18\x02 \x01(\t\x12\x0f\n\x07product\x18\x03 \x01(\t\x12\x10\n\x08\x66irmware\x18\x04 \x01(\t\x12\x10\n\x08protocol\x18\x05 \x01(\t\x12\x0e\n\x06serial\x18\x06 \x01(\t\"\xca\x01\n\x05Specs\x12\x10\n\x08response\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\t\x12\x18\n\x10\x64istance_minimum\x18\x03 \x01(\r\x12\x18\n\x10\x64istance_maximum\x18\x04 \x01(\r\x12\x17\n\x0f\x61rea_resolution\x18\x05 \x01(\r\x12\x14\n\x0c\x61rea_minimum\x18\x06 \x01(\r\x12\x14\n\x0c\x61rea_maximum\x18\x07 \x01(\r\x12\x12\n\narea_front\x18\x08 \x01(\r\x12\x13\n\x0bmotor_speed\x18\t \x01(\r\"\x96\x01\n\x05State\x12\x10\n\x08response\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\t\x12\r\n\x05laser\x18\x03 \x01(\x08\x12\x13\n\x0bmotor_speed\x18\x04 \x01(\t\x12\x14\n\x0cmeasure_mode\x18\x05 \x01(\t\x12\x10\n\x08\x62it_rate\x18\x06 \x01(\t\x12\x0c\n\x04time\x18\x07 \x01(\t\x12\x12\n\ndiagnostic\x18\x08 \x01(\t\"1\n\x04Scan\x12\x12\n\x06\x61ngles\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tdistances\x18\x02 \x03(\x05\x42\x02\x10\x01:*\n\x10get_version_info\x12\x10.amber.DriverMsg\x18) \x01(\x08:*\n\x10get_sensor_state\x12\x10.amber.DriverMsg\x18* \x01(\x08:*\n\x10get_sensor_specs\x12\x10.amber.DriverMsg\x18+ \x01(\x08:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18, \x01(\x08:>\n\x07version\x12\x10.amber.DriverMsg\x18- \x01(\x0b\x32\x1b.amber.hokuyo_proto.Version::\n\x05specs\x12\x10.amber.DriverMsg\x18. \x01(\x0b\x32\x19.amber.hokuyo_proto.Specs::\n\x05state\x12\x10.amber.DriverMsg\x18/ \x01(\x0b\x32\x19.amber.hokuyo_proto.State:8\n\x04scan\x12\x10.amber.DriverMsg\x18\x30 \x01(\x0b\x32\x18.amber.hokuyo_proto.ScanB,\n\x1dpl.edu.agh.amber.hokuyo.protoB\x0bHokuyoProto')
 
 
-GET_VERSION_INFO_FIELD_NUMBER = 11
+GET_VERSION_INFO_FIELD_NUMBER = 41
 get_version_info = _descriptor.FieldDescriptor(
   name='get_version_info', full_name='amber.hokuyo_proto.get_version_info', index=0,
-  number=11, type=8, cpp_type=7, label=1,
+  number=41, type=8, cpp_type=7, label=1,
   has_default_value=False, default_value=False,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-GET_SENSOR_STATE_FIELD_NUMBER = 12
+GET_SENSOR_STATE_FIELD_NUMBER = 42
 get_sensor_state = _descriptor.FieldDescriptor(
   name='get_sensor_state', full_name='amber.hokuyo_proto.get_sensor_state', index=1,
-  number=12, type=8, cpp_type=7, label=1,
+  number=42, type=8, cpp_type=7, label=1,
   has_default_value=False, default_value=False,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-GET_SENSOR_SPECS_FIELD_NUMBER = 13
+GET_SENSOR_SPECS_FIELD_NUMBER = 43
 get_sensor_specs = _descriptor.FieldDescriptor(
   name='get_sensor_specs', full_name='amber.hokuyo_proto.get_sensor_specs', index=2,
-  number=13, type=8, cpp_type=7, label=1,
+  number=43, type=8, cpp_type=7, label=1,
   has_default_value=False, default_value=False,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-GET_SINGLE_SCAN_FIELD_NUMBER = 14
+GET_SINGLE_SCAN_FIELD_NUMBER = 44
 get_single_scan = _descriptor.FieldDescriptor(
   name='get_single_scan', full_name='amber.hokuyo_proto.get_single_scan', index=3,
-  number=14, type=8, cpp_type=7, label=1,
+  number=44, type=8, cpp_type=7, label=1,
   has_default_value=False, default_value=False,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-VERSION_FIELD_NUMBER = 15
+VERSION_FIELD_NUMBER = 45
 version = _descriptor.FieldDescriptor(
   name='version', full_name='amber.hokuyo_proto.version', index=4,
-  number=15, type=11, cpp_type=10, label=1,
+  number=45, type=11, cpp_type=10, label=1,
   has_default_value=False, default_value=None,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-SPECS_FIELD_NUMBER = 16
+SPECS_FIELD_NUMBER = 46
 specs = _descriptor.FieldDescriptor(
   name='specs', full_name='amber.hokuyo_proto.specs', index=5,
-  number=16, type=11, cpp_type=10, label=1,
+  number=46, type=11, cpp_type=10, label=1,
   has_default_value=False, default_value=None,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-STATE_FIELD_NUMBER = 17
+STATE_FIELD_NUMBER = 47
 state = _descriptor.FieldDescriptor(
   name='state', full_name='amber.hokuyo_proto.state', index=6,
-  number=17, type=11, cpp_type=10, label=1,
+  number=47, type=11, cpp_type=10, label=1,
   has_default_value=False, default_value=None,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-SCAN_FIELD_NUMBER = 18
+SCAN_FIELD_NUMBER = 48
 scan = _descriptor.FieldDescriptor(
   name='scan', full_name='amber.hokuyo_proto.scan', index=7,
-  number=18, type=11, cpp_type=10, label=1,
+  number=48, type=11, cpp_type=10, label=1,
   has_default_value=False, default_value=None,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
