@@ -1,6 +1,8 @@
 import abc
 from functools import wraps
 import logging
+import logging.config
+import os
 import struct
 
 from amber.common import drivermsg_pb2
@@ -9,7 +11,10 @@ from amber.common import drivermsg_pb2
 __author__ = 'paoolo'
 
 LEN_SIZE = 2
-LOGGER_NAME = 'Amber.Pipes'
+
+LOGGER_NAME = 'AmberPipes'
+pwd = os.path.dirname(os.path.abspath(__file__))
+logging.config.fileConfig('%s/amber.ini' % pwd)
 
 
 class MessageHandler(object):
@@ -63,8 +68,7 @@ class AmberPipes(object):
         self.__message_handler = message_handler
         self.__pipe_in, self.__pipe_out = pipe_in, pipe_out
 
-        self.__logger = logging.Logger(LOGGER_NAME)
-        self.__logger.addHandler(logging.StreamHandler())
+        self.__logger = logging.getLogger(LOGGER_NAME)
 
     def __call__(self, *args, **kwargs):
         self.__logger.info('Pipes thread started.')

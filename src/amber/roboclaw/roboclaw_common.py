@@ -1,4 +1,5 @@
 import logging
+import logging.config
 import os
 
 from amber.common.amber_pipes import MessageHandler
@@ -8,9 +9,9 @@ from amber.tools import config
 
 __author__ = 'paoolo'
 
-LOGGER_NAME = 'Roboclaw.Controller'
-
+LOGGER_NAME = 'RoboclawController'
 pwd = os.path.dirname(os.path.abspath(__file__))
+logging.config.fileConfig('%s/roboclaw.ini' % pwd)
 config.add_config_ini('%s/roboclaw.ini' % pwd)
 
 SERIAL_PORT = config.ROBOCLAW_SERIAL_PORT
@@ -503,8 +504,7 @@ class RoboclawController(MessageHandler):
         self.__roboclaw_rear.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
         self.__roboclaw_rear.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
 
-        self.__logger = logging.Logger(LOGGER_NAME)
-        self.__logger.addHandler(logging.StreamHandler())
+        self.__logger = logging.getLogger(LOGGER_NAME)
 
         self.__clients = []
 

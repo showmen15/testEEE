@@ -3,13 +3,10 @@ import sys
 import os
 
 from amber.roboclaw.roboclaw_common import RoboclawController
-
 from amber.tools import serial_port, config
 
 
 __author__ = 'paoolo'
-
-LOGGER_NAME = 'Roboclaw.Controller'
 
 pwd = os.path.dirname(os.path.abspath(__file__))
 config.add_config_ini('%s/roboclaw.ini' % pwd)

@@ -1,25 +1,20 @@
 import logging
+import logging.config
+import os
 import sys
 import threading
 import time
 
 from amber.common import drivermsg_pb2
-
 from amber.common.amber_pipes import MessageHandler
-
 from amber.dummy import dummy_pb2
 
 
 __author__ = 'paoolo'
 
-LOGGER_NAME = 'Dummy.Controller'
-
-
-def uniq(seq):
-    # not order preserving
-    __set = {}
-    map(__set.__setitem__, seq, [])
-    return __set.keys()
+LOGGER_NAME = 'DummyController'
+pwd = os.path.dirname(os.path.abspath(__file__))
+logging.config.fileConfig('%s/dummy.ini' % pwd)
 
 
 class Dummy(object):
@@ -36,8 +31,7 @@ class DummyController(MessageHandler):
         self.__subscribers = []
         self.__subscribe_thread = None
 
-        self.__logger = logging.Logger(LOGGER_NAME)
-        self.__logger.addHandler(logging.StreamHandler())
+        self.__logger = logging.getLogger(LOGGER_NAME)
 
     def handle_data_message(self, header, message):
         if message.HasExtension(dummy_pb2.enable):

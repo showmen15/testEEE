@@ -1,4 +1,5 @@
 import logging
+import logging.config
 import os
 import threading
 import time
@@ -11,9 +12,9 @@ from amber.tools import config
 
 __author__ = 'paoolo'
 
-LOGGER_NAME = 'Hokuyo.Controller'
-
+LOGGER_NAME = 'HokuyoController'
 pwd = os.path.dirname(os.path.abspath(__file__))
+logging.config.fileConfig('%s/hokuyo.ini' % pwd)
 config.add_config_ini('%s/hokuyo.ini' % pwd)
 
 HIGH_SENSITIVE = bool(config.HOKUYO_HIGH_SENSITIVE_ENABLE)
@@ -182,8 +183,7 @@ class HokuyoController(MessageHandler):
         self.__hokuyo.set_high_sensitive(HIGH_SENSITIVE)
         self.__hokuyo.set_motor_speed(SPEED_MOTOR)
 
-        self.__logger = logging.Logger(LOGGER_NAME)
-        self.__logger.addHandler(logging.StreamHandler())
+        self.__logger = logging.getLogger(LOGGER_NAME)
 
         self.__subscribers = []
         self.__subscribe_thread = None

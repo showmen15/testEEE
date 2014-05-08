@@ -9,8 +9,6 @@ from amber.tools import serial_port, config
 
 __author__ = 'paoolo'
 
-LOGGER_NAME = 'Hokuyo.Controller'
-
 pwd = os.path.dirname(os.path.abspath(__file__))
 config.add_config_ini('%s/hokuyo.ini' % pwd)
 
