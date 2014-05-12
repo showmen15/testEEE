@@ -1,6 +1,11 @@
 #!/bin/bash
 
-export __DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export PYTHONPATH=$( dirname ${__DIR} )/src
+export __dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export __dir="$( dirname ${__dir} )"
 
-python -u ${PYTHONPATH}/amber/dummy/dummy.py
+if [ -d ${__dir}/__envi ]
+then
+    . ${__dir}/__envi/bin/activate
+    export PYTHONPATH=${__dir}/src
+    ${__dir}/__envi/bin/python -u ${PYTHONPATH}/amber/dummy/dummy.py
+fi
