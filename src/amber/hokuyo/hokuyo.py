@@ -1,6 +1,6 @@
+import logging.config
 import sys
 import os
-import traceback
 import time
 
 import serial
@@ -11,14 +11,18 @@ from amber.tools import serial_port, config
 
 __author__ = 'paoolo'
 
+LOGGER_NAME = 'AmberPipes'
 pwd = os.path.dirname(os.path.abspath(__file__))
 config.add_config_ini('%s/hokuyo.ini' % pwd)
+logging.config.fileConfig('%s/hokuyo.ini' % pwd)
 
 SERIAL_PORT = config.HOKUYO_SERIAL_PORT
 BAUD_RATE = config.HOKUYO_BAUD_RATE
 TIMEOUT = 0.1
 
 if __name__ == '__main__':
+    logger = logging.getLogger(LOGGER_NAME)
+
     serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
     port = serial_port.SerialPort(serial)
 
@@ -28,6 +32,5 @@ if __name__ == '__main__':
             controller = HokuyoController(sys.stdin, sys.stdout, port)
             controller()
         except BaseException as e:
-            print 'error: %s' % str(e)
-            traceback.print_exc()
+            logger.error('error: %s' % str(e))
             time.sleep(5)
