@@ -15,14 +15,14 @@ Add to `requirements.txt`
 
 You can install it by python-installer
 
-	pip install amber-python-drivers
+    pip install amber-python-drivers
 
 Package available at https://pypi.python.org/pypi/amber-python-drivers
 
 How to contribute
 -----------------
 
-Clone this repo, setup your enviroment (optional using `virtualenv`), by `pip install -r requirements.txt`. Next, change what you want and make pull request.
+Clone this repo, setup your environment (optional using `virtualenv`), by `pip install -r requirements.txt`. Next, change what you want and make pull request.
 
 Support
 -------
