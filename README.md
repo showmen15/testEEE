@@ -4,7 +4,16 @@ amber-python-drivers
 Requirements
 ------------
 
-* `protobuf` and `protoc`
+* `python` with `pip`
+* `protoc` from `protobuf-compiler`
+
+How to deploy
+-------------
+
+* Clone this project.
+* `pip install -r requirements.txt` inside project.
+* `./protoc.sh; ./repair.sh` inside project.
+* Import project to your favorite IDE.
 
 How to use (PyPi)
 -----------------
