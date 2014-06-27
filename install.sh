@@ -8,4 +8,4 @@ then
 fi
 
 . ${__dir}/__envi/bin/activate
-${__dir}/__envi/bin/pip install --upgrade -r requirements.txt
+${__dir}/__envi/bin/pip install --upgrade -r ${__dir}/requirements.txt

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export __dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 set -x
-rm -rf *.egg-info/ build/ dist/
-find . -name *.pyc -exec rm {} \;
+rm -rf ${__dir}/*.egg-info/ ${__dir}/build/ ${__dir}/dist/
+find ${__dir} -name *.pyc -exec rm {} \;
