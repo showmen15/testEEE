@@ -3,8 +3,6 @@ import logging.config
 import threading
 import time
 
-import re
-
 import os
 
 from amber.common import drivermsg_pb2, runtime
@@ -98,22 +96,19 @@ class Hokuyo(object):
         distances = {}
 
         result = self.__get_result(4 if multiple else 3)
-        if len(result) == 4 if multiple else 3 and \
-                        result[-1] == '\n' and \
-                (re.match(r'^MD[0-9]{13}$', result[-4]) if multiple else
-                 re.match(r'^GD[0-9]{11,}.*$', result[-3])):
-            count = ((stop_step - start_step) * 3 * 67) / (64 * cluster_count)
-            result += self.__port.read(count)
 
-            result = result.split('\n')
-            result = map(lambda line: line[:-1], result[3:-2])
-            result = ''.join(result)
+        count = ((stop_step - start_step) * 3 * 67) / (64 * cluster_count)
+        result += self.__port.read(count)
 
-            i = 0
-            start = (-119.885 + 0.35208516886930985 * cluster_count * (start_step - 44))
-            for chunk in chunks(result, 3):
-                distances[- ((0.35208516886930985 * cluster_count * i) + start)] = decode(chunk)
-                i += 1
+        result = result.split('\n')
+        result = map(lambda line: line[:-1], result[3:-2])
+        result = ''.join(result)
+
+        i = 0
+        start = (-119.885 + 0.35208516886930985 * cluster_count * (start_step - 44))
+        for chunk in chunks(result, 3):
+            distances[- ((0.35208516886930985 * cluster_count * i) + start)] = decode(chunk)
+            i += 1
 
         return distances
 
@@ -198,7 +193,8 @@ class HokuyoController(MessageHandler):
             self.__logger.warning('Client %d does not registered as subscriber' % client_id)
 
     def __scanning_run(self):
-        for scan in self.__hokuyo.get_multiple_scan():
+        while self.__alive:
+            scan = self.__hokuyo.get_single_scan()
             self.__angles = sorted(scan.keys())
             self.__distances = map(scan.get, self.__angles)
 
