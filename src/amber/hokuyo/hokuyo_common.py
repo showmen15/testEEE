@@ -1,5 +1,6 @@
 import logging
 import logging.config
+import re
 import threading
 import time
 
@@ -96,19 +97,21 @@ class Hokuyo(object):
         distances = {}
 
         result = self.__get_result(4 if multiple else 3)
+        if result[-1] == '\n' and \
+                (re.match(r'^MD[0-9]{13}$', result[-4]) if multiple else
+                 re.match(r'^GD[0-9]{11,}.*$', result[-3])):
+            count = ((stop_step - start_step) * 3 * 67) / (64 * cluster_count)
+            result += self.__port.read(count)
 
-        count = ((stop_step - start_step) * 3 * 67) / (64 * cluster_count)
-        result += self.__port.read(count)
+            result = result.split('\n')
+            result = map(lambda line: line[:-1], result[3:-2])
+            result = ''.join(result)
 
-        result = result.split('\n')
-        result = map(lambda line: line[:-1], result[3:-2])
-        result = ''.join(result)
-
-        i = 0
-        start = (-119.885 + 0.35208516886930985 * cluster_count * (start_step - 44))
-        for chunk in chunks(result, 3):
-            distances[- ((0.35208516886930985 * cluster_count * i) + start)] = decode(chunk)
-            i += 1
+            i = 0
+            start = (-119.885 + 0.35208516886930985 * cluster_count * (start_step - 44))
+            for chunk in chunks(result, 3):
+                distances[- ((0.35208516886930985 * cluster_count * i) + start)] = decode(chunk)
+                i += 1
 
         return distances
 
@@ -127,56 +130,10 @@ class Hokuyo(object):
         index = 0
         while number_of_scans == 0 or index > 0:
             index -= 1
-            yield self.__get_scan(start_step, stop_step, cluster_count)
+            yield self.__get_scan(start_step, stop_step, cluster_count, True)
 
 
 class HokuyoController(MessageHandler):
-    __version_fields = {'vendor': 2,
-                        'product': 3,
-                        'firmware': 4,
-                        'protocol': 5,
-                        'serial': 6}
-
-    __state_fields = {'model': 2,
-                      'motor_speed': 4,
-                      'measure_mode': 5,
-                      'bit_rate': 6,
-                      'time': 7,
-                      'diagnostic': 8}
-
-    __sensor_specs_fields = {'model': 2,
-                             'distance_minimum': 3,
-                             'distance_maximum': 4,
-                             'area_resolution': 5,
-                             'area_minimum': 6,
-                             'area_maximum': 7,
-                             'area_front': 8,
-                             'motor_speed': 9}
-
-    @staticmethod
-    def __get_value(value):
-        try:
-            value = value[5:-2]
-        except IndexError:
-            pass
-
-        try:
-            value = int(value)
-        except ValueError:
-            pass
-
-        return value
-
-    def __set_value(self, response_message, what, where, which):
-        for field_name, field_num in which:
-            try:
-                setattr(response_message.Extensions[where], field_name,
-                        HokuyoController.__get_value(what[field_num]))
-            except IndexError as e:
-                self.__logger.warn('Index out of list: %s' % str(e))
-            except TypeError as e:
-                self.__logger.warn('Probably saving int as string: %s' % str(e))
-
     def __init__(self, pipe_in, pipe_out, port):
         super(HokuyoController, self).__init__(pipe_in, pipe_out)
         self.__hokuyo = Hokuyo(port)
