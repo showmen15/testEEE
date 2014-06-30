@@ -1,8 +1,7 @@
 import logging.config
 import sys
-import os
-import time
 
+import os
 import serial
 
 from amber.hokuyo.hokuyo_common import HokuyoController
@@ -26,11 +25,5 @@ if __name__ == '__main__':
     serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
     port = serial_port.SerialPort(serial)
 
-    while True:
-        # noinspection PyBroadException
-        try:
-            controller = HokuyoController(sys.stdin, sys.stdout, port)
-            controller()
-        except BaseException as e:
-            logger.error('error: %s' % str(e))
-            time.sleep(5)
+    controller = HokuyoController(sys.stdin, sys.stdout, port)
+    controller()
