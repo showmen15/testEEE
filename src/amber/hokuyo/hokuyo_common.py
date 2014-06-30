@@ -1,8 +1,9 @@
 import logging
 import logging.config
-import re
 import threading
 import time
+
+import re
 
 import os
 
@@ -97,7 +98,8 @@ class Hokuyo(object):
         distances = {}
 
         result = self.__get_result(4 if multiple else 3)
-        if result[-1] == '\n' and \
+        if len(result) == 4 if multiple else 3 and \
+                        result[-1] == '\n' and \
                 (re.match(r'^MD[0-9]{13}$', result[-4]) if multiple else
                  re.match(r'^GD[0-9]{11,}.*$', result[-3])):
             count = ((stop_step - start_step) * 3 * 67) / (64 * cluster_count)
