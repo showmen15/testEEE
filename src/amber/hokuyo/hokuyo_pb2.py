@@ -14,297 +14,25 @@ from amber.common import drivermsg_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='hokuyo.proto',
   package='amber.hokuyo_proto',
-  serialized_pb='\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"p\n\x07Version\x12\x10\n\x08response\x18\x01 \x01(\t\x12\x0e\n\x06vendor\x18\x02 \x01(\t\x12\x0f\n\x07product\x18\x03 \x01(\t\x12\x10\n\x08\x66irmware\x18\x04 \x01(\t\x12\x10\n\x08protocol\x18\x05 \x01(\t\x12\x0e\n\x06serial\x18\x06 \x01(\t\"\xca\x01\n\x05Specs\x12\x10\n\x08response\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\t\x12\x18\n\x10\x64istance_minimum\x18\x03 \x01(\r\x12\x18\n\x10\x64istance_maximum\x18\x04 \x01(\r\x12\x17\n\x0f\x61rea_resolution\x18\x05 \x01(\r\x12\x14\n\x0c\x61rea_minimum\x18\x06 \x01(\r\x12\x14\n\x0c\x61rea_maximum\x18\x07 \x01(\r\x12\x12\n\narea_front\x18\x08 \x01(\r\x12\x13\n\x0bmotor_speed\x18\t \x01(\r\"\x96\x01\n\x05State\x12\x10\n\x08response\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\t\x12\r\n\x05laser\x18\x03 \x01(\x08\x12\x13\n\x0bmotor_speed\x18\x04 \x01(\t\x12\x14\n\x0cmeasure_mode\x18\x05 \x01(\t\x12\x10\n\x08\x62it_rate\x18\x06 \x01(\t\x12\x0c\n\x04time\x18\x07 \x01(\t\x12\x12\n\ndiagnostic\x18\x08 \x01(\t\"1\n\x04Scan\x12\x12\n\x06\x61ngles\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tdistances\x18\x02 \x03(\x05\x42\x02\x10\x01:*\n\x10get_version_info\x12\x10.amber.DriverMsg\x18) \x01(\x08:*\n\x10get_sensor_state\x12\x10.amber.DriverMsg\x18* \x01(\x08:*\n\x10get_sensor_specs\x12\x10.amber.DriverMsg\x18+ \x01(\x08:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18, \x01(\x08:>\n\x07version\x12\x10.amber.DriverMsg\x18- \x01(\x0b\x32\x1b.amber.hokuyo_proto.Version::\n\x05specs\x12\x10.amber.DriverMsg\x18. \x01(\x0b\x32\x19.amber.hokuyo_proto.Specs::\n\x05state\x12\x10.amber.DriverMsg\x18/ \x01(\x0b\x32\x19.amber.hokuyo_proto.State:8\n\x04scan\x12\x10.amber.DriverMsg\x18\x30 \x01(\x0b\x32\x18.amber.hokuyo_proto.ScanB,\n\x1dpl.edu.agh.amber.hokuyo.protoB\x0bHokuyoProto')
+  serialized_pb='\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"1\n\x04Scan\x12\x12\n\x06\x61ngles\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tdistances\x18\x02 \x03(\x05\x42\x02\x10\x01:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18, \x01(\x08:8\n\x04scan\x12\x10.amber.DriverMsg\x18\x30 \x01(\x0b\x32\x18.amber.hokuyo_proto.ScanB,\n\x1dpl.edu.agh.amber.hokuyo.protoB\x0bHokuyoProto')
 
 
-GET_VERSION_INFO_FIELD_NUMBER = 41
-get_version_info = _descriptor.FieldDescriptor(
-  name='get_version_info', full_name='amber.hokuyo_proto.get_version_info', index=0,
-  number=41, type=8, cpp_type=7, label=1,
-  has_default_value=False, default_value=False,
-  message_type=None, enum_type=None, containing_type=None,
-  is_extension=True, extension_scope=None,
-  options=None)
-GET_SENSOR_STATE_FIELD_NUMBER = 42
-get_sensor_state = _descriptor.FieldDescriptor(
-  name='get_sensor_state', full_name='amber.hokuyo_proto.get_sensor_state', index=1,
-  number=42, type=8, cpp_type=7, label=1,
-  has_default_value=False, default_value=False,
-  message_type=None, enum_type=None, containing_type=None,
-  is_extension=True, extension_scope=None,
-  options=None)
-GET_SENSOR_SPECS_FIELD_NUMBER = 43
-get_sensor_specs = _descriptor.FieldDescriptor(
-  name='get_sensor_specs', full_name='amber.hokuyo_proto.get_sensor_specs', index=2,
-  number=43, type=8, cpp_type=7, label=1,
-  has_default_value=False, default_value=False,
-  message_type=None, enum_type=None, containing_type=None,
-  is_extension=True, extension_scope=None,
-  options=None)
 GET_SINGLE_SCAN_FIELD_NUMBER = 44
 get_single_scan = _descriptor.FieldDescriptor(
-  name='get_single_scan', full_name='amber.hokuyo_proto.get_single_scan', index=3,
+  name='get_single_scan', full_name='amber.hokuyo_proto.get_single_scan', index=0,
   number=44, type=8, cpp_type=7, label=1,
   has_default_value=False, default_value=False,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-VERSION_FIELD_NUMBER = 45
-version = _descriptor.FieldDescriptor(
-  name='version', full_name='amber.hokuyo_proto.version', index=4,
-  number=45, type=11, cpp_type=10, label=1,
-  has_default_value=False, default_value=None,
-  message_type=None, enum_type=None, containing_type=None,
-  is_extension=True, extension_scope=None,
-  options=None)
-SPECS_FIELD_NUMBER = 46
-specs = _descriptor.FieldDescriptor(
-  name='specs', full_name='amber.hokuyo_proto.specs', index=5,
-  number=46, type=11, cpp_type=10, label=1,
-  has_default_value=False, default_value=None,
-  message_type=None, enum_type=None, containing_type=None,
-  is_extension=True, extension_scope=None,
-  options=None)
-STATE_FIELD_NUMBER = 47
-state = _descriptor.FieldDescriptor(
-  name='state', full_name='amber.hokuyo_proto.state', index=6,
-  number=47, type=11, cpp_type=10, label=1,
-  has_default_value=False, default_value=None,
-  message_type=None, enum_type=None, containing_type=None,
-  is_extension=True, extension_scope=None,
-  options=None)
 SCAN_FIELD_NUMBER = 48
 scan = _descriptor.FieldDescriptor(
-  name='scan', full_name='amber.hokuyo_proto.scan', index=7,
+  name='scan', full_name='amber.hokuyo_proto.scan', index=1,
   number=48, type=11, cpp_type=10, label=1,
   has_default_value=False, default_value=None,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
-
-
-_VERSION = _descriptor.Descriptor(
-  name='Version',
-  full_name='amber.hokuyo_proto.Version',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='response', full_name='amber.hokuyo_proto.Version.response', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='vendor', full_name='amber.hokuyo_proto.Version.vendor', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='product', full_name='amber.hokuyo_proto.Version.product', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='firmware', full_name='amber.hokuyo_proto.Version.firmware', index=3,
-      number=4, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='protocol', full_name='amber.hokuyo_proto.Version.protocol', index=4,
-      number=5, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='serial', full_name='amber.hokuyo_proto.Version.serial', index=5,
-      number=6, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  extension_ranges=[],
-  serialized_start=53,
-  serialized_end=165,
-)
-
-
-_SPECS = _descriptor.Descriptor(
-  name='Specs',
-  full_name='amber.hokuyo_proto.Specs',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='response', full_name='amber.hokuyo_proto.Specs.response', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='model', full_name='amber.hokuyo_proto.Specs.model', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='distance_minimum', full_name='amber.hokuyo_proto.Specs.distance_minimum', index=2,
-      number=3, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='distance_maximum', full_name='amber.hokuyo_proto.Specs.distance_maximum', index=3,
-      number=4, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='area_resolution', full_name='amber.hokuyo_proto.Specs.area_resolution', index=4,
-      number=5, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='area_minimum', full_name='amber.hokuyo_proto.Specs.area_minimum', index=5,
-      number=6, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='area_maximum', full_name='amber.hokuyo_proto.Specs.area_maximum', index=6,
-      number=7, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='area_front', full_name='amber.hokuyo_proto.Specs.area_front', index=7,
-      number=8, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='motor_speed', full_name='amber.hokuyo_proto.Specs.motor_speed', index=8,
-      number=9, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  extension_ranges=[],
-  serialized_start=168,
-  serialized_end=370,
-)
-
-
-_STATE = _descriptor.Descriptor(
-  name='State',
-  full_name='amber.hokuyo_proto.State',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='response', full_name='amber.hokuyo_proto.State.response', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='model', full_name='amber.hokuyo_proto.State.model', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='laser', full_name='amber.hokuyo_proto.State.laser', index=2,
-      number=3, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='motor_speed', full_name='amber.hokuyo_proto.State.motor_speed', index=3,
-      number=4, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='measure_mode', full_name='amber.hokuyo_proto.State.measure_mode', index=4,
-      number=5, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='bit_rate', full_name='amber.hokuyo_proto.State.bit_rate', index=5,
-      number=6, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='time', full_name='amber.hokuyo_proto.State.time', index=6,
-      number=7, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='diagnostic', full_name='amber.hokuyo_proto.State.diagnostic', index=7,
-      number=8, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  extension_ranges=[],
-  serialized_start=373,
-  serialized_end=523,
-)
 
 
 _SCAN = _descriptor.Descriptor(
@@ -337,32 +65,11 @@ _SCAN = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=525,
-  serialized_end=574,
+  serialized_start=53,
+  serialized_end=102,
 )
 
-DESCRIPTOR.message_types_by_name['Version'] = _VERSION
-DESCRIPTOR.message_types_by_name['Specs'] = _SPECS
-DESCRIPTOR.message_types_by_name['State'] = _STATE
 DESCRIPTOR.message_types_by_name['Scan'] = _SCAN
-
-class Version(_message.Message):
-  __metaclass__ = _reflection.GeneratedProtocolMessageType
-  DESCRIPTOR = _VERSION
-
-  # @@protoc_insertion_point(class_scope:amber.hokuyo_proto.Version)
-
-class Specs(_message.Message):
-  __metaclass__ = _reflection.GeneratedProtocolMessageType
-  DESCRIPTOR = _SPECS
-
-  # @@protoc_insertion_point(class_scope:amber.hokuyo_proto.Specs)
-
-class State(_message.Message):
-  __metaclass__ = _reflection.GeneratedProtocolMessageType
-  DESCRIPTOR = _STATE
-
-  # @@protoc_insertion_point(class_scope:amber.hokuyo_proto.State)
 
 class Scan(_message.Message):
   __metaclass__ = _reflection.GeneratedProtocolMessageType
@@ -370,16 +77,7 @@ class Scan(_message.Message):
 
   # @@protoc_insertion_point(class_scope:amber.hokuyo_proto.Scan)
 
-drivermsg_pb2.DriverMsg.RegisterExtension(get_version_info)
-drivermsg_pb2.DriverMsg.RegisterExtension(get_sensor_state)
-drivermsg_pb2.DriverMsg.RegisterExtension(get_sensor_specs)
 drivermsg_pb2.DriverMsg.RegisterExtension(get_single_scan)
-version.message_type = _VERSION
-drivermsg_pb2.DriverMsg.RegisterExtension(version)
-specs.message_type = _SPECS
-drivermsg_pb2.DriverMsg.RegisterExtension(specs)
-state.message_type = _STATE
-drivermsg_pb2.DriverMsg.RegisterExtension(state)
 scan.message_type = _SCAN
 drivermsg_pb2.DriverMsg.RegisterExtension(scan)
 

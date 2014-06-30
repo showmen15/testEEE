@@ -5,58 +5,9 @@ option java_outer_classname = "HokuyoProto";
 import "drivermsg.proto";
 
 extend amber.DriverMsg {
-    optional bool get_version_info = 41;
-    optional bool get_sensor_state = 42;
-    optional bool get_sensor_specs = 43;
     optional bool get_single_scan = 44;
 
-    optional Version version = 45;
-    optional Specs specs = 46;
-    optional State state = 47;
     optional Scan scan = 48;
-}
-
-message Version {
-    optional string response = 1;
-
-    optional string vendor = 2;
-    optional string product = 3;
-
-    optional string firmware = 4;
-    optional string protocol = 5;
-    optional string serial = 6;
-}
-
-message Specs {
-    optional string response = 1;
-
-    optional string model = 2;
-
-    optional uint32 distance_minimum = 3;
-    optional uint32 distance_maximum = 4;
-
-    optional uint32 area_resolution = 5;
-    optional uint32 area_minimum = 6;
-    optional uint32 area_maximum = 7;
-    optional uint32 area_front = 8;
-
-    optional uint32 motor_speed = 9;
-}
-
-message State {
-    optional string response = 1;
-
-    optional string model = 2;
-
-    optional bool laser = 3;
-
-    optional string motor_speed = 4;
-    optional string measure_mode = 5;
-    optional string bit_rate = 6;
-
-    optional string time = 7;
-
-    optional string diagnostic = 8;
 }
 
 message Scan {
