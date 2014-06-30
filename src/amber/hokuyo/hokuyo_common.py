@@ -1,8 +1,9 @@
 import logging
 import logging.config
-import os
 import threading
 import time
+
+import os
 
 from amber.common import drivermsg_pb2, runtime
 from amber.common.amber_pipes import MessageHandler
@@ -243,20 +244,23 @@ class HokuyoController(MessageHandler):
             time.sleep(0.045)
 
     def __subscription_run(self):
-        while self.__alive and len(self.__subscribers) > 0:
-            response_header = drivermsg_pb2.DriverHdr()
-            response_message = drivermsg_pb2.DriverMsg()
+        try:
+            while self.__alive and len(self.__subscribers) > 0:
+                response_header = drivermsg_pb2.DriverHdr()
+                response_message = drivermsg_pb2.DriverMsg()
 
-            response_message.type = drivermsg_pb2.DriverMsg.DATA
-            response_message.ackNum = 0
+                response_message.type = drivermsg_pb2.DriverMsg.DATA
+                response_message.ackNum = 0
 
-            response_header.clientIDs.extend(self.__subscribers)
-            response_message = self.__fill_scan(response_message)
+                response_header.clientIDs.extend(self.__subscribers)
+                response_message = self.__fill_scan(response_message)
 
-            self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
+                self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
-            # It must be less than 0.1s
-            time.sleep(0.095)
+                # It must be less than 0.1s
+                time.sleep(0.095)
+        except IOError:
+            self.__alive = False
 
     def __fill_scan(self, response_message):
         response_message.Extensions[hokuyo_pb2.scan].angles.extend(self.__angles)
