@@ -8,6 +8,9 @@ class SerialPort(object):
         self.__port = serial_port
         self.__checksum = 0
 
+    def close(self):
+        self.__port.close()
+
     def get_checksum(self):
         return self.__checksum
 

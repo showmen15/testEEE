@@ -60,6 +60,9 @@ class Hokuyo(object):
         self.__write_command(code)
         return self.__get_result(lines)
 
+    def close(self):
+        self.__port.close()
+
     def laser_on(self):
         self.__port.write('BM\n')
         return self.__port.read(9)
@@ -236,12 +239,9 @@ class HokuyoController(MessageHandler):
             self.__logger.warning('Client %d does not registered as subscriber' % client_id)
 
     def __scanning_run(self):
-        while self.__alive:
-            scan = self.__hokuyo.get_single_scan()
+        for scan in self.__hokuyo.get_multiple_scan():
             self.__angles = sorted(scan.keys())
             self.__distances = map(scan.get, self.__angles)
-
-            time.sleep(0.045)
 
     def __subscription_run(self):
         try:
@@ -270,3 +270,4 @@ class HokuyoController(MessageHandler):
 
     def terminate(self):
         self.__alive = False
+        self.__hokuyo.close()
