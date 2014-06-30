@@ -5,7 +5,7 @@ import logging.config
 import os
 import struct
 
-from amber.common import drivermsg_pb2
+from amber.common import drivermsg_pb2, runtime
 
 
 __author__ = 'paoolo'
@@ -67,6 +67,9 @@ class AmberPipes(object):
     def __init__(self, message_handler, pipe_in, pipe_out):
         self.__message_handler = message_handler
         self.__pipe_in, self.__pipe_out = pipe_in, pipe_out
+        self.__alive = True
+
+        runtime.add_shutdown_hook(self.terminate)
 
         self.__logger = logging.getLogger(LOGGER_NAME)
 
@@ -74,8 +77,11 @@ class AmberPipes(object):
         self.__logger.info('Pipes thread started.')
         self.__run_process()
 
+    def terminate(self):
+        self.__alive = False
+
     def __run_process(self):
-        while True:
+        while self.__alive:
             header, message = self.__read_header_and_message_from_pipe()
             self.__handle_header_and_message(header, message)
 
@@ -224,4 +230,3 @@ class AmberPipes(object):
         """
         self.__pipe_out.write(binary_string)
         self.__pipe_out.flush()
-

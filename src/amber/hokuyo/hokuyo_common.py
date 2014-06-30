@@ -240,6 +240,8 @@ class HokuyoController(MessageHandler):
             self.__angles = sorted(scan.keys())
             self.__distances = map(scan.get, self.__angles)
 
+            time.sleep(0.045)
+
     def __subscription_run(self):
         while self.__alive and len(self.__subscribers) > 0:
             response_header = drivermsg_pb2.DriverHdr()

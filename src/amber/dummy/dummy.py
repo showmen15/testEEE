@@ -5,7 +5,7 @@ import sys
 import threading
 import time
 
-from amber.common import drivermsg_pb2
+from amber.common import drivermsg_pb2, runtime
 from amber.common.amber_pipes import MessageHandler
 from amber.dummy import dummy_pb2
 
@@ -39,8 +39,14 @@ class DummyController(MessageHandler):
 
         self.__subscribers = []
         self.__subscribe_thread = None
+        self.__alive = True
+
+        runtime.add_shutdown_hook(self.terminate)
 
         self.__logger = logging.getLogger(LOGGER_NAME)
+
+    def terminate(self):
+        self.__alive = False
 
     def handle_data_message(self, header, message):
         """
@@ -156,7 +162,7 @@ class DummyController(MessageHandler):
 
         :return:
         """
-        while len(self.__subscribers) > 0:
+        while self.__alive and len(self.__subscribers) > 0:
             response_header = drivermsg_pb2.DriverHdr()
             response_message = drivermsg_pb2.DriverMsg()
 
