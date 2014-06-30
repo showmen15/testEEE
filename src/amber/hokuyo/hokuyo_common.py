@@ -2,6 +2,7 @@ import logging
 import logging.config
 import threading
 import time
+import sys
 
 import os
 
@@ -109,6 +110,8 @@ class Hokuyo(object):
         for chunk in chunks(result, 3):
             distances[- ((0.35208516886930985 * cluster_count * i) + start)] = decode(chunk)
             i += 1
+
+        sys.stderr.write(str(len(distances)))
 
         return distances
 
