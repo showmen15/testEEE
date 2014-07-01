@@ -90,9 +90,12 @@ class AmberPipes(object):
         self.__alive = False
 
     def __run_process(self):
-        while self.__alive:
-            header, message = self.__read_header_and_message_from_pipe()
-            self.__handle_header_and_message(header, message)
+        try:
+            while self.__alive:
+                header, message = self.__read_header_and_message_from_pipe()
+                self.__handle_header_and_message(header, message)
+        except struct.error:
+            self.__alive = False
 
         self.__logger.warning('amber_pipes: stop')
 

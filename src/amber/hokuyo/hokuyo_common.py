@@ -4,7 +4,6 @@ import threading
 import time
 
 import os
-
 from amber.common import drivermsg_pb2, runtime
 from amber.common.amber_pipes import MessageHandler
 from amber.hokuyo import hokuyo_pb2
@@ -142,10 +141,6 @@ class HokuyoController(MessageHandler):
         self.__hokuyo.set_motor_speed(SPEED_MOTOR)
 
         self.__angles, self.__distances = [], []
-
-        self.__scan_thread = threading.Thread(target=self.__scanning_run)
-        runtime.add_shutdown_hook(self.terminate)
-        self.__scan_thread.start()
 
         self.__logger = logging.getLogger(LOGGER_NAME)
 
