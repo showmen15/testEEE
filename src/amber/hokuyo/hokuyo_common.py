@@ -141,7 +141,7 @@ class HokuyoController(MessageHandler):
         self.__hokuyo.set_high_sensitive(HIGH_SENSITIVE)
         self.__hokuyo.set_motor_speed(SPEED_MOTOR)
 
-        self.__alive, self.__angles, self.__distances = True, [], []
+        self.__angles, self.__distances = [], []
 
         self.__scan_thread = threading.Thread(target=self.__scanning_run)
         runtime.add_shutdown_hook(self.terminate)
@@ -151,6 +151,10 @@ class HokuyoController(MessageHandler):
 
         self.__subscribers = []
         self.__subscribe_thread = None
+
+        self.__scan_thread = threading.Thread(target=self.__scanning_run)
+        runtime.add_shutdown_hook(self.terminate)
+        self.__scan_thread.start()
 
     @MessageHandler.handle_and_response
     def __handle_get_single_scan(self, received_header, received_message, response_header, response_message):
@@ -194,7 +198,9 @@ class HokuyoController(MessageHandler):
             self.__logger.warning('Client %d does not registered as subscriber' % client_id)
 
     def __scanning_run(self):
-        while self.__alive:
+        while self.is_alive():
+            self.__logger.warning('hokuyo_scan: still live')
+
             scan = self.__hokuyo.get_single_scan()
             self.__angles = sorted(scan.keys())
             self.__distances = map(scan.get, self.__angles)
@@ -202,23 +208,22 @@ class HokuyoController(MessageHandler):
         self.__logger.warning('hokuyo: scanning stop')
 
     def __subscription_run(self):
-        try:
-            while self.__alive and len(self.__subscribers) > 0:
-                response_header = drivermsg_pb2.DriverHdr()
-                response_message = drivermsg_pb2.DriverMsg()
+        while self.is_alive() and len(self.__subscribers) > 0:
+            self.__logger.warning('hokuyo_subs: still live')
 
-                response_message.type = drivermsg_pb2.DriverMsg.DATA
-                response_message.ackNum = 0
+            response_header = drivermsg_pb2.DriverHdr()
+            response_message = drivermsg_pb2.DriverMsg()
 
-                response_header.clientIDs.extend(self.__subscribers)
-                response_message = self.__fill_scan(response_message)
+            response_message.type = drivermsg_pb2.DriverMsg.DATA
+            response_message.ackNum = 0
 
-                self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
+            response_header.clientIDs.extend(self.__subscribers)
+            response_message = self.__fill_scan(response_message)
 
-                # It must be less than 0.1s
-                time.sleep(0.095)
-        except IOError:
-            self.__alive = False
+            self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
+
+            # It must be less than 0.1s
+            time.sleep(0.095)
 
         self.__logger.warning('hokuyo: subscription stop')
 
@@ -230,6 +235,4 @@ class HokuyoController(MessageHandler):
 
     def terminate(self):
         self.__logger.warning('hokuyo: terminate')
-
-        self.__alive = False
         self.__hokuyo.close()

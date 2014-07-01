@@ -1,7 +1,7 @@
 import logging
 import logging.config
-import os
 
+import os
 from amber.common.amber_pipes import MessageHandler
 from amber.roboclaw import roboclaw_pb2
 from amber.tools import config
@@ -553,4 +553,3 @@ class RoboclawController(MessageHandler):
 
     def handle_client_died_message(self, client_id):
         self.__logger.debug('Client died %s' % str(client_id))
-

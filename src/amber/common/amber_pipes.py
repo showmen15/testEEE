@@ -1,9 +1,10 @@
-import abc
 from functools import wraps
 import logging
 import logging.config
-import os
 import struct
+
+import abc
+import os
 
 from amber.common import drivermsg_pb2, runtime
 
@@ -23,6 +24,9 @@ class MessageHandler(object):
 
     def __call__(self, *args, **kwargs):
         self.__amber_pipes(*args, **kwargs)
+
+    def is_alive(self):
+        return self.__amber_pipes.is_alive()
 
     @abc.abstractmethod
     def handle_data_message(self, header, message):
@@ -77,13 +81,20 @@ class AmberPipes(object):
         self.__logger.info('Pipes thread started.')
         self.__run_process()
 
+    def is_alive(self):
+        return self.__alive
+
     def terminate(self):
+        self.__logger.warning('amber_pipes: terminate')
+
         self.__alive = False
 
     def __run_process(self):
         while self.__alive:
             header, message = self.__read_header_and_message_from_pipe()
             self.__handle_header_and_message(header, message)
+
+        self.__logger.warning('amber_pipes: stop')
 
     def __read_data_from_pipe(self, container):
         data = self.__read_and_unpack_data_from_pipe(LEN_SIZE)
