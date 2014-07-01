@@ -1,10 +1,17 @@
 .idea
+
 *.iml
 *.ipr
 *.iws
 *.pyc
+*.png
+*.svg
+*.py.prof
+
 MANIFEST
+
 build/
 dist/
 *.egg-info/
+
 __envi/
