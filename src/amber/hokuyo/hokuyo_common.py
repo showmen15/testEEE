@@ -133,6 +133,7 @@ class Hokuyo(object):
 class HokuyoController(MessageHandler):
     def __init__(self, pipe_in, pipe_out, port):
         super(HokuyoController, self).__init__(pipe_in, pipe_out)
+
         self.__hokuyo = Hokuyo(port)
 
         self.__hokuyo.reset()
@@ -198,6 +199,8 @@ class HokuyoController(MessageHandler):
             self.__angles = sorted(scan.keys())
             self.__distances = map(scan.get, self.__angles)
 
+        self.__logger.warning('hokuyo: scanning stop')
+
     def __subscription_run(self):
         try:
             while self.__alive and len(self.__subscribers) > 0:
@@ -217,6 +220,8 @@ class HokuyoController(MessageHandler):
         except IOError:
             self.__alive = False
 
+        self.__logger.warning('hokuyo: subscription stop')
+
     def __fill_scan(self, response_message):
         response_message.Extensions[hokuyo_pb2.scan].angles.extend(self.__angles)
         response_message.Extensions[hokuyo_pb2.scan].distances.extend(self.__distances)
@@ -224,5 +229,7 @@ class HokuyoController(MessageHandler):
         return response_message
 
     def terminate(self):
+        self.__logger.warning('hokuyo: terminate')
+
         self.__alive = False
         self.__hokuyo.close()
