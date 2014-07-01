@@ -199,8 +199,6 @@ class HokuyoController(MessageHandler):
 
     def __scanning_run(self):
         while self.is_alive():
-            self.__logger.warning('hokuyo_scan: still live')
-
             scan = self.__hokuyo.get_single_scan()
             self.__angles = sorted(scan.keys())
             self.__distances = map(scan.get, self.__angles)
@@ -209,8 +207,6 @@ class HokuyoController(MessageHandler):
 
     def __subscription_run(self):
         while self.is_alive() and len(self.__subscribers) > 0:
-            self.__logger.warning('hokuyo_subs: still live')
-
             response_header = drivermsg_pb2.DriverHdr()
             response_message = drivermsg_pb2.DriverMsg()
 
