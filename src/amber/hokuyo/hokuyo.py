@@ -14,21 +14,20 @@ config.add_config_ini('%s/hokuyo.ini' % pwd)
 
 SERIAL_PORT = config.HOKUYO_SERIAL_PORT
 BAUD_RATE = config.HOKUYO_BAUD_RATE
-TIMEOUT = 0.4
+TIMEOUT = 0.3
 
 if __name__ == '__main__':
-    serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
-    port = serial_port.SerialPort(serial)
+    _serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
+    _serial_port = serial_port.SerialPort(_serial)
 
-    serial.write('QT\n')
-    serial.write('RS\n')
+    _serial.write('QT\nRS\nQT\n')
     result = ''
     flushing = True
     while flushing:
-        char = serial.read(1)
+        char = _serial.read()
         flushing = (char != '')
         result += char
     sys.stderr.write('\n===============\nFLUSH SERIAL PORT\n"%s"\n===============\n' % result)
 
-    controller = HokuyoController(sys.stdin, sys.stdout, port)
+    controller = HokuyoController(sys.stdin, sys.stdout, _serial_port)
     controller()

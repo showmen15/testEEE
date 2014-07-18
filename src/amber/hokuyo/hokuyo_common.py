@@ -311,11 +311,11 @@ class HokuyoController(MessageHandler):
             self.__logger.warning('Client %d does not registered as subscriber' % client_id)
 
     def __scanning_run(self):
-        for scan in self.__hokuyo.get_multiple_scan():
-            if not self.is_alive():
-                break
-        #while self.is_alive():
-        #    scan = self.__hokuyo.get_single_scan()
+        while self.is_alive():
+            scan = self.__hokuyo.get_single_scan()
+        #for scan in self.__hokuyo.get_multiple_scan():
+        #    if not self.is_alive():
+        #        break
             self.__angles = sorted(scan.keys())
             self.__distances = map(scan.get, self.__angles)
 
