@@ -20,13 +20,15 @@ if __name__ == '__main__':
     serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
     port = serial_port.SerialPort(serial)
 
+    serial.write('QT\n')
+    serial.write('RS\n')
     result = ''
     flushing = True
     while flushing:
         char = serial.read(1)
         flushing = (char != '')
         result += char
-    sys.stderr.write('FLUSH SERIAL PORT: "%s"' % result)
+    sys.stderr.write('\n===============\nFLUSH SERIAL PORT\n"%s"\n===============\n' % result)
 
     controller = HokuyoController(sys.stdin, sys.stdout, port)
     controller()
