@@ -2,6 +2,8 @@ import logging
 import logging.config
 import threading
 import time
+import sys
+import traceback
 
 import os
 from amber.common import drivermsg_pb2, runtime
@@ -35,98 +37,210 @@ def decode(val):
 
 
 class Hokuyo(object):
+    SHORT_COMMAND_LEN = 5
+    MD_COMMAND_REPLY_LEN = 20
+
+    LASER_ON = 'BM\n'
+    LASER_OFF = 'QT\n'
+    RESET = 'RS\n'
+
+    VERSION_INFO = 'VV\n'
+    SENSOR_STATE = 'II\n'
+    SENSOR_SPECS = 'PP\n'
+
+    CHARS_PER_VALUE = 3.0
+    CHARS_PER_LINE = 66.0
+    CHARS_PER_BLOCK = 64.0
+
+    START_DEG = 119.885
+    STEP_DEG = 0.35208516886930985
+
+    START_STEP = 44
+    STOP_STEP = 725
+
+    VERSION_INFO_LINES = 6
+    SENSOR_STATE_LINES = 8
+    SENSOR_SPECS_LINES = 9
+
     def __init__(self, port):
         self.__port = port
 
-    def __write_command(self, command):
+    def __offset(self):
+        count = 2
+        result = ''
+        a = self.__port.read(1)
+        b = self.__port.read(1)
+
+        while not ((a == '\n' and b == '\n') or (a == '' and b == '')):
+            result += a
+            a = b
+            b = self.__port.read(1)
+            count += 1
+
+        result += a
+        result += b
+
+        sys.stderr.write('READ %d EXTRA BYTES: "%s"\n' % (count, str(result)))
+
+    def __execute_command(self, command):
         self.__port.write(command)
 
-    def __get_result(self, lines=1):
-        line = 0
-        result = ''
-        while line < lines:
-            char = self.__port.read_byte()
-            if not char is None:
-                char = chr(char)
-                result += char
-                if char == '\n':
-                    line += 1
-            else:
-                line += 1
+        result = self.__port.read(len(command))
+        assert result == command
+
         return result
 
-    def __get(self, code, lines):
-        self.__write_command(code)
-        return self.__get_result(lines)
+    def __short_command(self, command, check_response=True):
+        result = ''
+        # noinspection PyBroadException
+        try:
+            result += self.__execute_command(command)
+
+            result += self.__port.read(Hokuyo.SHORT_COMMAND_LEN)
+            if check_response:
+                assert result[-5:-2] == '00P'
+            assert result[-2:] == '\n\n'
+
+            return result
+        except:
+            sys.stderr.write('RESULT: "%s"' % result)
+            traceback.print_exc()
+            self.__offset()
+            return ''
+
+    def __long_command(self, cmd, lines, check_response=True):
+        result = ''
+        # noinspection PyBroadException
+        try:
+            result += self.__execute_command(cmd)
+
+            result += self.__port.read(4)
+            if check_response:
+                assert result[-4:-1] == '00P'
+            assert result[-1:] == '\n'
+
+            line = 0
+            while line < lines:
+                char = self.__port.read_byte()
+                if not char is None:
+                    char = chr(char)
+                    result += char
+                    if char == '\n':
+                        line += 1
+                else:  # char is None
+                    line += 1
+
+            assert result[-2:] == '\n\n'
+
+            return result
+        except:
+            sys.stderr.write('RESULT: "%s"' % result)
+            traceback.print_exc()
+            self.__offset()
+            return ''
 
     def close(self):
         self.__port.close()
 
     def laser_on(self):
-        self.__port.write('BM\n')
-        return self.__port.read(9)
+        return self.__short_command(Hokuyo.LASER_ON, check_response=True)
 
     def laser_off(self):
-        self.__port.write('QT\n')
-        return self.__port.read(9)
+        return self.__short_command(Hokuyo.LASER_OFF)
 
     def reset(self):
-        self.__port.write('RS\n')
-        return self.__port.read(9)
+        return self.__short_command(Hokuyo.RESET)
 
     def set_motor_speed(self, motor_speed=99):
-        self.__port.write('CR' + '%02d' % motor_speed + '\n')
-        return self.__port.read(11)
+        return self.__short_command('CR' + '%02d' % motor_speed + '\n', check_response=False)
 
     def set_high_sensitive(self, enable=True):
-        self.__port.write('HS' + ('1\n' if enable else '0\n'))
-        return self.__port.read(10)
+        return self.__short_command('HS' + ('1\n' if enable else '0\n'), check_response=False)
 
     def get_version_info(self):
-        return self.__get('VV\n', 8)
+        return self.__long_command(Hokuyo.VERSION_INFO, Hokuyo.VERSION_INFO_LINES)
 
     def get_sensor_state(self):
-        return self.__get('II\n', 10)
+        return self.__long_command(Hokuyo.SENSOR_STATE, Hokuyo.SENSOR_STATE_LINES)
 
     def get_sensor_specs(self):
-        return self.__get('PP\n', 11)
+        return self.__long_command(Hokuyo.SENSOR_SPECS, Hokuyo.SENSOR_SPECS_LINES)
 
-    def __get_scan(self, start_step=44, stop_step=725, cluster_count=1, multiple=False):
+    def __get_and_parse_scan(self, result, cluster_count, start_step, stop_step):
         distances = {}
 
-        result = self.__get_result(4 if multiple else 3)
-
-        count = ((stop_step - start_step) * 3 * 67) / (64 * cluster_count)
+        count = ((stop_step - start_step) * Hokuyo.CHARS_PER_VALUE * Hokuyo.CHARS_PER_LINE)
+        count /= (Hokuyo.CHARS_PER_BLOCK * cluster_count)
+        count += 1.0 + 4.0  # paoolo(FIXME): why +4.0?
+        count = int(count)
         result += self.__port.read(count)
 
+        assert result[-2:] == '\n\n'
+
         result = result.split('\n')
-        result = map(lambda line: line[:-1], result[3:-2])
+        result = map(lambda line: line[:-1], result)
         result = ''.join(result)
 
         i = 0
-        start = (-119.885 + 0.35208516886930985 * cluster_count * (start_step - 44))
+        start = (-Hokuyo.START_DEG + Hokuyo.STEP_DEG * cluster_count * (start_step - Hokuyo.START_STEP))
         for chunk in chunks(result, 3):
-            distances[- ((0.35208516886930985 * cluster_count * i) + start)] = decode(chunk)
+            distances[- ((Hokuyo.STEP_DEG * cluster_count * i) + start)] = decode(chunk)
             i += 1
 
         return distances
 
-    def get_single_scan(self, start_step=44, stop_step=725, cluster_count=1):
+    def get_single_scan(self, start_step=START_STEP, stop_step=STOP_STEP, cluster_count=1):
+        # noinspection PyBroadException
+        try:
+            cmd = 'GD%04d%04d%02d\n' % (start_step, stop_step, cluster_count)
+            self.__port.write(cmd)
 
-        self.__port.write('GD%04d%04d%02d\n' % (start_step, stop_step, cluster_count))
+            result = self.__port.read(len(cmd))
+            assert result == cmd
 
-        return self.__get_scan(start_step, stop_step, cluster_count)
+            result += self.__port.read(4)
+            assert result[-4:-1] == '00P'
+            assert result[-1] == '\n'
 
-    def get_multiple_scan(self, start_step=44, stop_step=725, cluster_count=1,
+            result = self.__port.read(6)
+            assert result[-1] == '\n'
+
+            result = ''
+            return self.__get_and_parse_scan(result, cluster_count, start_step, stop_step)
+        except:
+            traceback.print_exc()
+            self.__offset()
+            return {}
+
+    def get_multiple_scan(self, start_step=START_STEP, stop_step=STOP_STEP, cluster_count=1,
                           scan_interval=0, number_of_scans=0):
+        # noinspection PyBroadException
+        try:
+            cmd = 'MD%04d%04d%02d%01d%02d\n' % (start_step, stop_step, cluster_count, scan_interval, number_of_scans)
+            self.__port.write(cmd)
 
-        self.__port.write('MD%04d%04d%02d%01d%02d\n' %
-                          (start_step, stop_step, cluster_count, scan_interval, number_of_scans))
+            result = self.__port.read(len(cmd))
+            assert result == cmd
 
-        index = 0
-        while number_of_scans == 0 or index > 0:
-            index -= 1
-            yield self.__get_scan(start_step, stop_step, cluster_count, True)
+            result += self.__port.read(Hokuyo.SHORT_COMMAND_LEN)
+            assert result[-2:] == '\n\n'
+
+            index = 0
+            while number_of_scans == 0 or index > 0:
+                index -= 1
+
+                result = self.__port.read(Hokuyo.MD_COMMAND_REPLY_LEN)
+                assert result[:13] == cmd[:13]
+
+                result = self.__port.read(6)
+                assert result[-1] == '\n'
+
+                result = ''
+                yield self.__get_and_parse_scan(result, cluster_count, start_step, stop_step)
+        except:
+            traceback.print_exc()
+            self.__offset()
+            yield {}
 
 
 class HokuyoController(MessageHandler):
@@ -135,10 +249,14 @@ class HokuyoController(MessageHandler):
 
         self.__hokuyo = Hokuyo(port)
 
-        self.__hokuyo.reset()
-        self.__hokuyo.laser_on()
-        self.__hokuyo.set_high_sensitive(HIGH_SENSITIVE)
-        self.__hokuyo.set_motor_speed(SPEED_MOTOR)
+        sys.stderr.write('RESET:\n%s\n' % self.__hokuyo.reset())
+        sys.stderr.write('LASER_ON:\n%s\n' % self.__hokuyo.laser_on())
+        sys.stderr.write('HIGH_SENSITIVE:\n%s\n' % self.__hokuyo.set_high_sensitive(HIGH_SENSITIVE))
+        sys.stderr.write('SPEED_MOTOR:\n%s\n' % self.__hokuyo.set_motor_speed(SPEED_MOTOR))
+
+        sys.stderr.write('SENSOR_SPECS:\n%s\n' % self.__hokuyo.get_sensor_specs())
+        sys.stderr.write('SENSOR_STATE:\n%s\n' % self.__hokuyo.get_sensor_state())
+        sys.stderr.write('VERSION_INFO:\n%s\n' % self.__hokuyo.get_version_info())
 
         self.__angles, self.__distances = [], []
 
@@ -193,8 +311,11 @@ class HokuyoController(MessageHandler):
             self.__logger.warning('Client %d does not registered as subscriber' % client_id)
 
     def __scanning_run(self):
-        while self.is_alive():
-            scan = self.__hokuyo.get_single_scan()
+        for scan in self.__hokuyo.get_multiple_scan():
+            if not self.is_alive():
+                break
+        #while self.is_alive():
+        #    scan = self.__hokuyo.get_single_scan()
             self.__angles = sorted(scan.keys())
             self.__distances = map(scan.get, self.__angles)
 
