@@ -2,10 +2,10 @@ from functools import wraps
 import logging
 import logging.config
 import struct
+import threading
 
 import abc
 import os
-
 from amber.common import drivermsg_pb2, runtime
 
 
@@ -93,7 +93,7 @@ class AmberPipes(object):
         try:
             while self.__alive:
                 header, message = self.__read_header_and_message_from_pipe()
-                self.__handle_header_and_message(header, message)
+                threading.Thread(target=self.__handle_header_and_message, args=(header, message)).start()
         except struct.error:
             self.__alive = False
 
