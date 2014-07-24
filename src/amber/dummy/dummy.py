@@ -40,6 +40,7 @@ class DummyController(MessageHandler):
         self.__subscribers = []
         self.__subscribe_thread = None
 
+        self.__value = 0
         self.__logger = logging.getLogger(LOGGER_NAME)
 
     def handle_data_message(self, header, message):
@@ -165,11 +166,12 @@ class DummyController(MessageHandler):
 
             response_header.clientIDs.extend(self.__subscribers)
 
-            response_message.Extensions[dummy_pb2.message] = 'Response'
+            response_message.Extensions[dummy_pb2.message] = 'Response %d' % self.__value
+            self.__value += 1
 
             self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
-            time.sleep(1)
+            time.sleep(0.01)
 
 
 if __name__ == '__main__':

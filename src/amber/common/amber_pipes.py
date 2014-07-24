@@ -75,6 +75,7 @@ class AmberPipes(object):
 
         runtime.add_shutdown_hook(self.terminate)
 
+        self.__write_lock = threading.Lock()
         self.__logger = logging.getLogger(LOGGER_NAME)
 
     def __call__(self, *args, **kwargs):
@@ -216,14 +217,18 @@ class AmberPipes(object):
         :param message: object of DriverMsg
         :return: nothing
         """
-        self.__logger.debug('Write header and message to pipe: header="%s", message="%s".' %
+        self.__logger.debug('Write header and message to pipe:\nHEADER:\n%s\n---\nMESSAGE:\n%s\n---' %
                             (str(header).strip(), str(message).strip()))
+
+        self.__write_lock.acquire()
 
         header_data = header.SerializeToString()
         self.__pack_and_write_data_to_pipe(header_data)
 
         message_data = message.SerializeToString()
         self.__pack_and_write_data_to_pipe(message_data)
+
+        self.__write_lock.release()
 
     def __pack_and_write_data_to_pipe(self, binary_data):
         """
