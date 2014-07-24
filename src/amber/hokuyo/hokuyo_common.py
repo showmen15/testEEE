@@ -263,11 +263,9 @@ class HokuyoController(MessageHandler):
         self.__logger = logging.getLogger(LOGGER_NAME)
 
         self.__subscribers = []
-        self.__subscribe_thread = None
 
-        self.__scan_thread = threading.Thread(target=self.__scanning_run)
+        self.__scan_thread = None
         runtime.add_shutdown_hook(self.terminate)
-        self.__scan_thread.start()
 
     @MessageHandler.handle_and_response
     def __handle_get_single_scan(self, received_header, received_message, response_header, response_message):
@@ -290,9 +288,9 @@ class HokuyoController(MessageHandler):
         no_subscribers = (len(self.__subscribers) == 0)
         self.__subscribers.extend(header.clientIDs)
 
-        if no_subscribers or self.__subscribe_thread is None:
-            self.__subscribe_thread = threading.Thread(target=self.__subscription_run)
-            self.__subscribe_thread.start()
+        if no_subscribers or self.__scan_thread is None:
+            self.__scan_thread = threading.Thread(target=self.__scanning_run)
+            self.__scan_thread.start()
 
     def handle_unsubscribe_message(self, header, message):
         self.__logger.debug('Unsubscribe action')
@@ -311,18 +309,11 @@ class HokuyoController(MessageHandler):
             self.__logger.warning('Client %d does not registered as subscriber' % client_id)
 
     def __scanning_run(self):
-        while self.is_alive():
+        while self.is_alive() and len(self.__subscribers) > 0:
             scan = self.__hokuyo.get_single_scan()
-        #for scan in self.__hokuyo.get_multiple_scan():
-        #    if not self.is_alive():
-        #        break
             self.__angles = sorted(scan.keys())
             self.__distances = map(scan.get, self.__angles)
 
-        self.__logger.warning('hokuyo: scanning stop')
-
-    def __subscription_run(self):
-        while self.is_alive() and len(self.__subscribers) > 0:
             response_header = drivermsg_pb2.DriverHdr()
             response_message = drivermsg_pb2.DriverMsg()
 
@@ -334,10 +325,7 @@ class HokuyoController(MessageHandler):
 
             self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
-            # It must be less than 0.1s
-            time.sleep(0.095)
-
-        self.__logger.warning('hokuyo: subscription stop')
+        self.__logger.warning('hokuyo: stop')
 
     def __fill_scan(self, response_message):
         response_message.Extensions[hokuyo_pb2.scan].angles.extend(self.__angles)
