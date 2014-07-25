@@ -223,22 +223,14 @@ class AmberPipes(object):
         self.__write_lock.acquire()
 
         header_data = header.SerializeToString()
-        self.__pack_and_write_data_to_pipe(header_data)
-
         message_data = message.SerializeToString()
-        self.__pack_and_write_data_to_pipe(message_data)
+
+        header_binary_data = struct.pack('!h', len(header_data)) + header_data
+        message_binary_data = struct.pack('!h', len(message_data)) + message_data
+
+        self.__write_to_pipe(header_binary_data + message_binary_data)
 
         self.__write_lock.release()
-
-    def __pack_and_write_data_to_pipe(self, binary_data):
-        """
-        Pack and write data to pipe.
-
-        :param binary_data: binary data as string
-        :return: nothing
-        """
-        binary_data = struct.pack('!h', len(binary_data)) + binary_data
-        self.__write_to_pipe(binary_data)
 
     def __write_to_pipe(self, binary_string):
         """
