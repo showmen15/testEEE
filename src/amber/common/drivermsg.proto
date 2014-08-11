@@ -29,9 +29,9 @@ message DriverMsg {
         UNSUBSCRIBE = 7;
     }
 
-    required MsgType type     = 2;
-    optional uint32 synNum    = 3;
-    optional uint32 ackNum    = 4;
+    required MsgType type = 2;
+    optional uint32 synNum = 3;
+    optional uint32 ackNum = 4;
     optional uint32 listenerNum = 5;
     extensions 8 to 63;
 }
