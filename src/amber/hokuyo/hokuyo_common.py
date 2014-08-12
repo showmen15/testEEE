@@ -1,7 +1,6 @@
 import logging
 import logging.config
 import threading
-import time
 import sys
 import traceback
 
@@ -270,6 +269,11 @@ class HokuyoController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_single_scan(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get single scan')
+
+        if len(self.__subscribers) == 0:
+            scan = self.__hokuyo.get_single_scan()
+            self.__angles = sorted(scan.keys())
+            self.__distances = map(scan.get, self.__angles)
 
         response_message = self.__fill_scan(response_message)
 
