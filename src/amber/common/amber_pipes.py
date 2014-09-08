@@ -3,6 +3,7 @@ import logging
 import logging.config
 import struct
 import threading
+import traceback
 
 import abc
 import os
@@ -222,13 +223,16 @@ class AmberPipes(object):
 
         self.__write_lock.acquire()
 
-        header_data = header.SerializeToString()
-        message_data = message.SerializeToString()
+        try:
+            header_data = header.SerializeToString()
+            message_data = message.SerializeToString()
 
-        header_binary_data = struct.pack('!h', len(header_data)) + header_data
-        message_binary_data = struct.pack('!h', len(message_data)) + message_data
+            header_binary_data = struct.pack('!h', len(header_data)) + header_data
+            message_binary_data = struct.pack('!h', len(message_data)) + message_data
 
-        self.__write_to_pipe(header_binary_data + message_binary_data)
+            self.__write_to_pipe(header_binary_data + message_binary_data)
+        except BaseException as e:
+            traceback.print_exc(e)
 
         self.__write_lock.release()
 
