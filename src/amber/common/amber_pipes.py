@@ -1,6 +1,7 @@
 from functools import wraps
 import logging
 import logging.config
+from multiprocessing import Pool
 import struct
 import threading
 import traceback
@@ -73,6 +74,7 @@ class AmberPipes(object):
         self.__message_handler = message_handler
         self.__pipe_in, self.__pipe_out = pipe_in, pipe_out
         self.__alive = True
+        self.__pool = Pool(10)
 
         runtime.add_shutdown_hook(self.terminate)
 
@@ -95,7 +97,7 @@ class AmberPipes(object):
         try:
             while self.__alive:
                 header, message = self.__read_header_and_message_from_pipe()
-                threading.Thread(target=self.__handle_header_and_message, args=(header, message)).start()
+                self.__pool.apply_async(self.__handle_header_and_message, args=(header, message))
         except struct.error:
             self.__alive = False
 
