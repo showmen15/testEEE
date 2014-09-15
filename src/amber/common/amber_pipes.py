@@ -1,15 +1,21 @@
 from functools import wraps
 import logging
 import logging.config
+import multiprocessing
+from multiprocessing import util
 from multiprocessing import Pool
 import struct
 import threading
 import traceback
+import sys
 
 import abc
 import os
 from amber.common import drivermsg_pb2, runtime
 
+
+util.get_logger().setLevel(util.DEBUG)
+multiprocessing.log_to_stderr().setLevel(logging.DEBUG)
 
 __author__ = 'paoolo'
 
@@ -92,6 +98,8 @@ class AmberPipes(object):
         self.__logger.warning('amber_pipes: terminate')
 
         self.__alive = False
+        self.__pool.close()
+        self.__pool.terminate()
 
     def __run_process(self):
         try:
