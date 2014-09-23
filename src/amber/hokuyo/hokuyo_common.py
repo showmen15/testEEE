@@ -315,8 +315,6 @@ class HokuyoController(MessageHandler):
             self.__logger.warning('Client %d does not registered as subscriber' % client_id)
 
     def __scanning_run(self):
-        old_time_stamp = time.time()
-
         while self.is_alive() and len(self.__subscribers) > 0:
             scan = self.__hokuyo.get_single_scan()
             self.__angles = sorted(scan.keys())
@@ -332,10 +330,6 @@ class HokuyoController(MessageHandler):
             response_message = self.__fill_scan(response_message)
 
             self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
-
-            time_stamp = time.time()
-            time.sleep(0.1 - (time_stamp - old_time_stamp))
-            old_time_stamp = time_stamp
 
         self.__logger.warning('hokuyo: stop')
 
