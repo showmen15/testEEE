@@ -1,5 +1,7 @@
 import sys
 
+from amber.hokuyo.hokuyo_mock import MockPort
+
 import os
 import serial
 from amber.hokuyo.hokuyo_common import HokuyoController
@@ -17,17 +19,22 @@ BAUD_RATE = config.HOKUYO_BAUD_RATE
 TIMEOUT = 0.3
 
 if __name__ == '__main__':
-    _serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
-    _serial_port = serial_port.SerialPort(_serial)
+    try:
+        _serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
+        _serial_port = serial_port.SerialPort(_serial)
 
-    _serial.write('QT\nRS\nQT\n')
-    result = ''
-    flushing = True
-    while flushing:
-        char = _serial.read()
-        flushing = (char != '')
-        result += char
-    sys.stderr.write('\n===============\nFLUSH SERIAL PORT\n"%s"\n===============\n' % result)
+        _serial.write('QT\nRS\nQT\n')
+        result = ''
+        flushing = True
+        while flushing:
+            char = _serial.read()
+            flushing = (char != '')
+            result += char
+        sys.stderr.write('\n===============\nFLUSH SERIAL PORT\n"%s"\n===============\n' % result)
 
-    controller = HokuyoController(sys.stdin, sys.stdout, _serial_port)
+    except BaseException as e:
+        sys.stderr.write('%s\nRun without Hokuyo.' % str(e))
+        _serial_port = MockPort()
+
+    controller = HokuyoController(sys.stdin, sys.stdout, _serial_port, _disable_assert=True)
     controller()

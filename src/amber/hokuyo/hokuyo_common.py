@@ -61,8 +61,9 @@ class Hokuyo(object):
     SENSOR_STATE_LINES = 8
     SENSOR_SPECS_LINES = 9
 
-    def __init__(self, port):
+    def __init__(self, port, _disable_assert=False):
         self.__port = port
+        self.__disable_assert = _disable_assert
 
     def __offset(self):
         count = 2
@@ -85,7 +86,7 @@ class Hokuyo(object):
         self.__port.write(command)
 
         result = self.__port.read(len(command))
-        assert result == command
+        assert self.__disable_assert or result == command
 
         return result
 
@@ -97,8 +98,8 @@ class Hokuyo(object):
 
             result += self.__port.read(Hokuyo.SHORT_COMMAND_LEN)
             if check_response:
-                assert result[-5:-2] == '00P'
-            assert result[-2:] == '\n\n'
+                assert self.__disable_assert or result[-5:-2] == '00P'
+            assert self.__disable_assert or result[-2:] == '\n\n'
 
             return result
         except:
@@ -115,8 +116,8 @@ class Hokuyo(object):
 
             result += self.__port.read(4)
             if check_response:
-                assert result[-4:-1] == '00P'
-            assert result[-1:] == '\n'
+                assert self.__disable_assert or result[-4:-1] == '00P'
+            assert self.__disable_assert or result[-1:] == '\n'
 
             line = 0
             while line < lines:
@@ -129,7 +130,7 @@ class Hokuyo(object):
                 else:  # char is None
                     line += 1
 
-            assert result[-2:] == '\n\n'
+            assert self.__disable_assert or result[-2:] == '\n\n'
 
             return result
         except:
@@ -174,7 +175,7 @@ class Hokuyo(object):
         count = int(count)
         result += self.__port.read(count)
 
-        assert result[-2:] == '\n\n'
+        assert self.__disable_assert or result[-2:] == '\n\n'
 
         result = result.split('\n')
         result = map(lambda line: line[:-1], result)
@@ -195,14 +196,14 @@ class Hokuyo(object):
             self.__port.write(cmd)
 
             result = self.__port.read(len(cmd))
-            assert result == cmd
+            assert self.__disable_assert or result == cmd
 
             result += self.__port.read(4)
-            assert result[-4:-1] == '00P'
-            assert result[-1] == '\n'
+            assert self.__disable_assert or result[-4:-1] == '00P'
+            assert self.__disable_assert or result[-1] == '\n'
 
             result = self.__port.read(6)
-            assert result[-1] == '\n'
+            assert self.__disable_assert or result[-1] == '\n'
 
             result = ''
             return self.__get_and_parse_scan(result, cluster_count, start_step, stop_step)
@@ -219,20 +220,20 @@ class Hokuyo(object):
             self.__port.write(cmd)
 
             result = self.__port.read(len(cmd))
-            assert result == cmd
+            assert self.__disable_assert or result == cmd
 
             result += self.__port.read(Hokuyo.SHORT_COMMAND_LEN)
-            assert result[-2:] == '\n\n'
+            assert self.__disable_assert or result[-2:] == '\n\n'
 
             index = 0
             while number_of_scans == 0 or index > 0:
                 index -= 1
 
                 result = self.__port.read(Hokuyo.MD_COMMAND_REPLY_LEN)
-                assert result[:13] == cmd[:13]
+                assert self.__disable_assert or result[:13] == cmd[:13]
 
                 result = self.__port.read(6)
-                assert result[-1] == '\n'
+                assert self.__disable_assert or result[-1] == '\n'
 
                 result = ''
                 yield self.__get_and_parse_scan(result, cluster_count, start_step, stop_step)
@@ -243,10 +244,10 @@ class Hokuyo(object):
 
 
 class HokuyoController(MessageHandler):
-    def __init__(self, pipe_in, pipe_out, port):
+    def __init__(self, pipe_in, pipe_out, port, _disable_assert=False):
         super(HokuyoController, self).__init__(pipe_in, pipe_out)
 
-        self.__hokuyo = Hokuyo(port)
+        self.__hokuyo = Hokuyo(port, _disable_assert=_disable_assert)
 
         sys.stderr.write('RESET:\n%s\n' % self.__hokuyo.reset())
         sys.stderr.write('LASER_ON:\n%s\n' % self.__hokuyo.laser_on())
