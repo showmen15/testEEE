@@ -175,7 +175,7 @@ class Hokuyo(object):
         count = int(count)
         result += self.__port.read(count)
 
-        assert self.__disable_assert or result[-2:] == '\n\n'
+        assert result[-2:] == '\n\n'
 
         result = result.split('\n')
         result = map(lambda line: line[:-1], result)
@@ -196,14 +196,14 @@ class Hokuyo(object):
             self.__port.write(cmd)
 
             result = self.__port.read(len(cmd))
-            assert self.__disable_assert or result == cmd
+            assert result == cmd
 
             result += self.__port.read(4)
-            assert self.__disable_assert or result[-4:-1] == '00P'
-            assert self.__disable_assert or result[-1] == '\n'
+            assert result[-4:-1] == '00P'
+            assert result[-1] == '\n'
 
             result = self.__port.read(6)
-            assert self.__disable_assert or result[-1] == '\n'
+            assert result[-1] == '\n'
 
             result = ''
             return self.__get_and_parse_scan(result, cluster_count, start_step, stop_step)
@@ -220,20 +220,20 @@ class Hokuyo(object):
             self.__port.write(cmd)
 
             result = self.__port.read(len(cmd))
-            assert self.__disable_assert or result == cmd
+            assert result == cmd
 
             result += self.__port.read(Hokuyo.SHORT_COMMAND_LEN)
-            assert self.__disable_assert or result[-2:] == '\n\n'
+            assert result[-2:] == '\n\n'
 
             index = 0
             while number_of_scans == 0 or index > 0:
                 index -= 1
 
                 result = self.__port.read(Hokuyo.MD_COMMAND_REPLY_LEN)
-                assert self.__disable_assert or result[:13] == cmd[:13]
+                assert result[:13] == cmd[:13]
 
                 result = self.__port.read(6)
-                assert self.__disable_assert or result[-1] == '\n'
+                assert result[-1] == '\n'
 
                 result = ''
                 yield self.__get_and_parse_scan(result, cluster_count, start_step, stop_step)
