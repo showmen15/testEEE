@@ -102,11 +102,11 @@ class Hokuyo(object):
             assert self.__disable_assert or result[-2:] == '\n\n'
 
             return result
-        except:
+        except BaseException as e:
             sys.stderr.write('RESULT: "%s"' % result)
             traceback.print_exc()
             self.__offset()
-            return ''
+            raise e
 
     def __long_command(self, cmd, lines, check_response=True):
         result = ''
@@ -133,11 +133,11 @@ class Hokuyo(object):
             assert self.__disable_assert or result[-2:] == '\n\n'
 
             return result
-        except:
+        except BaseException as e:
             sys.stderr.write('RESULT: "%s"' % result)
             traceback.print_exc()
             self.__offset()
-            return ''
+            raise e
 
     def close(self):
         self.__port.close()
@@ -207,10 +207,10 @@ class Hokuyo(object):
 
             result = ''
             return self.__get_and_parse_scan(result, cluster_count, start_step, stop_step)
-        except:
+        except BaseException as e:
             traceback.print_exc()
             self.__offset()
-            return {}
+            raise e
 
     def get_multiple_scan(self, start_step=START_STEP, stop_step=STOP_STEP, cluster_count=1,
                           scan_interval=0, number_of_scans=0):
@@ -237,10 +237,10 @@ class Hokuyo(object):
 
                 result = ''
                 yield self.__get_and_parse_scan(result, cluster_count, start_step, stop_step)
-        except:
+        except BaseException as e:
             traceback.print_exc()
             self.__offset()
-            yield {}
+            raise e
 
 
 class HokuyoController(MessageHandler):
