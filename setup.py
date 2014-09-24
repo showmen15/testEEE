@@ -11,12 +11,11 @@ with open('requirements.txt') as f:
 
 setup(
     name='amber-python-drivers',
-    packages=['amber', 'amber.common', 'amber.dummy', 'amber.hokuyo', 'amber.tests', 'amber.tools'],
+    packages=['amber', 'amber.common', 'amber.dummy', 'amber.hokuyo', 'amber.tools'],
     package_dir={'amber': 'src/amber',
                  'amber.common': 'src/amber/common',
                  'amber.dummy': 'src/amber/dummy',
                  'amber.hokuyo': 'src/amber/hokuyo',
-                 'amber.tests': 'src/amber/tests',
                  'amber.tools': 'src/amber/tools'},
     install_requires=required,
     version='1.13',
