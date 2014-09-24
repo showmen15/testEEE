@@ -1,6 +1,6 @@
 import sys
 
-from amber.hokuyo.hokuyo_mock import MockPort
+from amber.null.null import NullController
 
 import os
 import serial
@@ -32,9 +32,11 @@ if __name__ == '__main__':
             result += char
         sys.stderr.write('\n===============\nFLUSH SERIAL PORT\n"%s"\n===============\n' % result)
 
+        controller = HokuyoController(sys.stdin, sys.stdout, _serial_port)
+        controller()
+
     except BaseException as e:
         sys.stderr.write('%s\nRun without Hokuyo.' % str(e))
-        _serial_port = MockPort()
 
-    controller = HokuyoController(sys.stdin, sys.stdout, _serial_port, _disable_assert=True)
-    controller()
+        controller = NullController(sys.stdin, sys.stdout)
+        controller()
