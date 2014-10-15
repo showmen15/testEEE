@@ -5,7 +5,7 @@ Requirements
 ------------
 
 * `python` with `pip`
-* `protoc` from `protobuf-compiler`
+* `protobuf` and `protoc` from `protobuf-compiler`
 
 How to deploy
 -------------
@@ -27,13 +27,3 @@ You can install it by python-installer
     pip install amber-python-drivers
 
 Package available at https://pypi.python.org/pypi/amber-python-drivers
-
-How to contribute
------------------
-
-Clone this repo, setup your environment (optional using `virtualenv`), by `pip install -r requirements.txt`. Next, change what you want and make pull request.
-
-Support
--------
-
-If you have any trouble, create ticket.
