@@ -10,6 +10,8 @@ enum DeviceType {
     STARGAZER = 3;
     HOKUYO = 4;
     DUMMY = 5;
+    LOCATION = 6;
+    SERVO = 7;
 }
 
 message DriverHdr {
@@ -33,5 +35,5 @@ message DriverMsg {
     optional uint32 synNum = 3;
     optional uint32 ackNum = 4;
     optional uint32 listenerNum = 5;
-    extensions 8 to 63;
+    extensions 10 to 79;
 }

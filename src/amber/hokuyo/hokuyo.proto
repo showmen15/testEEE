@@ -5,8 +5,8 @@ option java_outer_classname = "HokuyoProto";
 import "drivermsg.proto";
 
 extend amber.DriverMsg {
-    optional bool get_single_scan = 44;
-    optional Scan scan = 48;
+    optional bool get_single_scan = 40;
+    optional Scan scan = 41;
 }
 
 message Scan {
