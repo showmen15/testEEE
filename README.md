@@ -30,4 +30,4 @@ Package available at https://pypi.python.org/pypi/amber-python-drivers
 How to contribute
 -----------------
 
-Clone this repo, setup your environment, using `virtualenv` and `pip install -r requirements.txt` or `bin/install.sh`. Change what you want to change and make pull request.
+Clone this repo, setup your environment using `bin/install.sh`. Change what you want to change and make pull request.
