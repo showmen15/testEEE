@@ -11,7 +11,7 @@ enum DeviceType {
     HOKUYO = 4;
     DUMMY = 5;
     LOCATION = 6;
-    SERVO = 7;
+    MAESTRO = 7;
 }
 
 message DriverHdr {
