@@ -100,7 +100,7 @@ class AmberPipes(object):
         try:
             while self.__alive:
                 header, message = self.__read_header_and_message_from_pipe()
-                threading.Thread(target=self.__handle_header_and_message, args=(header, message)).start()
+                self.__handle_header_and_message(header, message)
         except struct.error:
             self.__alive = False
 
