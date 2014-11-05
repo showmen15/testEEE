@@ -19,7 +19,7 @@ from amber.common import drivermsg_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='hokuyo.proto',
   package='amber.hokuyo_proto',
-  serialized_pb=_b('\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"1\n\x04Scan\x12\x12\n\x06\x61ngles\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tdistances\x18\x02 \x03(\x05\x42\x02\x10\x01:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18( \x01(\x08:8\n\x04scan\x12\x10.amber.DriverMsg\x18) \x01(\x0b\x32\x18.amber.hokuyo_proto.ScanB,\n\x1dpl.edu.agh.amber.hokuyo.protoB\x0bHokuyoProto')
+  serialized_pb=_b('\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"1\n\x04Scan\x12\x12\n\x06\x61ngles\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tdistances\x18\x02 \x03(\x05\x42\x02\x10\x01:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18( \x01(\x08:8\n\x04scan\x12\x10.amber.DriverMsg\x18) \x01(\x0b\x32\x18.amber.hokuyo_proto.Scan:)\n\x0f\x65nable_scanning\x12\x10.amber.DriverMsg\x18* \x01(\x08:#\n\ttimestamp\x12\x10.amber.DriverMsg\x18\x31 \x01(\x02\x42,\n\x1dpl.edu.agh.amber.hokuyo.protoB\x0bHokuyoProto')
   ,
   dependencies=[drivermsg_pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -38,6 +38,22 @@ scan = _descriptor.FieldDescriptor(
   name='scan', full_name='amber.hokuyo_proto.scan', index=1,
   number=41, type=11, cpp_type=10, label=1,
   has_default_value=False, default_value=None,
+  message_type=None, enum_type=None, containing_type=None,
+  is_extension=True, extension_scope=None,
+  options=None)
+ENABLE_SCANNING_FIELD_NUMBER = 42
+enable_scanning = _descriptor.FieldDescriptor(
+  name='enable_scanning', full_name='amber.hokuyo_proto.enable_scanning', index=2,
+  number=42, type=8, cpp_type=7, label=1,
+  has_default_value=False, default_value=False,
+  message_type=None, enum_type=None, containing_type=None,
+  is_extension=True, extension_scope=None,
+  options=None)
+TIMESTAMP_FIELD_NUMBER = 49
+timestamp = _descriptor.FieldDescriptor(
+  name='timestamp', full_name='amber.hokuyo_proto.timestamp', index=3,
+  number=49, type=2, cpp_type=6, label=1,
+  has_default_value=False, default_value=0,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,
   options=None)
@@ -82,6 +98,8 @@ _SCAN = _descriptor.Descriptor(
 DESCRIPTOR.message_types_by_name['Scan'] = _SCAN
 DESCRIPTOR.extensions_by_name['get_single_scan'] = get_single_scan
 DESCRIPTOR.extensions_by_name['scan'] = scan
+DESCRIPTOR.extensions_by_name['enable_scanning'] = enable_scanning
+DESCRIPTOR.extensions_by_name['timestamp'] = timestamp
 
 Scan = _reflection.GeneratedProtocolMessageType('Scan', (_message.Message,), dict(
   DESCRIPTOR = _SCAN,
@@ -93,6 +111,8 @@ _sym_db.RegisterMessage(Scan)
 drivermsg_pb2.DriverMsg.RegisterExtension(get_single_scan)
 scan.message_type = _SCAN
 drivermsg_pb2.DriverMsg.RegisterExtension(scan)
+drivermsg_pb2.DriverMsg.RegisterExtension(enable_scanning)
+drivermsg_pb2.DriverMsg.RegisterExtension(timestamp)
 
 DESCRIPTOR.has_options = True
 DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), _b('\n\035pl.edu.agh.amber.hokuyo.protoB\013HokuyoProto'))
