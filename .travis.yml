@@ -5,5 +5,5 @@ install:
   - pip install -r requirements.txt
   - pip install nose pylint
 script:
-  - pylint
+  - PYTHONPATH=src pylint amber
   - python setup.py test
