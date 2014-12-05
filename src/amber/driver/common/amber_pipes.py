@@ -9,7 +9,7 @@ import traceback
 
 import abc
 import os
-from amber.common import drivermsg_pb2, runtime
+from amber.driver.common import drivermsg_pb2, runtime
 
 
 util.get_logger().setLevel(util.DEBUG)

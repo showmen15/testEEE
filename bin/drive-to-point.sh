@@ -10,15 +10,15 @@ then
 
     if [ -z "${_APP_PROFILE}" ];
     then
-        ${__dir}/__envi/bin/python -u ${PYTHONPATH}/amber/driver/dummy/dummy.py
+        ${__dir}/__envi/bin/python -u ${PYTHONPATH}/amber/driver/drive_to_point/drive_to_point.py
     else
         export _APP_TEMP=$(mktemp -d)
 
-        ${__dir}/__envi/bin/python -u -m cProfile -o ${_APP_TEMP}/output.pstats ${PYTHONPATH}/amber/driver/dummy/dummy.py
+        ${__dir}/__envi/bin/python -u -m cProfile -o ${_APP_TEMP}/output.pstats ${PYTHONPATH}/amber/driver/drive_to_point/drive_to_point.py
 
         ${__dir}/__envi/bin/gprof2dot -f pstats --output ${_APP_TEMP}/output.dot ${_APP_TEMP}/output.pstats
         # TODO(paoolo) check if `dot` exists?
-        /usr/bin/dot -Tpng ${_APP_TEMP}/output.dot -o ${__dir}/profile-dummy-$(date +"%Y%m%d-%H%M%S").png
+        /usr/bin/dot -Tpng ${_APP_TEMP}/output.dot -o ${__dir}/profile-drive_to_point-$(date +"%Y%m%d-%H%M%S").png
 
         rm -rf ${_APP_TEMP}
     fi

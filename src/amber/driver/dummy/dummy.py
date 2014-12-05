@@ -5,9 +5,9 @@ import threading
 import time
 
 import os
-from amber.common import drivermsg_pb2
-from amber.common.amber_pipes import MessageHandler
-from amber.dummy import dummy_pb2
+from amber.driver.common import drivermsg_pb2
+from amber.driver.common.amber_pipes import MessageHandler
+from amber.driver.dummy import dummy_pb2
 
 
 __author__ = 'paoolo'
@@ -30,7 +30,7 @@ class Dummy(object):
 class DummyController(MessageHandler):
     """
     Example implementation of driver.
-    Need to extends `MessageHandler` from `amber.common.amber_pipes`.
+    Need to extends `MessageHandler` from `amber.driver.common.amber_pipes`.
     """
 
     def __init__(self, pipe_in, pipe_out):
