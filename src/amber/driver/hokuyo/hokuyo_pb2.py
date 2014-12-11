@@ -12,14 +12,14 @@ from google.protobuf import descriptor_pb2
 
 _sym_db = _symbol_database.Default()
 
-
-from amber.common import drivermsg_pb2
+from amber.driver.common import drivermsg_pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='hokuyo.proto',
   package='amber.hokuyo_proto',
-  serialized_pb=_b('\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"1\n\x04Scan\x12\x12\n\x06\x61ngles\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tdistances\x18\x02 \x03(\x05\x42\x02\x10\x01:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18( \x01(\x08:8\n\x04scan\x12\x10.amber.DriverMsg\x18) \x01(\x0b\x32\x18.amber.hokuyo_proto.ScanB,\n\x1dpl.edu.agh.amber.driver.hokuyo.protoB\x0bHokuyoProto')
+  serialized_pb=_b(
+    '\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"1\n\x04Scan\x12\x12\n\x06\x61ngles\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tdistances\x18\x02 \x03(\x05\x42\x02\x10\x01:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18( \x01(\x08:8\n\x04scan\x12\x10.amber.DriverMsg\x18) \x01(\x0b\x32\x18.amber.hokuyo_proto.ScanB3\n$pl.edu.agh.amber.driver.hokuyo.protoB\x0bHokuyoProto')
   ,
   dependencies=[drivermsg_pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -95,7 +95,8 @@ scan.message_type = _SCAN
 drivermsg_pb2.DriverMsg.RegisterExtension(scan)
 
 DESCRIPTOR.has_options = True
-DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), _b('\n\035pl.edu.agh.amber.driver.hokuyo.protoB\013HokuyoProto'))
+DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(),
+                                                _b('\n$pl.edu.agh.amber.driver.hokuyo.protoB\013HokuyoProto'))
 _SCAN.fields_by_name['angles'].has_options = True
 _SCAN.fields_by_name['angles']._options = _descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\020\001'))
 _SCAN.fields_by_name['distances'].has_options = True
