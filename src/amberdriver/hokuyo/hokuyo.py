@@ -1,11 +1,11 @@
 import sys
 
-from amber.driver.null.null import NullController
+from amberdriver.null.null import NullController
 
 import os
 import serial
-from amber.driver.hokuyo.hokuyo_common import HokuyoController
-from amber.driver.tools import serial_port, config
+from amberdriver.hokuyo.hokuyo_common import HokuyoController
+from amberdriver.tools import serial_port, config
 
 
 __author__ = 'paoolo'

@@ -5,10 +5,10 @@ import sys
 import traceback
 
 import os
-from amber.driver.common import drivermsg_pb2, runtime
-from amber.driver.common.amber_pipes import MessageHandler
-from amber.driver.hokuyo import hokuyo_pb2
-from amber.driver.tools import config
+from amberdriver.common import drivermsg_pb2, runtime
+from amberdriver.common.amber_pipes import MessageHandler
+from amberdriver.hokuyo import hokuyo_pb2
+from amberdriver.tools import config
 
 
 __author__ = 'paoolo'

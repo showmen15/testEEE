@@ -5,9 +5,9 @@ import threading
 import time
 
 import os
-from amber.driver.common import drivermsg_pb2
-from amber.driver.common.amber_pipes import MessageHandler
-from amber.driver.dummy import dummy_pb2
+from amberdriver.common import drivermsg_pb2
+from amberdriver.common.amber_pipes import MessageHandler
+from amberdriver.dummy import dummy_pb2
 
 
 __author__ = 'paoolo'

@@ -1,6 +1,6 @@
 import sys
 
-from amber.driver.hokuyo.hokuyo_common import HokuyoController
+from amberdriver.hokuyo.hokuyo_common import HokuyoController
 
 
 __author__ = 'paoolo'

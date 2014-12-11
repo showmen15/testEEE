@@ -2,4 +2,4 @@
 
 export __dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-find ${__dir} -name *pb2.py -exec sed -i 's/^import drivermsg_pb2/from amber.driver.common import drivermsg_pb2/g' {} \;
+find ${__dir} -name *pb2.py -exec sed -i 's/^import drivermsg_pb2/from amberdriver.common import drivermsg_pb2/g' {} \;
