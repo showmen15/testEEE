@@ -4,11 +4,14 @@
 import sys
 _b=sys.version_info[0]<3 and (lambda x:x) or (lambda x:x.encode('latin1'))
 from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
+
 
 from amber.driver.common import drivermsg_pb2
 
@@ -16,8 +19,7 @@ from amber.driver.common import drivermsg_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='dummy.proto',
   package='amber.dummy_proto',
-  serialized_pb=_b(
-    '\n\x0b\x64ummy.proto\x12\x11\x61mber.dummy_proto\x1a\x0f\x64rivermsg.proto: \n\x06\x65nable\x12\x10.amber.DriverMsg\x18\x32 \x01(\x08:!\n\x07message\x12\x10.amber.DriverMsg\x18\x33 \x01(\t:$\n\nget_status\x12\x10.amber.DriverMsg\x18\x34 \x01(\x08\x42\x31\n#pl.edu.agh.amber.driver.dummy.protoB\nDummyProto')
+  serialized_pb=_b('\n\x0b\x64ummy.proto\x12\x11\x61mber.dummy_proto\x1a\x0f\x64rivermsg.proto: \n\x06\x65nable\x12\x10.amber.DriverMsg\x18\x32 \x01(\x08:!\n\x07message\x12\x10.amber.DriverMsg\x18\x33 \x01(\t:$\n\nget_status\x12\x10.amber.DriverMsg\x18\x34 \x01(\x08\x42\x31\n#pl.edu.agh.amber.driver.dummy.protoB\nDummyProto')
   ,
   dependencies=[drivermsg_pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -57,6 +59,5 @@ drivermsg_pb2.DriverMsg.RegisterExtension(message)
 drivermsg_pb2.DriverMsg.RegisterExtension(get_status)
 
 DESCRIPTOR.has_options = True
-DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(),
-                                                _b('\n#pl.edu.agh.amber.driver.dummy.protoB\nDummyProto'))
+DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), _b('\n#pl.edu.agh.amber.driver.dummy.protoB\nDummyProto'))
 # @@protoc_insertion_point(module_scope)

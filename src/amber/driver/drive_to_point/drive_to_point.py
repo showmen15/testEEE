@@ -4,9 +4,9 @@ import time
 import math
 import sys
 
-from amber.client.common import amber_client
-from amber.client.location import location
-from amber.client.roboclaw import roboclaw
+from amberclient.common import amber_client
+from amberclient.location import location
+from amberclient.roboclaw import roboclaw
 import os
 
 from amber.driver.common import runtime
