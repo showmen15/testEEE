@@ -153,8 +153,9 @@ class DriveToPointController(MessageHandler):
         finally:
             self.__targets_lock.release()
 
+        response_message.Extensions[drive_to_point_pb2.getNextTarget] = True
         t = response_message.Extensions[drive_to_point_pb2.targets]
-        map(lambda field, value: field.add(value),
+        map(lambda (field, value): field.extend([value]),
             zip([t.longitudes, t.latitudes, t.radiuses], list(next_target)))
 
         return response_header, response_message
@@ -169,8 +170,9 @@ class DriveToPointController(MessageHandler):
         finally:
             self.__targets_lock.release()
 
+        response_message.Extensions[drive_to_point_pb2.getNextTargets] = True
         t = response_message.Extensions[drive_to_point_pb2.targets]
-        map(lambda field, value: field.extend(value),
+        map(lambda (field, value): field.extend(value),
             zip([t.longitudes, t.latitudes, t.radiuses], list(next_targets)))
 
         return response_header, response_message
@@ -181,12 +183,13 @@ class DriveToPointController(MessageHandler):
 
         try:
             self.__targets_lock.acquire()
-            visited_target = self.__visited_targets[-1]
+            visited_target = self.__visited_targets[-1] if len(self.__visited_targets) > 0 else ()
         finally:
             self.__targets_lock.release()
 
+        response_message.Extensions[drive_to_point_pb2.getVisitedTarget] = True
         t = response_message.Extensions[drive_to_point_pb2.targets]
-        map(lambda field, value: field.add(value),
+        map(lambda (field, value): field.extend([value]),
             zip([t.longitudes, t.latitudes, t.radiuses], list(visited_target)))
 
         return response_header, response_message
@@ -201,8 +204,9 @@ class DriveToPointController(MessageHandler):
         finally:
             self.__targets_lock.release()
 
+        response_message.Extensions[drive_to_point_pb2.getVisitedTargets] = True
         t = response_message.Extensions[drive_to_point_pb2.targets]
-        map(lambda field, value: field.extend(value),
+        map(lambda (field, value): field.extend(value),
             zip([t.longitudes, t.latitudes, t.radiuses], list(visited_targets)))
 
         return response_header, response_message
