@@ -52,6 +52,8 @@ class DriveToPoint(object):
             _left = _drive_speed - self._alpha * _drive_angle / math.pi * _drive_speed
             _right = _drive_speed + self._alpha * _drive_angle / math.pi * _drive_speed
 
+            _left, _right = int(_left), int(_right)
+
             self._roboclaw.send_motors_command(_left, _right, _left, _right)
 
     def _get_delta_time(self):
