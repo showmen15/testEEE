@@ -11,10 +11,25 @@ extend amber.DriverMsg {
     optional bool getVisitedTarget = 83;
     optional bool getVisitedTargets = 84;
     optional Targets targets = 85;
+    optional Location location = 86;
+    optional bool getConfiguration = 87;
+    optional Configuration configuration = 88;
 }
 
 message Targets {
     repeated double longitudes = 1 [packed = true];
     repeated double latitudes = 2 [packed = true];
     repeated double radiuses = 3 [packed = true];
+}
+
+message Location {
+    optional double x = 1;
+    optional double y = 2;
+    optional double p = 3;
+    optional double alfa = 4;
+    optional double timeStamp = 5;
+}
+
+message Configuration {
+    optional double maxSpeed = 1;
 }

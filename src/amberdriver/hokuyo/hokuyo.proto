@@ -1,5 +1,5 @@
 package amber.hokuyo_proto;
-option java_package = "pl.edu.agh.amber.driver.hokuyo.proto";
+option java_package = "pl.edu.agh.amber.hokuyo.proto";
 option java_outer_classname = "HokuyoProto";
 
 import "drivermsg.proto";
