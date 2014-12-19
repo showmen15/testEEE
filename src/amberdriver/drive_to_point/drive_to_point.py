@@ -163,6 +163,10 @@ class DriveToPointController(MessageHandler):
 
         response_message.Extensions[drive_to_point_pb2.getNextTarget] = True
         t = response_message.Extensions[drive_to_point_pb2.targets]
+        t.longitudes.extend(next_target[0])
+        t.longitudes.extend(next_target[1])
+        t.longitudes.extend(next_target[2])
+
         map(lambda (field, value): field.extend([value]),
             zip([t.longitudes, t.latitudes, t.radiuses], list(next_target)))
 
@@ -180,8 +184,9 @@ class DriveToPointController(MessageHandler):
 
         response_message.Extensions[drive_to_point_pb2.getNextTargets] = True
         t = response_message.Extensions[drive_to_point_pb2.targets]
-        map(lambda (field, value): field.extend(value),
-            zip([t.longitudes, t.latitudes, t.radiuses], list(next_targets)))
+        t.longitudes.extend(map(lambda t: t[0], next_targets))
+        t.longitudes.extend(map(lambda t: t[1], next_targets))
+        t.longitudes.extend(map(lambda t: t[2], next_targets))
 
         return response_header, response_message
 
@@ -198,8 +203,9 @@ class DriveToPointController(MessageHandler):
 
         response_message.Extensions[drive_to_point_pb2.getVisitedTarget] = True
         t = response_message.Extensions[drive_to_point_pb2.targets]
-        map(lambda (field, value): field.extend([value]),
-            zip([t.longitudes, t.latitudes, t.radiuses], list(visited_target)))
+        t.longitudes.extend(visited_target[0])
+        t.longitudes.extend(visited_target[1])
+        t.longitudes.extend(visited_target[2])
 
         return response_header, response_message
 
@@ -215,8 +221,9 @@ class DriveToPointController(MessageHandler):
 
         response_message.Extensions[drive_to_point_pb2.getVisitedTargets] = True
         t = response_message.Extensions[drive_to_point_pb2.targets]
-        map(lambda (field, value): field.extend(value),
-            zip([t.longitudes, t.latitudes, t.radiuses], list(visited_targets)))
+        t.longitudes.extend(map(lambda t: t[0], visited_targets))
+        t.longitudes.extend(map(lambda t: t[1], visited_targets))
+        t.longitudes.extend(map(lambda t: t[2], visited_targets))
 
         return response_header, response_message
 
