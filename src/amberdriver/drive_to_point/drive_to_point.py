@@ -56,6 +56,9 @@ class DriveToPoint(object):
 
             self._roboclaw.send_motors_command(_left, _right, _left, _right)
 
+    def stop(self):
+        self._roboclaw.send_motors_command(0, 0, 0, 0)
+
     def _get_delta_time(self):
         _time_stamp = time.time()
         _delta_time = _time_stamp - self._time_stamp
@@ -251,6 +254,8 @@ class DriveToPointController(MessageHandler):
                     self.__visited_targets.append(target)
             finally:
                 self.__targets_lock.release()
+
+        self.__drive_to_point.stop()
 
     def terminate(self):
         self.__logger.warning('drive_to_point: terminate')
