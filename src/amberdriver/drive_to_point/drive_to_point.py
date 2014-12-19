@@ -34,12 +34,14 @@ class DriveToPoint(object):
     def drive_to(self, target):
         _location = self._location.get_location()
         _current_x, _current_y, _, _current_angle, _ = _location.get_location()
+        _current_x, _current_y = map(lambda x: 1000 * x, (_current_x, _current_y))
         _target_x, _target_y, _target_radius = target
 
         while abs(_current_x - _target_x) < _target_radius \
                 or abs(_current_y - _target_y) < _target_radius:
             _location = self._location.get_location()
             _current_x, _current_y, _, _current_angle, _ = _location.get_location()
+            _current_x, _current_y = map(lambda x: 1000 * x, (_current_x, _current_y))
 
             _target_angle = math.atan2(_target_y - _current_y, _target_x - _current_x)
 
@@ -238,24 +240,25 @@ class DriveToPointController(MessageHandler):
             self.__targets_lock.release()
 
     def __targeting_run(self):
-        while self.__targets is not None and len(self.__targets) > 0:
-            try:
-                self.__targets_lock.acquire()
-                target = self.__targets[0]
-            finally:
-                self.__targets_lock.release()
+        try:
+            while self.__targets is not None and len(self.__targets) > 0:
+                try:
+                    self.__targets_lock.acquire()
+                    target = self.__targets[0]
+                finally:
+                    self.__targets_lock.release()
 
-            self.__drive_to_point.drive_to(target)
+                self.__drive_to_point.drive_to(target)
 
-            try:
-                self.__targets_lock.acquire()
-                if self.__targets is not None:
-                    self.__targets.pop(0)
-                    self.__visited_targets.append(target)
-            finally:
-                self.__targets_lock.release()
-
-        self.__drive_to_point.stop()
+                try:
+                    self.__targets_lock.acquire()
+                    if self.__targets is not None:
+                        self.__targets.pop(0)
+                        self.__visited_targets.append(target)
+                finally:
+                    self.__targets_lock.release()
+        finally:
+            self.__drive_to_point.stop()
 
     def terminate(self):
         self.__logger.warning('drive_to_point: terminate')
