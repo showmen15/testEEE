@@ -35,6 +35,8 @@ class DriveToPoint(object):
         _location = self._location.get_location()
         _current_x, _current_y, _, _current_angle, _ = _location.get_location()
         _current_x, _current_y = map(lambda value: 1000 * value, (_current_x, _current_y))
+        sys.stderr.write('current location: %f, %f\n' % (_current_x, _current_y))
+
         _target_x, _target_y, _target_radius = target
 
         while abs(_current_x - _target_x) < _target_radius \
@@ -42,6 +44,7 @@ class DriveToPoint(object):
             _location = self._location.get_location()
             _current_x, _current_y, _, _current_angle, _ = _location.get_location()
             _current_x, _current_y = map(lambda value: 1000 * value, (_current_x, _current_y))
+            sys.stderr.write('current location: %f, %f\n' % (_current_x, _current_y))
 
             _target_angle = math.atan2(_target_y - _current_y, _target_x - _current_x)
 
@@ -57,6 +60,8 @@ class DriveToPoint(object):
             _left, _right = int(_left), int(_right)
 
             self._roboclaw.send_motors_command(_left, _right, _left, _right)
+
+        self.stop()
 
     def stop(self):
         self._roboclaw.send_motors_command(0, 0, 0, 0)
