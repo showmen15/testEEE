@@ -34,14 +34,14 @@ class DriveToPoint(object):
     def drive_to(self, target):
         _location = self._location.get_location()
         _current_x, _current_y, _, _current_angle, _ = _location.get_location()
-        _current_x, _current_y = map(lambda x: 1000 * x, (_current_x, _current_y))
+        _current_x, _current_y = map(lambda value: 1000 * value, (_current_x, _current_y))
         _target_x, _target_y, _target_radius = target
 
         while abs(_current_x - _target_x) < _target_radius \
                 or abs(_current_y - _target_y) < _target_radius:
             _location = self._location.get_location()
             _current_x, _current_y, _, _current_angle, _ = _location.get_location()
-            _current_x, _current_y = map(lambda x: 1000 * x, (_current_x, _current_y))
+            _current_x, _current_y = map(lambda value: 1000 * value, (_current_x, _current_y))
 
             _target_angle = math.atan2(_target_y - _current_y, _target_x - _current_x)
 
@@ -142,6 +142,7 @@ class DriveToPointController(MessageHandler):
 
             targets = message.Extensions[drive_to_point_pb2.targets]
             self.__targets = zip(targets.longitudes, targets.latitudes, targets.radiuses)
+            self.__logger.warn('Set targets to %s' % str(self.__targets))
 
             if self.__targeting_thread is None:
                 self.__targeting_thread = threading.Thread(target=self.__targeting_run)
@@ -166,9 +167,6 @@ class DriveToPointController(MessageHandler):
         t.longitudes.extend(next_target[0])
         t.longitudes.extend(next_target[1])
         t.longitudes.extend(next_target[2])
-
-        map(lambda (field, value): field.extend([value]),
-            zip([t.longitudes, t.latitudes, t.radiuses], list(next_target)))
 
         return response_header, response_message
 
@@ -255,7 +253,9 @@ class DriveToPointController(MessageHandler):
                 finally:
                     self.__targets_lock.release()
 
+                self.__logger.warn('Drive to %s' % str(target))
                 self.__drive_to_point.drive_to(target)
+                self.__logger.warn('Target %s reached' % str(target))
 
                 try:
                     self.__targets_lock.acquire()
