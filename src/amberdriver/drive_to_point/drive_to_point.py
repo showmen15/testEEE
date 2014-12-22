@@ -289,7 +289,7 @@ class DriveToPointController(MessageHandler):
 
     def terminate(self):
         self.__logger.warning('drive_to_point: terminate')
-        self.__targets = None
+        self.__targets = []
 
 
 if __name__ == '__main__':
