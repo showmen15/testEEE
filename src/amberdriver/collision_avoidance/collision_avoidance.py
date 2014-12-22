@@ -6,7 +6,6 @@ import time
 from amberclient.common import amber_client
 from amberclient.roboclaw import roboclaw
 from amberclient.hokuyo import hokuyo
-
 import os
 
 from amberdriver.collision_avoidance import collision_avoidance_pb2
@@ -23,33 +22,34 @@ logging.config.fileConfig('%s/collision_avoidance.ini' % pwd)
 
 class CollisionAvoidance(object):
     def __init__(self):
-        self._client = amber_client.AmberClient('127.0.0.1')
-        self._roboclaw_proxy = roboclaw.RoboclawProxy(self._client, 0)
-        self._hokuyo_proxy = hokuyo.HokuyoProxy(self._client, 0)
+        self._client_for_roboclaw = amber_client.AmberClient('127.0.0.1')
+        self._roboclaw_proxy = roboclaw.RoboclawProxy(self._client_for_roboclaw, 0)
 
-        self._front_left, self._front_right, self._rear_left, self._rear_right = 0, 0, 0, 0
-        self._scan = []
+        self._client_for_hokuyo = amber_client.AmberClient('127.0.0.1')
+        self._hokuyo_proxy = hokuyo.HokuyoProxy(self._client_for_hokuyo, 0)
 
         self._is_active = True
         self._is_active_lock = threading.Condition()
 
+        self._scan = []
         self._scanning_thread = threading.Thread(target=self.__scanning)
         self._scanning_thread.start()
         self._scanning_lock = threading.Condition()
 
+        self._measuring_speed = (0, 0, 0, 0)
         self._measuring_thread = threading.Thread(target=self.__measuring)
         self._measuring_thread.start()
         self._measuring_lock = threading.Condition()
 
+        self._driving_speed = (0, 0, 0, 0)
         self._driving_thread = threading.Thread(target=self.__driving)
         self._driving_thread.start()
         self._driving_lock = threading.Condition()
 
-    def drive(self, front_left, front_right, rear_left, rear_right, ):
+    def drive(self, front_left, front_right, rear_left, rear_right):
         try:
             self._driving_lock.acquire()
-            self._front_left, self._front_right, self._rear_left, self._rear_right = \
-                front_left, front_right, rear_left, rear_right
+            self._driving_speed = front_left, front_right, rear_left, rear_right
         finally:
             self._driving_lock.release()
 
@@ -65,6 +65,7 @@ class CollisionAvoidance(object):
                     self._scan = scan.get_points()
                 finally:
                     self._scanning_lock.release()
+                    time.sleep(0.1)
 
     def get_scan(self):
         try:
@@ -79,24 +80,25 @@ class CollisionAvoidance(object):
             if current_motors_speed.is_available():
                 try:
                     self._measuring_lock.acquire()
-                    self._motors_speed = (current_motors_speed.get_front_left_speed(),
-                                          current_motors_speed.get_front_right_speed(),
-                                          current_motors_speed.get_rear_left_speed(),
-                                          current_motors_speed.get_rear_right_speed())
+                    self._measuring_speed = (current_motors_speed.get_front_left_speed(),
+                                             current_motors_speed.get_front_right_speed(),
+                                             current_motors_speed.get_rear_left_speed(),
+                                             current_motors_speed.get_rear_right_speed())
                 finally:
                     self._measuring_lock.release()
+                    time.sleep(0.1)
 
     def get_speed(self):
         try:
             self._measuring_lock.acquire()
-            return self._motors_speed
+            return self._measuring_speed
         finally:
             self._measuring_lock.release()
 
     def get_speed_and_scan(self):
         try:
             self._measuring_lock.acquire()
-            motors_speed = self._motors_speed
+            speed = self._measuring_speed
         finally:
             self._measuring_lock.release()
         try:
@@ -104,14 +106,13 @@ class CollisionAvoidance(object):
             scan = self._scan
         finally:
             self._scanning_lock.release()
-        return motors_speed, scan
+        return speed, scan
 
     def __driving(self):
         while self.is_active():
             try:
                 self._driving_lock.acquire()
-                self._roboclaw_proxy.send_motors_command(self._front_left, self._front_right,
-                                                         self._rear_left, self._rear_right)
+                self._roboclaw_proxy.send_motors_command(*self._driving_speed)
             finally:
                 self._driving_lock.release()
                 time.sleep(0.1)
@@ -124,7 +125,11 @@ class CollisionAvoidance(object):
             self._is_active_lock.release()
 
     def terminate(self):
-        self._is_active = False
+        try:
+            self._is_active_lock.acquire()
+            self._is_active = False
+        finally:
+            self._is_active_lock.release()
 
 
 class CollisionAvoidanceController(MessageHandler):
@@ -159,7 +164,7 @@ class CollisionAvoidanceController(MessageHandler):
                                          motors_speed.rearLeftSpeed, motors_speed.rearRightSpeed)
 
     @staticmethod
-    def _get_speed(speed, response_message):
+    def _fill_response_with_speed(speed, response_message):
         front_left, front_right, rear_left, rear_right = speed
         s = response_message.Extensions[collision_avoidance_pb2.motorsSpeed]
         s.frontLeftSpeed = int(front_left)
@@ -168,7 +173,7 @@ class CollisionAvoidanceController(MessageHandler):
         s.rearRightSpeed = int(rear_right)
 
     @staticmethod
-    def _get_scan(scan, response_message):
+    def _fill_response_with_scan(scan, response_message):
         s = response_message.Extensions[collision_avoidance_pb2.scan]
         angles = map(lambda point: point[0], scan)
         distances = map(lambda point: point[1], scan)
@@ -179,23 +184,35 @@ class CollisionAvoidanceController(MessageHandler):
     def __handle_get_speed(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get speed')
         speed = self.__collision_avoidance.get_speed()
-        self._get_speed(speed, response_message)
+
+        self._fill_response_with_speed(speed, response_message)
+
         response_message.Extensions[collision_avoidance_pb2.getSpeed] = True
+
+        return response_header, response_message
 
     @MessageHandler.handle_and_response
     def __handle_get_speed_and_scan(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get speed and scan')
         speed, scan = self.__collision_avoidance.get_speed_and_scan()
-        self._get_speed(speed, response_message)
-        self._get_scan(scan, response_message)
+
+        self._fill_response_with_speed(speed, response_message)
+        self._fill_response_with_scan(scan, response_message)
+
         response_message.Extensions[collision_avoidance_pb2.getSpeedAndScan] = True
+
+        return response_header, response_message
 
     @MessageHandler.handle_and_response
     def __handle_get_scan(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get scan')
         scan = self.__collision_avoidance.get_scan()
-        self._get_scan(scan, response_message)
+
+        self._fill_response_with_scan(scan, response_message)
+
         response_message.Extensions[collision_avoidance_pb2.getScan] = True
+
+        return response_header, response_message
 
     def handle_subscribe_message(self, header, message):
         self.__logger.debug('Subscribe action, nothing to do...')
