@@ -22,7 +22,7 @@ logging.config.fileConfig('%s/drive_to_point.ini' % pwd)
 
 
 class DriveToPoint(object):
-    MAX_SPEED = 300
+    MAX_SPEED = 200
     X = 0
     Y = 1
     ALFA = 3
