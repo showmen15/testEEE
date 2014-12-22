@@ -125,6 +125,10 @@ class DriveToPoint(object):
         try:
             self._is_active_lock.acquire()
             self._is_active = False
+            self._client_for_location.terminate()
+            self._location_proxy.terminate_proxy()
+            self._client_for_roboclaw.terminate()
+            self._roboclaw_proxy.terminate_proxy()
         finally:
             self._is_active_lock.release()
 
