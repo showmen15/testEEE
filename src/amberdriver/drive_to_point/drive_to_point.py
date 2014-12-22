@@ -169,9 +169,9 @@ class DriveToPointController(MessageHandler):
 
         response_message.Extensions[drive_to_point_pb2.getNextTarget] = True
         t = response_message.Extensions[drive_to_point_pb2.targets]
-        t.longitudes.extend(next_target[0])
-        t.latitudes.extend(next_target[1])
-        t.radiuses.extend(next_target[2])
+        t.longitudes.extend([next_target[0]])
+        t.latitudes.extend([next_target[1]])
+        t.radiuses.extend([next_target[2]])
 
         return response_header, response_message
 
@@ -206,9 +206,9 @@ class DriveToPointController(MessageHandler):
 
         response_message.Extensions[drive_to_point_pb2.getVisitedTarget] = True
         t = response_message.Extensions[drive_to_point_pb2.targets]
-        t.longitudes.extend(visited_target[0])
-        t.latitudes.extend(visited_target[1])
-        t.radiuses.extend(visited_target[2])
+        t.longitudes.extend([visited_target[0]])
+        t.latitudes.extend([visited_target[1]])
+        t.radiuses.extend([visited_target[2]])
 
         return response_header, response_message
 
