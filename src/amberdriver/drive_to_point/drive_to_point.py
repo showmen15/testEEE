@@ -39,8 +39,8 @@ class DriveToPoint(object):
         sys.stderr.write('current location: %f, %f, %f\n' % (self._location_x, self._location_y, self._location_angle))
 
         _target_x, _target_y, _target_radius = target
-        while abs(self._location_x - _target_x) < _target_radius \
-                or abs(self._location_y - _target_y) < _target_radius:
+        while abs(self._location_x - _target_x) > _target_radius \
+                or abs(self._location_y - _target_y) > _target_radius:
             self._location_x, self._location_y, self._location_p, self._location_angle, self._location_timestamp = \
                 self.__get_current_location(self._location_proxy)
             sys.stderr.write(
