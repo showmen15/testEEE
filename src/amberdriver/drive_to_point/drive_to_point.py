@@ -118,7 +118,7 @@ class DriveToPointController(MessageHandler):
         super(DriveToPointController, self).__init__(pipe_in, pipe_out)
         self.__drive_to_point = DriveToPoint()
 
-        self.__targets, self.__visited_targets = None, []
+        self.__targets, self.__visited_targets = [], []
         self.__targets_lock = threading.Condition()
 
         self.__targeting_thread = None
@@ -171,8 +171,7 @@ class DriveToPointController(MessageHandler):
 
         try:
             self.__targets_lock.acquire()
-            next_target = self.__targets[0] if (self.__targets is not None and
-                                                len(self.__targets) > 0) else ()
+            next_target = self.__targets[0] if len(self.__targets) > 0 else ()
         finally:
             self.__targets_lock.release()
 
@@ -192,7 +191,7 @@ class DriveToPointController(MessageHandler):
 
         try:
             self.__targets_lock.acquire()
-            next_targets = self.__targets[:] if self.__targets is not None else []
+            next_targets = self.__targets[:]
         finally:
             self.__targets_lock.release()
 
@@ -212,8 +211,7 @@ class DriveToPointController(MessageHandler):
 
         try:
             self.__targets_lock.acquire()
-            visited_target = self.__visited_targets[-1] if (self.__visited_targets is not None and
-                                                            len(self.__visited_targets) > 0) else ()
+            visited_target = self.__visited_targets[-1] if len(self.__visited_targets) > 0 else ()
         finally:
             self.__targets_lock.release()
 
@@ -260,7 +258,7 @@ class DriveToPointController(MessageHandler):
             self.__targeting_lock.acquire()
             self.__targets_lock.acquire()
 
-            self.__targets, self.__visited_targets = None, []
+            self.__targets, self.__visited_targets = [], []
             self.__targeting_thread = None
         finally:
             self.__targeting_lock.release()
@@ -268,7 +266,7 @@ class DriveToPointController(MessageHandler):
 
     def __targeting_run(self):
         try:
-            while self.__targets is not None and len(self.__targets) > 0:
+            while self.is_alive() and len(self.__targets) > 0:
                 try:
                     self.__targets_lock.acquire()
                     target = self.__targets[0]
