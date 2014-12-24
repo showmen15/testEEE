@@ -24,31 +24,28 @@ logging.config.fileConfig('%s/drive_to_point.ini' % pwd)
 class DriveToPoint(object):
     def __init__(self, _robo_width=280.0, _alpha=1.0, _target_radius=75.0):
         self._client = amber_client.AmberClient('127.0.0.1')
-        self._roboclaw = roboclaw.RoboclawProxy(self._client, 0)
-        self._location = location.LocationProxy(self._client, 0)
+        self._roboclaw_proxy = roboclaw.RoboclawProxy(self._client, 0)
+        self._location_proxy = location.LocationProxy(self._client, 0)
+        self._location_x, self._location_y, self._location_p, self._location_angle, self._location_timestamp = \
+            0.0, 0.0, 0.0, 0.0, 0.0
 
         self._time_stamp = time.time()
         self._robo_width = _robo_width
         self._alpha = _alpha
 
     def drive_to(self, target):
-        _location = self._location.get_location()
-        _current_x, _current_y, _, _current_angle, _ = _location.get_location()
-        _current_x, _current_y = map(lambda value: 1000 * value, (_current_x, _current_y))
-        sys.stderr.write('current location: %f, %f\n' % (_current_x, _current_y))
+        self._location_x, self._location_y, self._location_angle = self.__get_current_location(self._location_proxy)
+        sys.stderr.write('current location: %f, %f, %f\n' % (self._location_x, self._location_y, self._location_angle))
 
         _target_x, _target_y, _target_radius = target
+        while abs(self._location_x - _target_x) < _target_radius \
+                or abs(self._location_y - _target_y) < _target_radius:
+            self._location_x, self._location_y, self._location_angle = self.__get_current_location(self._location_proxy)
+            sys.stderr.write(
+                'current location: %f, %f, %f\n' % (self._location_x, self._location_y, self._location_angle))
 
-        while abs(_current_x - _target_x) < _target_radius \
-                or abs(_current_y - _target_y) < _target_radius:
-            _location = self._location.get_location()
-            _current_x, _current_y, _, _current_angle, _ = _location.get_location()
-            _current_x, _current_y = map(lambda value: 1000 * value, (_current_x, _current_y))
-            sys.stderr.write('current location: %f, %f\n' % (_current_x, _current_y))
-
-            _target_angle = math.atan2(_target_y - _current_y, _target_x - _current_x)
-
-            _drive_angle = _target_angle - _current_angle
+            _target_angle = math.atan2(_target_y - self._location_y, _target_x - self._location_x)
+            _drive_angle = _target_angle - self._location_angle
             _drive_angle = DriveToPoint._normalize_angle(_drive_angle)
 
             _left, _right = 300, 300
@@ -59,18 +56,22 @@ class DriveToPoint(object):
 
             _left, _right = int(_left), int(_right)
 
-            self._roboclaw.send_motors_command(_left, _right, _left, _right)
+            self._roboclaw_proxy.send_motors_command(_left, _right, _left, _right)
 
         self.stop()
 
-    def stop(self):
-        self._roboclaw.send_motors_command(0, 0, 0, 0)
+    def get_location(self):
+        return self._location_x, self._location_y, self._location_p, self._location_angle, self._location_timestamp
 
-    def _get_delta_time(self):
-        _time_stamp = time.time()
-        _delta_time = _time_stamp - self._time_stamp
-        self._time_stamp = _time_stamp
-        return _delta_time
+    def stop(self):
+        self._roboclaw_proxy.send_motors_command(0, 0, 0, 0)
+
+    @staticmethod
+    def __get_current_location(_location_proxy):
+        _location = _location_proxy.get_location()
+        _current_x, _current_y, _current_p, _current_angle, _current_timestamp = _location.get_location()
+        _current_x, _current_y = map(lambda value: 1000 * value, (_current_x, _current_y))
+        return _current_x, _current_y, _current_p, _current_angle, _current_timestamp
 
     @staticmethod
     def _normalize_angle(angle):
@@ -79,6 +80,12 @@ class DriveToPoint(object):
         elif angle > math.pi:
             angle -= 2 * math.pi
         return angle
+
+    def _get_delta_time(self):
+        _time_stamp = time.time()
+        _delta_time = _time_stamp - self._time_stamp
+        self._time_stamp = _time_stamp
+        return _delta_time
 
     def _calculate_new_relative_location(self, current_speed_left, current_speed_right,
                                          current_x, current_y, current_angle):
@@ -147,7 +154,7 @@ class DriveToPointController(MessageHandler):
 
             targets = message.Extensions[drive_to_point_pb2.targets]
             self.__targets = zip(targets.longitudes, targets.latitudes, targets.radiuses)
-            self.__logger.warn('Set targets to %s' % str(self.__targets))
+            self.__logger.info('Set targets to %s' % str(self.__targets))
 
             if self.__targeting_thread is None:
                 self.__targeting_thread = threading.Thread(target=self.__targeting_run)
@@ -172,6 +179,8 @@ class DriveToPointController(MessageHandler):
         t.longitudes.extend([next_target[0]])
         t.latitudes.extend([next_target[1]])
         t.radiuses.extend([next_target[2]])
+        l = response_message.Extensions[drive_to_point_pb2.location]
+        l.x, l.y, l.p, l.alfa, l.timeStamp = self.__drive_to_point.get_location()
 
         return response_header, response_message
 
@@ -190,6 +199,8 @@ class DriveToPointController(MessageHandler):
         t.longitudes.extend(map(lambda t: t[0], next_targets))
         t.latitudes.extend(map(lambda t: t[1], next_targets))
         t.radiuses.extend(map(lambda t: t[2], next_targets))
+        l = response_message.Extensions[drive_to_point_pb2.location]
+        l.x, l.y, l.p, l.alfa, l.timeStamp = self.__drive_to_point.get_location()
 
         return response_header, response_message
 
@@ -209,6 +220,8 @@ class DriveToPointController(MessageHandler):
         t.longitudes.extend([visited_target[0]])
         t.latitudes.extend([visited_target[1]])
         t.radiuses.extend([visited_target[2]])
+        l = response_message.Extensions[drive_to_point_pb2.location]
+        l.x, l.y, l.p, l.alfa, l.timeStamp = self.__drive_to_point.get_location()
 
         return response_header, response_message
 
@@ -227,6 +240,8 @@ class DriveToPointController(MessageHandler):
         t.longitudes.extend(map(lambda t: t[0], visited_targets))
         t.latitudes.extend(map(lambda t: t[1], visited_targets))
         t.radiuses.extend(map(lambda t: t[2], visited_targets))
+        l = response_message.Extensions[drive_to_point_pb2.location]
+        l.x, l.y, l.p, l.alfa, l.timeStamp = self.__drive_to_point.get_location()
 
         return response_header, response_message
 
@@ -258,9 +273,9 @@ class DriveToPointController(MessageHandler):
                 finally:
                     self.__targets_lock.release()
 
-                self.__logger.warn('Drive to %s' % str(target))
+                self.__logger.info('Drive to %s' % str(target))
                 self.__drive_to_point.drive_to(target)
-                self.__logger.warn('Target %s reached' % str(target))
+                self.__logger.info('Target %s reached' % str(target))
 
                 try:
                     self.__targets_lock.acquire()
