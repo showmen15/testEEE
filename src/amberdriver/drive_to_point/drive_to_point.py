@@ -22,54 +22,145 @@ logging.config.fileConfig('%s/drive_to_point.ini' % pwd)
 
 
 class DriveToPoint(object):
+    MAX_SPEED = 200
+    X = 0
+    Y = 1
+    ALFA = 3
+
     def __init__(self, _robo_width=280.0, _alpha=1.0, _target_radius=75.0):
-        self._client = amber_client.AmberClient('127.0.0.1')
-        self._roboclaw_proxy = roboclaw.RoboclawProxy(self._client, 0)
-        self._location_proxy = location.LocationProxy(self._client, 0)
-        self._location_x, self._location_y, self._location_p, self._location_angle, self._location_timestamp = \
-            0.0, 0.0, 0.0, 0.0, 0.0
+        self._client_for_roboclaw = amber_client.AmberClient('127.0.0.1')
+        self._roboclaw_proxy = roboclaw.RoboclawProxy(self._client_for_roboclaw, 0)
+
+        self._client_for_location = amber_client.AmberClient('127.0.0.1')
+        self._location_proxy = location.LocationProxy(self._client_for_location, 0)
+
+        self._next_targets, self._visited_targets, self._current_location = [], [], (0, 0, 0, 0, 0)
+        self._targets_and_location_lock = threading.Condition()
+
+        self._is_active = True
+        self._is_active_lock = threading.Condition()
+
+        self._driving_speed = (0, 0, 0, 0)
+        self._driving_thread = threading.Thread(target=self.__driving)
+        self._driving_thread.start()
+        self._driving_lock = threading.Condition()
 
         self._time_stamp = time.time()
         self._robo_width = _robo_width
         self._alpha = _alpha
 
-    def drive_to(self, target):
-        self._location_x, self._location_y, self._location_p, self._location_angle, self._location_timestamp = \
-            self.__get_current_location(self._location_proxy)
-        sys.stderr.write('current location: %f, %f, %f\n' % (self._location_x, self._location_y, self._location_angle))
+    def set_targets(self, targets):
+        try:
+            self._targets_and_location_lock.acquire()
+            self._next_targets = targets
+            self._visited_targets = []
+        finally:
+            self._targets_and_location_lock.release()
+
+    def get_next_targets_and_location(self):
+        try:
+            self._targets_and_location_lock.acquire()
+            return self._next_targets[:], self._current_location
+        finally:
+            self._targets_and_location_lock.release()
+
+    def get_next_target_and_location(self):
+        try:
+            self._targets_and_location_lock.acquire()
+            return self._next_targets[0], self._current_location if len(self._next_targets) > 0 else None
+        finally:
+            self._targets_and_location_lock.release()
+
+    def get_visited_targets_and_location(self):
+        try:
+            self._targets_and_location_lock.acquire()
+            return self._visited_targets[:], self._current_location
+        finally:
+            self._targets_and_location_lock.release()
+
+    def get_visited_target_and_location(self):
+        try:
+            self._targets_and_location_lock.acquire()
+            return self._visited_targets[-1], self._current_location if len(self._visited_targets) > 0 else None
+        finally:
+            self._targets_and_location_lock.release()
+
+    def _get_next_target(self):
+        try:
+            self._targets_and_location_lock.acquire()
+            return self._next_targets[0]
+        finally:
+            self._targets_and_location_lock.release()
+
+    def _add_target_to_visited(self, target):
+        try:
+            self._targets_and_location_lock.acquire()
+            try:
+                self._next_targets.pop(0)
+            except IndexError as e:
+                print e
+            self._visited_targets.append(target)
+        finally:
+            self._targets_and_location_lock.release()
+
+    def __driving(self):
+        while self.is_active():
+            try:
+                while True:
+                    target = self._get_next_target()
+                    self._drive_to(target)
+                    self._add_target_to_visited(target)
+            except IndexError:
+                pass
+            time.sleep(0.1)
+
+    def is_active(self):
+        try:
+            self._is_active_lock.acquire()
+            return self._is_active
+        finally:
+            self._is_active_lock.release()
+
+    def terminate(self):
+        try:
+            self._is_active_lock.acquire()
+            self._is_active = False
+            self._client_for_location.terminate()
+            self._location_proxy.terminate_proxy()
+            self._client_for_roboclaw.terminate()
+            self._roboclaw_proxy.terminate_proxy()
+        finally:
+            self._is_active_lock.release()
+
+    def _drive_to(self, target):
+        sys.stderr.write('Drive to %s\n' % str(target))
+
+        self._current_location = self._get_current_location(self._location_proxy)
 
         _target_x, _target_y, _target_radius = target
-        while abs(self._location_x - _target_x) > _target_radius \
-                or abs(self._location_y - _target_y) > _target_radius:
-            self._location_x, self._location_y, self._location_p, self._location_angle, self._location_timestamp = \
-                self.__get_current_location(self._location_proxy)
-            sys.stderr.write(
-                'current location: %f, %f, %f\n' % (self._location_x, self._location_y, self._location_angle))
+        while abs(self._current_location[DriveToPoint.X] - _target_x) > _target_radius \
+                or abs(self._current_location[DriveToPoint.Y] - _target_y) > _target_radius:
+            self._current_location = self._get_current_location(self._location_proxy)
 
-            _target_angle = math.atan2(_target_y - self._location_y, _target_x - self._location_x)
-            _drive_angle = _target_angle - self._location_angle
+            _target_angle = math.atan2(_target_y - self._current_location[DriveToPoint.Y],
+                                       _target_x - self._current_location[DriveToPoint.X])
+
+            _drive_angle = _target_angle - self._current_location[DriveToPoint.ALFA]
             _drive_angle = DriveToPoint._normalize_angle(_drive_angle)
 
-            _left, _right = 300, 300
-            _drive_speed = (_left + _right) / 2.0
-
-            _left = _drive_speed - self._alpha * _drive_angle / math.pi * _drive_speed
-            _right = _drive_speed + self._alpha * _drive_angle / math.pi * _drive_speed
+            _left = DriveToPoint.MAX_SPEED + self._alpha * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
+            _right = DriveToPoint.MAX_SPEED - self._alpha * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
 
             _left, _right = int(_left), int(_right)
 
             self._roboclaw_proxy.send_motors_command(_left, _right, _left, _right)
 
-        self.stop()
-
-    def get_location(self):
-        return self._location_x, self._location_y, self._location_p, self._location_angle, self._location_timestamp
-
-    def stop(self):
         self._roboclaw_proxy.send_motors_command(0, 0, 0, 0)
 
+        sys.stderr.write('Target %s reached\n' % str(target))
+
     @staticmethod
-    def __get_current_location(_location_proxy):
+    def _get_current_location(_location_proxy):
         _location = _location_proxy.get_location()
         _current_x, _current_y, _current_p, _current_angle, _current_timestamp = _location.get_location()
         _current_x, _current_y = map(lambda value: 1000 * value, (_current_x, _current_y))
@@ -118,12 +209,6 @@ class DriveToPointController(MessageHandler):
         super(DriveToPointController, self).__init__(pipe_in, pipe_out)
         self.__drive_to_point = DriveToPoint()
 
-        self.__targets, self.__visited_targets = [], []
-        self.__targets_lock = threading.Condition()
-
-        self.__targeting_thread = None
-        self.__targeting_lock = threading.Condition()
-
         self.__logger = logging.getLogger(LOGGER_NAME)
 
         runtime.add_shutdown_hook(self.terminate)
@@ -144,104 +229,94 @@ class DriveToPointController(MessageHandler):
         elif message.HasExtension(drive_to_point_pb2.getVisitedTargets):
             self.__handle_get_visited_targets(header, message)
 
+        elif message.HasExtension(drive_to_point_pb2.getConfiguration):
+            self.__handle_get_configuration(header, message)
+
         else:
             self.__logger.warning('No request in message')
 
     def __handle_set_targets(self, header, message):
         self.__logger.debug('Set targets')
-
-        try:
-            self.__targeting_lock.acquire()
-            self.__targets_lock.acquire()
-
-            targets = message.Extensions[drive_to_point_pb2.targets]
-            self.__targets = zip(targets.longitudes, targets.latitudes, targets.radiuses)
-            self.__logger.info('Set targets to %s' % str(self.__targets))
-
-            if self.__targeting_thread is None:
-                self.__targeting_thread = threading.Thread(target=self.__targeting_run)
-                self.__targeting_thread.start()
-        finally:
-            self.__targeting_lock.release()
-            self.__targets_lock.release()
+        targets = message.Extensions[drive_to_point_pb2.targets]
+        targets = zip(targets.longitudes, targets.latitudes, targets.radiuses)
+        self.__drive_to_point.set_targets(targets)
 
     @MessageHandler.handle_and_response
     def __handle_get_next_target(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get next target')
+        _next_target, _current_location = self.__drive_to_point.get_next_target_and_location()
 
-        try:
-            self.__targets_lock.acquire()
-            next_target = self.__targets[0] if len(self.__targets) > 0 else ()
-        finally:
-            self.__targets_lock.release()
+        _targets = response_message.Extensions[drive_to_point_pb2.targets]
+        _targets.longitudes.extend([_next_target[0]])
+        _targets.latitudes.extend([_next_target[1]])
+        _targets.radiuses.extend([_next_target[2]])
+
+        _location = response_message.Extensions[drive_to_point_pb2.location]
+        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
 
         response_message.Extensions[drive_to_point_pb2.getNextTarget] = True
-        t = response_message.Extensions[drive_to_point_pb2.targets]
-        t.longitudes.extend([next_target[0]])
-        t.latitudes.extend([next_target[1]])
-        t.radiuses.extend([next_target[2]])
-        l = response_message.Extensions[drive_to_point_pb2.location]
-        l.x, l.y, l.p, l.alfa, l.timeStamp = self.__drive_to_point.get_location()
 
         return response_header, response_message
 
     @MessageHandler.handle_and_response
     def __handle_get_next_targets(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get next targets')
+        next_targets, _current_location = self.__drive_to_point.get_next_targets_and_location()
 
-        try:
-            self.__targets_lock.acquire()
-            next_targets = self.__targets[:]
-        finally:
-            self.__targets_lock.release()
+        _targets = response_message.Extensions[drive_to_point_pb2.targets]
+        _targets.longitudes.extend(map(lambda next_target: next_target[0], next_targets))
+        _targets.latitudes.extend(map(lambda next_target: next_target[1], next_targets))
+        _targets.radiuses.extend(map(lambda next_target: next_target[2], next_targets))
+
+        _location = response_message.Extensions[drive_to_point_pb2.location]
+        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
 
         response_message.Extensions[drive_to_point_pb2.getNextTargets] = True
-        t = response_message.Extensions[drive_to_point_pb2.targets]
-        t.longitudes.extend(map(lambda t: t[0], next_targets))
-        t.latitudes.extend(map(lambda t: t[1], next_targets))
-        t.radiuses.extend(map(lambda t: t[2], next_targets))
-        l = response_message.Extensions[drive_to_point_pb2.location]
-        l.x, l.y, l.p, l.alfa, l.timeStamp = self.__drive_to_point.get_location()
 
         return response_header, response_message
 
     @MessageHandler.handle_and_response
     def __handle_get_visited_target(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get visited target')
+        visited_target, _current_location = self.__drive_to_point.get_visited_target_and_location()
 
-        try:
-            self.__targets_lock.acquire()
-            visited_target = self.__visited_targets[-1] if len(self.__visited_targets) > 0 else ()
-        finally:
-            self.__targets_lock.release()
+        _targets = response_message.Extensions[drive_to_point_pb2.targets]
+        _targets.longitudes.extend([visited_target[0]])
+        _targets.latitudes.extend([visited_target[1]])
+        _targets.radiuses.extend([visited_target[2]])
+
+        _location = response_message.Extensions[drive_to_point_pb2.location]
+        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
 
         response_message.Extensions[drive_to_point_pb2.getVisitedTarget] = True
-        t = response_message.Extensions[drive_to_point_pb2.targets]
-        t.longitudes.extend([visited_target[0]])
-        t.latitudes.extend([visited_target[1]])
-        t.radiuses.extend([visited_target[2]])
-        l = response_message.Extensions[drive_to_point_pb2.location]
-        l.x, l.y, l.p, l.alfa, l.timeStamp = self.__drive_to_point.get_location()
 
         return response_header, response_message
 
     @MessageHandler.handle_and_response
     def __handle_get_visited_targets(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get visited targets')
+        visited_targets, _current_location = self.__drive_to_point.get_visited_targets_and_location()
 
-        try:
-            self.__targets_lock.acquire()
-            visited_targets = self.__visited_targets[::-1]
-        finally:
-            self.__targets_lock.release()
+        _targets = response_message.Extensions[drive_to_point_pb2.targets]
+        _targets.longitudes.extend(map(lambda target: target[0], visited_targets))
+        _targets.latitudes.extend(map(lambda target: target[1], visited_targets))
+        _targets.radiuses.extend(map(lambda target: target[2], visited_targets))
+
+        _location = response_message.Extensions[drive_to_point_pb2.location]
+        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
 
         response_message.Extensions[drive_to_point_pb2.getVisitedTargets] = True
-        t = response_message.Extensions[drive_to_point_pb2.targets]
-        t.longitudes.extend(map(lambda t: t[0], visited_targets))
-        t.latitudes.extend(map(lambda t: t[1], visited_targets))
-        t.radiuses.extend(map(lambda t: t[2], visited_targets))
-        l = response_message.Extensions[drive_to_point_pb2.location]
-        l.x, l.y, l.p, l.alfa, l.timeStamp = self.__drive_to_point.get_location()
+
+        return response_header, response_message
+
+    @MessageHandler.handle_and_response
+    def __handle_get_configuration(self, received_header, received_message, response_header, response_message):
+        self.__logger.debug('Get configuration')
+
+        _configuration = response_message.Extensions[drive_to_point_pb2.configuration]
+        _configuration.maxSpeed = self.__drive_to_point.MAX_SPEED
+
+        response_message.Extensions[drive_to_point_pb2.getConfiguration] = True
 
         return response_header, response_message
 
@@ -252,44 +327,11 @@ class DriveToPointController(MessageHandler):
         self.__logger.debug('Unsubscribe action, nothing to do...')
 
     def handle_client_died_message(self, client_id):
-        self.__logger.info('Client %d died' % client_id)
-
-        try:
-            self.__targeting_lock.acquire()
-            self.__targets_lock.acquire()
-
-            self.__targets, self.__visited_targets = [], []
-            self.__targeting_thread = None
-        finally:
-            self.__targeting_lock.release()
-            self.__targets_lock.release()
-
-    def __targeting_run(self):
-        try:
-            while self.is_alive() and len(self.__targets) > 0:
-                try:
-                    self.__targets_lock.acquire()
-                    target = self.__targets[0]
-                finally:
-                    self.__targets_lock.release()
-
-                self.__logger.info('Drive to %s' % str(target))
-                self.__drive_to_point.drive_to(target)
-                self.__logger.info('Target %s reached' % str(target))
-
-                try:
-                    self.__targets_lock.acquire()
-                    if self.__targets is not None:
-                        self.__targets.pop(0)
-                        self.__visited_targets.append(target)
-                finally:
-                    self.__targets_lock.release()
-        finally:
-            self.__drive_to_point.stop()
+        self.__logger.info('Client %d died, nothing to do...' % client_id)
 
     def terminate(self):
         self.__logger.warning('drive_to_point: terminate')
-        self.__targets = []
+        self.__drive_to_point.terminate()
 
 
 if __name__ == '__main__':
