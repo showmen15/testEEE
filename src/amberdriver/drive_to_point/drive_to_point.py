@@ -148,8 +148,8 @@ class DriveToPoint(object):
             _drive_angle = _target_angle - self._current_location[DriveToPoint.ALFA]
             _drive_angle = DriveToPoint._normalize_angle(_drive_angle)
 
-            _left = DriveToPoint.MAX_SPEED + self._alpha * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
-            _right = DriveToPoint.MAX_SPEED - self._alpha * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
+            _left = DriveToPoint.MAX_SPEED - self._alpha * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
+            _right = DriveToPoint.MAX_SPEED + self._alpha * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
 
             _left, _right = int(_left), int(_right)
 
