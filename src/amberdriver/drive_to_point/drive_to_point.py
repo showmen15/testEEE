@@ -67,7 +67,8 @@ class DriveToPoint(object):
     def get_next_target_and_location(self):
         try:
             self._targets_and_location_lock.acquire()
-            return self._next_targets[0], self._current_location if len(self._next_targets) > 0 else None
+            _next_target = self._next_targets[0] if len(self._next_targets) > 0 else (0, 0, 0)
+            return _next_target, self._current_location
         finally:
             self._targets_and_location_lock.release()
 
@@ -81,7 +82,8 @@ class DriveToPoint(object):
     def get_visited_target_and_location(self):
         try:
             self._targets_and_location_lock.acquire()
-            return self._visited_targets[-1], self._current_location if len(self._visited_targets) > 0 else None
+            _visited_target = self._visited_targets[-1] if len(self._visited_targets) > 0 else (0, 0, 0)
+            return _visited_target, self._current_location
         finally:
             self._targets_and_location_lock.release()
 
@@ -126,9 +128,7 @@ class DriveToPoint(object):
             self._is_active_lock.acquire()
             self._is_active = False
             self._client_for_location.terminate()
-            self._location_proxy.terminate_proxy()
             self._client_for_roboclaw.terminate()
-            self._roboclaw_proxy.terminate_proxy()
         finally:
             self._is_active_lock.release()
 
