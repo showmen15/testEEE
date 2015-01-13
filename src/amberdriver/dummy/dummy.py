@@ -121,7 +121,7 @@ class DummyController(MessageHandler):
         self.__subscribers.extend(header.clientIDs)
 
         if no_subscribers or self.__subscribe_thread is None:
-            self.__subscribe_thread = threading.Thread(target=self.__run)
+            self.__subscribe_thread = threading.Thread(target=self.__run, name="subscribe-thread")
             self.__subscribe_thread.start()
 
     def handle_unsubscribe_message(self, header, message):

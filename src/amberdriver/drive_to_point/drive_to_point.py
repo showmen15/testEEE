@@ -41,7 +41,7 @@ class DriveToPoint(object):
         self._is_active_lock = threading.Condition()
 
         self._driving_speed = (0, 0, 0, 0)
-        self._driving_thread = threading.Thread(target=self.__driving)
+        self._driving_thread = threading.Thread(target=self.__driving, name="driving-thread")
         self._driving_thread.start()
         self._driving_lock = threading.Condition()
 

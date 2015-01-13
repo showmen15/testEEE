@@ -450,7 +450,7 @@ class HokuyoController(MessageHandler):
             self.__scanning_thread_condition.acquire()
 
             if self.__scanning_thread is None:
-                self.__scanning_thread = threading.Thread(target=self.__scanning_run)
+                self.__scanning_thread = threading.Thread(target=self.__scanning_run, name="scanning-thread")
                 self.__scanning_thread.start()
 
         finally:
@@ -493,7 +493,7 @@ class HokuyoController(MessageHandler):
         try:
             self.__scanning_thread_condition.acquire()
             if self.__scanning_thread is None:
-                self.__scanning_thread = threading.Thread(target=self.__scanning_run)
+                self.__scanning_thread = threading.Thread(target=self.__scanning_run, name="scanning-thread")
                 self.__scanning_thread.start()
 
         finally:

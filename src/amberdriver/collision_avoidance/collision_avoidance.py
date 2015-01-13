@@ -32,17 +32,17 @@ class CollisionAvoidance(object):
         self._is_active_lock = threading.Condition()
 
         self._scan = []
-        self._scanning_thread = threading.Thread(target=self.__scanning)
+        self._scanning_thread = threading.Thread(target=self.__scanning, name="scanning-thread")
         self._scanning_thread.start()
         self._scanning_lock = threading.Condition()
 
         self._measuring_speed = (0, 0, 0, 0)
-        self._measuring_thread = threading.Thread(target=self.__measuring)
+        self._measuring_thread = threading.Thread(target=self.__measuring, name="measuring-thread")
         self._measuring_thread.start()
         self._measuring_lock = threading.Condition()
 
         self._driving_speed = (0, 0, 0, 0)
-        self._driving_thread = threading.Thread(target=self.__driving)
+        self._driving_thread = threading.Thread(target=self.__driving, name="driving-thread")
         self._driving_thread.start()
         self._driving_lock = threading.Condition()
 
