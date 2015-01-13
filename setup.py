@@ -34,7 +34,7 @@ setup(
         ]),
     ],
     install_requires=required,
-    version='1.13.2',
+    version='1.13.3',
     description='Amber drivers in python',
     author=u'Paweł Suder',
     author_email='pawel@suder.info',
