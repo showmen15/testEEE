@@ -400,7 +400,8 @@ class HokuyoController(MessageHandler):
         finally:
             self.__scan_condition.release()
 
-    def __fill_scan(self, response_message, angles, distances, timestamp):
+    @staticmethod
+    def __fill_scan(response_message, angles, distances, timestamp):
         response_message.Extensions[hokuyo_pb2.scan].angles.extend(angles)
         response_message.Extensions[hokuyo_pb2.scan].distances.extend(distances)
         response_message.Extensions[hokuyo_pb2.timestamp] = timestamp
@@ -469,43 +470,6 @@ class HokuyoController(MessageHandler):
         angles = sorted(scan.keys())
         distances = map(scan.get, angles)
         return angles, distances
-
-    def __get_subscribers(self):
-        try:
-            self.__subscribers_condition.acquire()
-            return list(self.__subscribers)
-
-        finally:
-            self.__subscribers_condition.release()
-
-    def __remove_subscriber(self, client_id):
-        try:
-            self.__subscribers_condition.acquire()
-            self.__subscribers.remove(client_id)
-
-        except ValueError:
-            self.__logger.warning('Client %d does not registered as subscriber' % client_id)
-
-        finally:
-            self.__subscribers_condition.release()
-
-    def __try_to_start_scanning_thread(self):
-        try:
-            self.__scanning_thread_condition.acquire()
-            if self.__scanning_thread is None:
-                self.__scanning_thread = threading.Thread(target=self.__scanning_run, name="scanning-thread")
-                self.__scanning_thread.start()
-
-        finally:
-            self.__scanning_thread_condition.release()
-
-    def __remove_scanning_thread(self):
-        try:
-            self.__scanning_thread_condition.acquire()
-            self.__scanning_thread = None
-
-        finally:
-            self.__scanning_thread_condition.release()
 
     def terminate(self):
         self.__logger.warning('hokuyo: terminate')
