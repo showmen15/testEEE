@@ -5,9 +5,11 @@ import threading
 import time
 
 import os
+
 from amberdriver.common import drivermsg_pb2
 from amberdriver.common.amber_pipes import MessageHandler
 from amberdriver.dummy import dummy_pb2
+from amberdriver.null.null import NullController
 
 
 __author__ = 'paoolo'
@@ -175,7 +177,14 @@ class DummyController(MessageHandler):
 
 
 if __name__ == '__main__':
-    # Create controller and run it.
-    controller = DummyController(sys.stdin, sys.stdout)
-    # It's running in infinite loop.
-    controller()
+    try:
+        # Create controller and run it.
+        controller = DummyController(sys.stdin, sys.stdout)
+        # It's running in infinite loop.
+        controller()
+
+    except BaseException as e:
+        sys.stderr.write('%s\nRun without Dummy.' % str(e))
+
+        controller = NullController(sys.stdin, sys.stdout)
+        controller()
