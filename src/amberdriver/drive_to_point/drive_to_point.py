@@ -12,6 +12,7 @@ import os
 from amberdriver.common import runtime
 from amberdriver.common.amber_pipes import MessageHandler
 from amberdriver.drive_to_point import drive_to_point_pb2
+from amberdriver.null.null import NullController
 
 
 __author__ = 'paoolo'
@@ -335,5 +336,12 @@ class DriveToPointController(MessageHandler):
 
 
 if __name__ == '__main__':
-    controller = DriveToPointController(sys.stdin, sys.stdout)
-    controller()
+    try:
+        controller = DriveToPointController(sys.stdin, sys.stdout)
+        controller()
+
+    except BaseException as e:
+        sys.stderr.write('%s\nRun without DriveToPoint.' % str(e))
+
+        controller = NullController(sys.stdin, sys.stdout)
+        controller()
