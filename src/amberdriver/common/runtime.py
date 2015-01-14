@@ -10,11 +10,18 @@ __funcs = []
 # noinspection PyBroadException
 def __shutdown_func(*args, **kwargs):
     sys.stderr.write('trap signal\n')
+
     for func in __funcs:
         try:
             func()
         except:
             pass
+
+    sys.stdout.flush()
+    sys.stdin.flush()
+
+    sys.stdout.close()
+    sys.stdin.close()
 
 
 for sig in __trap_signals:

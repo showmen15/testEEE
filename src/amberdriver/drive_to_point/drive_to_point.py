@@ -28,10 +28,10 @@ class DriveToPoint(object):
     ALFA = 3
 
     def __init__(self, _robo_width=280.0, _alpha=1.0, _target_radius=75.0):
-        self._client_for_roboclaw = amber_client.AmberClient('127.0.0.1')
+        self._client_for_roboclaw = amber_client.AmberClient('127.0.0.1', name="roboclaw")
         self._roboclaw_proxy = roboclaw.RoboclawProxy(self._client_for_roboclaw, 0)
 
-        self._client_for_location = amber_client.AmberClient('127.0.0.1')
+        self._client_for_location = amber_client.AmberClient('127.0.0.1', name="location")
         self._location_proxy = location.LocationProxy(self._client_for_location, 0)
 
         self._next_targets, self._visited_targets, self._current_location = [], [], (0, 0, 0, 0, 0)
@@ -108,7 +108,7 @@ class DriveToPoint(object):
     def __driving(self):
         while self.is_active():
             try:
-                while True:
+                while self.is_active():
                     target = self._get_next_target()
                     self._drive_to(target)
                     self._add_target_to_visited(target)
