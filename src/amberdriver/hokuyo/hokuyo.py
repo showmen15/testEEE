@@ -20,6 +20,7 @@ __author__ = 'paoolo'
 LOGGER_NAME = 'HokuyoController'
 pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/hokuyo.ini' % pwd)
+config.add_config_ini('%s/hokuyo.ini' % pwd)
 
 HIGH_SENSITIVE = bool(config.HOKUYO_HIGH_SENSITIVE_ENABLE)
 SPEED_MOTOR = int(config.HOKUYO_SPEED_MOTOR)

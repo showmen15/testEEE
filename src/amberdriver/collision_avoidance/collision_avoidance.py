@@ -1,4 +1,5 @@
 import logging
+import logging.config
 import sys
 import threading
 import time
@@ -11,6 +12,7 @@ import os
 from amberdriver.collision_avoidance import collision_avoidance_pb2
 from amberdriver.common import runtime
 from amberdriver.common.amber_pipes import MessageHandler
+from amberdriver.tools import config
 
 
 __author__ = 'paoolo'
@@ -18,6 +20,7 @@ __author__ = 'paoolo'
 LOGGER_NAME = 'CollisionAvoidanceController'
 pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/collision_avoidance.ini' % pwd)
+config.add_config_ini('%s/collision_avoidance.ini' % pwd)
 
 
 class CollisionAvoidance(object):

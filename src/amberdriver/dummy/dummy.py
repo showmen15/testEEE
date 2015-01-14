@@ -10,6 +10,7 @@ from amberdriver.common import drivermsg_pb2
 from amberdriver.common.amber_pipes import MessageHandler
 from amberdriver.dummy import dummy_pb2
 from amberdriver.null.null import NullController
+from amberdriver.tools import config
 
 
 __author__ = 'paoolo'
@@ -17,6 +18,7 @@ __author__ = 'paoolo'
 LOGGER_NAME = 'DummyController'
 pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/dummy.ini' % pwd)
+config.add_config_ini('%s/dummy.ini' % pwd)
 
 
 class Dummy(object):

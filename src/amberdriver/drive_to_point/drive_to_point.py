@@ -1,4 +1,5 @@
 import logging
+import logging.config
 import threading
 import time
 import math
@@ -13,6 +14,7 @@ from amberdriver.common import runtime
 from amberdriver.common.amber_pipes import MessageHandler
 from amberdriver.drive_to_point import drive_to_point_pb2
 from amberdriver.null.null import NullController
+from amberdriver.tools import config
 
 
 __author__ = 'paoolo'
@@ -20,6 +22,7 @@ __author__ = 'paoolo'
 LOGGER_NAME = 'DriveToPointController'
 pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/drive_to_point.ini' % pwd)
+config.add_config_ini('%s/drive_to_point.ini' % pwd)
 
 
 class DriveToPoint(object):
