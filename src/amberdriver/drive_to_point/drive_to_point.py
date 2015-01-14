@@ -114,7 +114,7 @@ class DriveToPoint(object):
                     self._drive_to(target)
                     self._add_target_to_visited(target)
             except IndexError:
-                pass
+                self._stop()
             time.sleep(0.1)
 
     def is_active(self):
@@ -156,9 +156,12 @@ class DriveToPoint(object):
 
             self._roboclaw_proxy.send_motors_command(_left, _right, _left, _right)
 
-        self._roboclaw_proxy.send_motors_command(0, 0, 0, 0)
+        self._stop()
 
         sys.stderr.write('Target %s reached\n' % str(target))
+
+    def _stop(self):
+        self._roboclaw_proxy.send_motors_command(0, 0, 0, 0)
 
     @staticmethod
     def _get_current_location(_location_proxy):
