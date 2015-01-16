@@ -17,12 +17,6 @@ def __shutdown_func(*args, **kwargs):
         except:
             pass
 
-    sys.stdout.flush()
-    sys.stdin.flush()
-
-    sys.stdout.close()
-    sys.stdin.close()
-
 
 for sig in __trap_signals:
     signal(sig, __shutdown_func)
