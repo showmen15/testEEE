@@ -26,12 +26,12 @@ config.add_config_ini('%s/drive_to_point.ini' % pwd)
 
 
 class DriveToPoint(object):
-    MAX_SPEED = 200
+    MAX_SPEED = 300
     X = 0
     Y = 1
     ALFA = 3
 
-    def __init__(self, _robo_width=280.0, _alpha=1.0, _target_radius=75.0):
+    def __init__(self, _robo_width=280.0, _alpha=2.0, _target_radius=75.0):
         self._client_for_roboclaw = amber_client.AmberClient('127.0.0.1', name="roboclaw")
         self._roboclaw_proxy = roboclaw.RoboclawProxy(self._client_for_roboclaw, 0)
 
@@ -44,10 +44,8 @@ class DriveToPoint(object):
         self._is_active = True
         self._is_active_lock = threading.Condition()
 
-        self._driving_speed = (0, 0, 0, 0)
         self._driving_thread = threading.Thread(target=self.__driving, name="driving-thread")
         self._driving_thread.start()
-        self._driving_lock = threading.Condition()
 
         self._time_stamp = time.time()
         self._robo_width = _robo_width
@@ -146,16 +144,26 @@ class DriveToPoint(object):
                 or abs(self._current_location[DriveToPoint.Y] - _target_y) > _target_radius:
             self._current_location = self._get_current_location(self._location_proxy)
 
-            _target_angle = math.atan2(_target_y - self._current_location[DriveToPoint.Y],
-                                       _target_x - self._current_location[DriveToPoint.X])
+            _current_x = self._current_location[DriveToPoint.X]
+            _current_y = self._current_location[DriveToPoint.Y]
+            _current_angle = self._current_location[DriveToPoint.ALFA]
+            _current_angle = DriveToPoint._normalize_angle(_current_angle)
 
-            _drive_angle = _target_angle - self._current_location[DriveToPoint.ALFA]
+            _target_angle = math.atan2(_target_y - _current_y, _target_x - _current_x)
+            _drive_angle = _target_angle - _current_angle
             _drive_angle = DriveToPoint._normalize_angle(_drive_angle)
+            _drive_angle = -_drive_angle  # odbicie lustrzane mapy
 
             _left = DriveToPoint.MAX_SPEED - self._alpha * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
             _right = DriveToPoint.MAX_SPEED + self._alpha * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
 
             _left, _right = int(_left), int(_right)
+
+            sys.stderr.write('Drive: %d, %d\tTarget: %d, %d, %f\tLocation: %d, %d, %f\tDrive angle:%f\n' %
+                             (_left, _right,
+                              _target_x, _target_y, _target_angle,
+                              _current_x, _current_y, _current_angle,
+                              _drive_angle))
 
             self._roboclaw_proxy.send_motors_command(_left, _right, _left, _right)
 

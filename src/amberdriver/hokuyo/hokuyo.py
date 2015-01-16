@@ -351,7 +351,7 @@ class HokuyoController(MessageHandler):
 
         self.__remove_subscriber(client_id)
 
-    def __scanning_run(self):
+    def __scanning_thread(self):
         try:
             while self.is_alive():
                 subscribers = self.__get_subscribers()
@@ -456,7 +456,7 @@ class HokuyoController(MessageHandler):
             self.__scanning_thread_condition.acquire()
 
             if self.__scanning_thread is None:
-                self.__scanning_thread = threading.Thread(target=self.__scanning_run, name="scanning-thread")
+                self.__scanning_thread = threading.Thread(target=self.__scanning_thread, name="scanning-thread")
                 self.__scanning_thread.start()
 
         finally:

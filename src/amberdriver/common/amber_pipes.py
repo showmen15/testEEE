@@ -1,8 +1,6 @@
 from functools import wraps
 import logging
 import logging.config
-import multiprocessing
-from multiprocessing import util
 import struct
 import threading
 import traceback
@@ -12,9 +10,6 @@ import os
 
 from amberdriver.common import drivermsg_pb2, runtime
 
-
-util.get_logger().setLevel(util.DEBUG)
-multiprocessing.log_to_stderr().setLevel(logging.DEBUG)
 
 __author__ = 'paoolo'
 
@@ -107,11 +102,6 @@ class AmberPipes(object):
 
         self.__logger.warning('amber_pipes: stop')
 
-    def __read_data_from_pipe(self, container):
-        data = self.__read_and_unpack_data_from_pipe(LEN_SIZE)
-        container.ParseFromString(data)
-        return container
-
     def __read_header_and_message_from_pipe(self):
         """
         Read and parse header and message from pipe.
@@ -125,6 +115,11 @@ class AmberPipes(object):
         message = self.__read_data_from_pipe(message)
 
         return header, message
+
+    def __read_data_from_pipe(self, container):
+        data = self.__read_and_unpack_data_from_pipe(LEN_SIZE)
+        container.ParseFromString(data)
+        return container
 
     def __read_and_unpack_data_from_pipe(self, size):
         """
