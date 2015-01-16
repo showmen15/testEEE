@@ -4,6 +4,7 @@ import logging.config
 import struct
 import threading
 import traceback
+import signal
 
 import abc
 import os
@@ -99,6 +100,7 @@ class AmberPipes(object):
                 self.__handle_header_and_message(header, message)
         except struct.error:
             self.__alive = False
+            os.kill(os.getpid(), signal.SIGTERM)
 
         self.__logger.warning('amber_pipes: stop')
 
