@@ -5,5 +5,9 @@ install:
   - pip install -r requirements.txt
   - pip install nose pylint
 script:
-  - PYTHONPATH=src pylint amberdriver || true
-  - python setup.py test
+  - PYTHONPATH=src pylint --ignore=drivermsg_pb2.py amberdriver.common || true
+  - PYTHONPATH=src pylint --ignore=dummy_pb2.py amberdriver.dummy || true
+  - PYTHONPATH=src pylint --ignore=hokuyo_pb2.py amberdriver.hokuyo || true
+  - PYTHONPATH=src pylint --ignore=drive_to_point_pb2.py amberdriver.drive_to_point || true
+  - PYTHONPATH=src pylint --ignore=collision_avoidance_pb2.py amberdriver.collision_avoidance || true
+  - PYTHONPATH=src python setup.py test
