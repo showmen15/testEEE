@@ -3,7 +3,7 @@ import threading
 import time
 
 from amberdriver.common import drivermsg_pb2
-from amberdriver.common.amber_pipes import MessageHandler
+from amberdriver.common.message_handler import MessageHandler
 from amberdriver.dummy import dummy_pb2
 
 

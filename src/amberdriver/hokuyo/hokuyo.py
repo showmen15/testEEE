@@ -9,7 +9,7 @@ import os
 import serial
 
 from amberdriver.common import drivermsg_pb2, runtime
-from amberdriver.common.amber_pipes import MessageHandler
+from amberdriver.common.message_handler import MessageHandler
 from amberdriver.hokuyo import hokuyo_pb2
 from amberdriver.null.null import NullController
 from amberdriver.tools import serial_port, config

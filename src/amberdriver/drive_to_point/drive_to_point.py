@@ -11,7 +11,7 @@ from amberclient.roboclaw import roboclaw
 import os
 
 from amberdriver.common import runtime
-from amberdriver.common.amber_pipes import MessageHandler
+from amberdriver.common.message_handler import MessageHandler
 from amberdriver.drive_to_point import drive_to_point_pb2
 from amberdriver.tools import config
 

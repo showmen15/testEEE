@@ -1,4 +1,3 @@
-from functools import wraps
 import logging
 import logging.config
 import struct
@@ -6,7 +5,6 @@ import threading
 import traceback
 import signal
 
-import abc
 import os
 
 from amberdriver.common import drivermsg_pb2, runtime
@@ -19,55 +17,6 @@ LEN_SIZE = 2
 LOGGER_NAME = 'AmberPipes'
 pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/amber.ini' % pwd)
-
-
-class MessageHandler(object):
-    def __init__(self, pipe_in, pipe_out):
-        self.__amber_pipes = AmberPipes(self, pipe_in, pipe_out)
-
-    def __call__(self, *args, **kwargs):
-        self.__amber_pipes(*args, **kwargs)
-
-    def is_alive(self):
-        return self.__amber_pipes.is_alive()
-
-    @abc.abstractmethod
-    def handle_data_message(self, header, message):
-        pass
-
-    @abc.abstractmethod
-    def handle_subscribe_message(self, header, message):
-        pass
-
-    @abc.abstractmethod
-    def handle_unsubscribe_message(self, header, message):
-        pass
-
-    @abc.abstractmethod
-    def handle_client_died_message(self, client_id):
-        pass
-
-    def get_pipes(self):
-        return self.__amber_pipes
-
-    @staticmethod
-    def handle_and_response(func):
-        @wraps(func)
-        def wrapped(inst, received_header, received_message):
-            response_header = drivermsg_pb2.DriverHdr()
-            response_message = drivermsg_pb2.DriverMsg()
-
-            response_message.type = drivermsg_pb2.DriverMsg.DATA
-            response_message.ackNum = received_message.synNum
-
-            response_header.clientIDs.extend(received_header.clientIDs)
-
-            response_header, response_message = func(inst, received_header, received_message,
-                                                     response_header, response_message)
-
-            inst.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
-
-        return wrapped
 
 
 class AmberPipes(object):
@@ -184,7 +133,7 @@ class AmberPipes(object):
         :param header: object of DriverHdr
         :return: nothing
         """
-        if len(header.clientIDs) != 1:
+        if len(header.clientIDs) < 1:
             self.__logger.warning('CLIENT_DIED\'s clientID not set, ignoring.')
 
         else:
@@ -198,12 +147,12 @@ class AmberPipes(object):
         :param ping_message: object of DriverMsg
         :return: nothing
         """
-        if ping_message.HasField('synNum'):
-            self.__logger.warning('PING\'s synNum not set, ignoring.')
+        if not ping_message.HasField('synNum'):
+            self.__logger.warning('PING\'s synNum is not set, ignoring.')
 
         else:
             pong_message = drivermsg_pb2.DriverMsg()
-            pong_message.type = drivermsg_pb2.DriverMsg.MsgType.PONG
+            pong_message.type = drivermsg_pb2.DriverMsg.PONG
             pong_message.ackNum = ping_message.synNum
 
             pong_header = drivermsg_pb2.DriverHdr()
