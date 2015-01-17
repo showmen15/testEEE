@@ -1,0 +1,13 @@
+doc-warnings: no
+test-warnings: no
+strictness: medium
+max-line-length: 120
+autodetect: no
+requirements:
+  - requirements.txt
+ignore-paths:
+  - bin/
+ignore-patterns:
+  - ^.*_pb2\.py$
+  - ^.*\.(sh|md|in|txt|yml)$
+  - ^README$

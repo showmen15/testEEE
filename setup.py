@@ -1,9 +1,11 @@
 # coding=utf-8
 # !/usr/bin/env python
+import sys
 
 try:
     from setuptools import setup
 except ImportError:
+    sys.stderr.write('using distutils\n')
     from distutils.core import setup
 
 with open('requirements.txt') as f:
@@ -33,6 +35,7 @@ setup(
             'src/amberdriver/tools/main.ini'
         ]),
     ],
+    test_suite="amberdriver.tests",
     install_requires=required,
     version='1.13.3',
     description='Amber drivers in python',
