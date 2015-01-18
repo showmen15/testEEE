@@ -32,5 +32,8 @@ exclude_lines =
     if 0:
     if __name__ == .__main__.:
 
-    # Don't complain __logger
+    # Don't complain following lines
     .*__logger.*
+    pass
+    print
+    sys\.std.*write.*
