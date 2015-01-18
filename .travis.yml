@@ -10,6 +10,6 @@ script:
   - PYTHONPATH=src pylint --ignore=hokuyo_pb2.py amberdriver.hokuyo || true
   - PYTHONPATH=src pylint --ignore=drive_to_point_pb2.py amberdriver.drive_to_point || true
   - PYTHONPATH=src pylint --ignore=collision_avoidance_pb2.py amberdriver.collision_avoidance || true
-  - PYTHONPATH=src coverage run setup.py test
+  - PYTHONPATH=src coverage run --source=amberdriver setup.py test
 after_success:
   - coveralls
