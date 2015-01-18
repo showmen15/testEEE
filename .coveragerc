@@ -13,7 +13,7 @@ omit =
     */site-packages/nose/*
     */tests/*
     *_pb2.py
-    __init__.py
+    *__init__.py
 
 # Regexes for lines to exclude from consideration
 exclude_lines =
