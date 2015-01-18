@@ -1,15 +1,9 @@
 amber-python-drivers
 ====================
 
-### Master status
-
 [![Build Status](https://travis-ci.org/project-capo/amber-python-drivers.svg?branch=master)](https://travis-ci.org/project-capo/amber-python-drivers)
 [![Code Health](https://landscape.io/github/project-capo/amber-python-drivers/master/landscape.svg)](https://landscape.io/github/project-capo/amber-python-drivers/master)
-
-### Deploy status
-
-[![Build Status](https://travis-ci.org/project-capo/amber-python-drivers.svg?branch=deploy)](https://travis-ci.org/project-capo/amber-python-drivers)
-[![Code Health](https://landscape.io/github/project-capo/amber-python-drivers/deploy/landscape.svg)](https://landscape.io/github/project-capo/amber-python-drivers/deploy)
+[![Coverage Status](https://coveralls.io/repos/project-capo/amber-python-drivers/badge.svg)](https://coveralls.io/r/project-capo/amber-python-drivers)
 
 Requirements
 ------------

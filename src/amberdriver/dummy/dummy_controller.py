@@ -1,13 +1,25 @@
-import logging
 import threading
 import time
+import logging
+import logging.config
+import sys
+
+import os
 
 from amberdriver.common import drivermsg_pb2
+
 from amberdriver.common.message_handler import MessageHandler
 from amberdriver.dummy import dummy_pb2
+from amberdriver.dummy.dummy import Dummy
+from amberdriver.null.null import NullController
+from amberdriver.tools import config
 
 
 __author__ = 'paoolo'
+
+pwd = os.path.dirname(os.path.abspath(__file__))
+logging.config.fileConfig('%s/dummy.ini' % pwd)
+config.add_config_ini('%s/dummy.ini' % pwd)
 
 LOGGER_NAME = 'DummyController'
 
@@ -157,3 +169,19 @@ class DummyController(MessageHandler):
             self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
             time.sleep(0.01)
+
+
+if __name__ == '__main__':
+    try:
+        # Create dummy.
+        dummy = Dummy()
+        # Create controller and run it.
+        controller = DummyController(sys.stdin, sys.stdout, dummy)
+        # It's running in infinite loop.
+        controller()
+
+    except BaseException as e:
+        sys.stderr.write('%s\nRun without Dummy.' % str(e))
+
+        controller = NullController(sys.stdin, sys.stdout)
+        controller()
