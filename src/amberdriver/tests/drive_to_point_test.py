@@ -1,7 +1,6 @@
 import mock
 
 from amberdriver.drive_to_point import drive_to_point_pb2
-
 from amberdriver.drive_to_point.drive_to_point_controller import DriveToPointController
 
 
@@ -58,6 +57,17 @@ class HandleDataMessageTestCase(DriveToPointControllerTestCase):
         self.controller.handle_data_message(header, message)
         mocked_handle_get_visited_targets.assert_called_once_with(header, message)
         self.assertEqual(message.HasExtension.call_count, 5)
+
+        message.HasExtension = mock.Mock(side_effect=lambda ext: ext is drive_to_point_pb2.getConfiguration)
+        mocked_handle_get_configuration = mock.Mock()
+        self.controller._DriveToPointController__handle_get_configuration = mocked_handle_get_configuration
+        self.controller.handle_data_message(header, message)
+        mocked_handle_get_configuration.assert_called_once_with(header, message)
+        self.assertEqual(message.HasExtension.call_count, 6)
+
+        message.HasExtension = mock.Mock(side_effect=lambda ext: False)
+        self.controller.handle_data_message(header, message)
+        self.assertEqual(message.HasExtension.call_count, 6)
 
 
 class HandleSetTargetsTestCase(DriveToPointControllerTestCase):
