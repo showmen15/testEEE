@@ -2,6 +2,9 @@ import logging
 import logging.config
 import sys
 
+from amberclient.common.amber_client import AmberClient
+from amberclient.location.location import LocationProxy
+from amberclient.roboclaw.roboclaw import RoboclawProxy
 import os
 
 from amberdriver.common import runtime
@@ -151,5 +154,13 @@ class DriveToPointController(MessageHandler):
 
 
 if __name__ == '__main__':
+    client_for_roboclaw = AmberClient('127.0.0.1', name="roboclaw")
+    client_for_location = AmberClient('127.0.0.1', name="location")
+
+    roboclaw_proxy = RoboclawProxy(client_for_roboclaw, 0)
+    location_proxy = LocationProxy(client_for_location, 0)
+
+    drive_to_point = DriveToPoint(roboclaw_proxy, location_proxy)
+
     controller = DriveToPointController(sys.stdin, sys.stdout)
     controller()

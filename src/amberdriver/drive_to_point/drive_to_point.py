@@ -3,96 +3,88 @@ import time
 import math
 import sys
 
-from amberclient.common import amber_client
-
-from amberclient.location import location
-from amberclient.roboclaw import roboclaw
-
 
 __author__ = 'paoolo'
 
 
 class DriveToPoint(object):
     MAX_SPEED = 300
-    X = 0
-    Y = 1
-    ALFA = 3
+    ROBO_WIDTH = 280.0
+    DRIVING_ALPHA = 2.0
+    LOCATION_X_ENUM = 0
+    LOCATION_Y_ENUM = 1
+    LOCATION_ALPHA_ENUM = 3
 
-    def __init__(self, _robo_width=280.0, _alpha=2.0, _target_radius=75.0):
-        self._client_for_roboclaw = amber_client.AmberClient('127.0.0.1', name="roboclaw")
-        self._roboclaw_proxy = roboclaw.RoboclawProxy(self._client_for_roboclaw, 0)
+    def __init__(self, roboclaw_proxy, location_proxy):
+        self.__roboclaw_proxy = roboclaw_proxy
+        self.__location_proxy = location_proxy
 
-        self._client_for_location = amber_client.AmberClient('127.0.0.1', name="location")
-        self._location_proxy = location.LocationProxy(self._client_for_location, 0)
+        self.__next_targets, self.__visited_targets, self.__current_location = [], [], (0, 0, 0, 0, 0)
+        self.__targets_and_location_lock = threading.Condition()
 
-        self._next_targets, self._visited_targets, self._current_location = [], [], (0, 0, 0, 0, 0)
-        self._targets_and_location_lock = threading.Condition()
+        self.__is_active = True
+        self.__is_active_lock = threading.Condition()
 
-        self._is_active = True
-        self._is_active_lock = threading.Condition()
+        self.__driving_thread = threading.Thread(target=self.__driving, name="driving-thread")
+        self.__driving_thread.start()
 
-        self._driving_thread = threading.Thread(target=self.__driving, name="driving-thread")
-        self._driving_thread.start()
-
-        self._time_stamp = time.time()
-        self._robo_width = _robo_width
-        self._alpha = _alpha
+        self.__time_stamp = time.time()
 
     def set_targets(self, targets):
         try:
-            self._targets_and_location_lock.acquire()
-            self._next_targets = targets
-            self._visited_targets = []
+            self.__targets_and_location_lock.acquire()
+            self.__next_targets = targets
+            self.__visited_targets = []
         finally:
-            self._targets_and_location_lock.release()
+            self.__targets_and_location_lock.release()
 
     def get_next_targets_and_location(self):
         try:
-            self._targets_and_location_lock.acquire()
-            return self._next_targets[:], self._current_location
+            self.__targets_and_location_lock.acquire()
+            return self.__next_targets[:], self.__current_location
         finally:
-            self._targets_and_location_lock.release()
+            self.__targets_and_location_lock.release()
 
     def get_next_target_and_location(self):
         try:
-            self._targets_and_location_lock.acquire()
-            _next_target = self._next_targets[0] if len(self._next_targets) > 0 else (0, 0, 0)
-            return _next_target, self._current_location
+            self.__targets_and_location_lock.acquire()
+            _next_target = self.__next_targets[0] if len(self.__next_targets) > 0 else (0, 0, 0)
+            return _next_target, self.__current_location
         finally:
-            self._targets_and_location_lock.release()
+            self.__targets_and_location_lock.release()
 
     def get_visited_targets_and_location(self):
         try:
-            self._targets_and_location_lock.acquire()
-            return self._visited_targets[:], self._current_location
+            self.__targets_and_location_lock.acquire()
+            return self.__visited_targets[:], self.__current_location
         finally:
-            self._targets_and_location_lock.release()
+            self.__targets_and_location_lock.release()
 
     def get_visited_target_and_location(self):
         try:
-            self._targets_and_location_lock.acquire()
-            _visited_target = self._visited_targets[-1] if len(self._visited_targets) > 0 else (0, 0, 0)
-            return _visited_target, self._current_location
+            self.__targets_and_location_lock.acquire()
+            _visited_target = self.__visited_targets[-1] if len(self.__visited_targets) > 0 else (0, 0, 0)
+            return _visited_target, self.__current_location
         finally:
-            self._targets_and_location_lock.release()
+            self.__targets_and_location_lock.release()
 
     def _get_next_target(self):
         try:
-            self._targets_and_location_lock.acquire()
-            return self._next_targets[0]
+            self.__targets_and_location_lock.acquire()
+            return self.__next_targets[0]
         finally:
-            self._targets_and_location_lock.release()
+            self.__targets_and_location_lock.release()
 
     def _add_target_to_visited(self, target):
         try:
-            self._targets_and_location_lock.acquire()
+            self.__targets_and_location_lock.acquire()
             try:
-                self._next_targets.pop(0)
+                self.__next_targets.pop(0)
             except IndexError as e:
                 print e
-            self._visited_targets.append(target)
+            self.__visited_targets.append(target)
         finally:
-            self._targets_and_location_lock.release()
+            self.__targets_and_location_lock.release()
 
     def __driving(self):
         while self.is_active():
@@ -107,33 +99,33 @@ class DriveToPoint(object):
 
     def is_active(self):
         try:
-            self._is_active_lock.acquire()
-            return self._is_active
+            self.__is_active_lock.acquire()
+            return self.__is_active
         finally:
-            self._is_active_lock.release()
+            self.__is_active_lock.release()
 
     def terminate(self):
         try:
-            self._is_active_lock.acquire()
-            self._is_active = False
-            self._client_for_location.terminate()
-            self._client_for_roboclaw.terminate()
+            self.__is_active_lock.acquire()
+            self.__is_active = False
+            self.__roboclaw_proxy.terminate_proxy()
+            self.__location_proxy.terminate_proxy()
         finally:
-            self._is_active_lock.release()
+            self.__is_active_lock.release()
 
     def _drive_to(self, target):
         sys.stderr.write('Drive to %s\n' % str(target))
 
-        self._current_location = self._get_current_location(self._location_proxy)
+        self.__current_location = self._get_current_location(self.__location_proxy)
 
         _target_x, _target_y, _target_radius = target
-        while abs(self._current_location[DriveToPoint.X] - _target_x) > _target_radius \
-                or abs(self._current_location[DriveToPoint.Y] - _target_y) > _target_radius:
-            self._current_location = self._get_current_location(self._location_proxy)
+        while abs(self.__current_location[DriveToPoint.LOCATION_X_ENUM] - _target_x) > _target_radius \
+                or abs(self.__current_location[DriveToPoint.LOCATION_Y_ENUM] - _target_y) > _target_radius:
+            self.__current_location = self._get_current_location(self.__location_proxy)
 
-            _current_x = self._current_location[DriveToPoint.X]
-            _current_y = self._current_location[DriveToPoint.Y]
-            _current_angle = self._current_location[DriveToPoint.ALFA]
+            _current_x = self.__current_location[DriveToPoint.LOCATION_X_ENUM]
+            _current_y = self.__current_location[DriveToPoint.LOCATION_Y_ENUM]
+            _current_angle = self.__current_location[DriveToPoint.LOCATION_ALPHA_ENUM]
             _current_angle = DriveToPoint._normalize_angle(_current_angle)
 
             _target_angle = math.atan2(_target_y - _current_y, _target_x - _current_x)
@@ -141,8 +133,8 @@ class DriveToPoint(object):
             _drive_angle = DriveToPoint._normalize_angle(_drive_angle)
             _drive_angle = -_drive_angle  # odbicie lustrzane mapy
 
-            _left = DriveToPoint.MAX_SPEED - self._alpha * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
-            _right = DriveToPoint.MAX_SPEED + self._alpha * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
+            _left = DriveToPoint.MAX_SPEED - DriveToPoint.DRIVING_ALPHA * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
+            _right = DriveToPoint.MAX_SPEED + DriveToPoint.DRIVING_ALPHA * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
 
             _left, _right = int(_left), int(_right)
 
@@ -152,14 +144,14 @@ class DriveToPoint(object):
                               _current_x, _current_y, _current_angle,
                               _drive_angle))
 
-            self._roboclaw_proxy.send_motors_command(_left, _right, _left, _right)
+            self.__roboclaw_proxy.send_motors_command(_left, _right, _left, _right)
 
         self._stop()
 
         sys.stderr.write('Target %s reached\n' % str(target))
 
     def _stop(self):
-        self._roboclaw_proxy.send_motors_command(0, 0, 0, 0)
+        self.__roboclaw_proxy.send_motors_command(0, 0, 0, 0)
 
     @staticmethod
     def _get_current_location(_location_proxy):
@@ -178,8 +170,8 @@ class DriveToPoint(object):
 
     def _get_delta_time(self):
         _time_stamp = time.time()
-        _delta_time = _time_stamp - self._time_stamp
-        self._time_stamp = _time_stamp
+        _delta_time = _time_stamp - self.__time_stamp
+        self.__time_stamp = _time_stamp
         return _delta_time
 
     def _calculate_new_relative_location(self, current_speed_left, current_speed_right,
@@ -193,10 +185,10 @@ class DriveToPoint(object):
             _robo_angle = current_angle
 
         else:
-            _a = 0.5 * self._robo_width * (current_speed_right + current_speed_left) / \
+            _a = 0.5 * DriveToPoint.ROBO_WIDTH * (current_speed_right + current_speed_left) / \
                  (current_speed_right - current_speed_left)
             _robo_angle = current_angle + (current_speed_right - current_speed_left) / \
-                                          self._robo_width * _delta_time
+                                          DriveToPoint.ROBO_WIDTH * _delta_time
 
             _x = current_x + _a * (math.sin(_robo_angle) - math.sin(current_angle))
             _y = current_y - _a * (math.cos(_robo_angle) - math.cos(current_angle))

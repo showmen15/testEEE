@@ -1,6 +1,7 @@
 import mock
 
 from amberdriver.drive_to_point import drive_to_point_pb2
+from amberdriver.drive_to_point.drive_to_point import DriveToPoint
 from amberdriver.drive_to_point.drive_to_point_controller import DriveToPointController
 
 
@@ -226,3 +227,32 @@ class TerminateTestCase(DriveToPointControllerTestCase):
     def runTest(self):
         self.controller.terminate()
         self.mocked_drive_to_point.terminate.assert_called_once_with()
+
+
+class DriveToPointTestCase(unittest.TestCase):
+    def setUp(self):
+        self.mocked_roboclaw_proxy = mock.Mock()
+        self.mocked_location_proxy = mock.Mock()
+        self.drive_to_point = DriveToPoint(self.mocked_roboclaw_proxy, self.mocked_location_proxy)
+
+    def tearDown(self):
+        self.drive_to_point.terminate()
+
+
+class SetTargetsTestCase(DriveToPointTestCase):
+    def runTest(self):
+        targets = mock.Mock()
+        self.drive_to_point.set_targets(targets)
+        self.assertEqual(self.drive_to_point._DriveToPoint__next_targets, targets)
+        self.assertEqual(self.drive_to_point._DriveToPoint__visited_targets, [])
+
+
+class GetNextTargetsAndLocationTestCase(DriveToPointTestCase):
+    def runTest(self):
+        mocked_target = mock.Mock()
+        mocked_targets, mocked_location = [mocked_target, ], mock.Mock(spec=tuple)
+        self.drive_to_point._DriveToPoint__next_targets = mocked_targets
+        self.drive_to_point._DriveToPoint__current_location = mocked_location
+        targets, location = self.drive_to_point.get_next_targets_and_location()
+        self.assertTrue(mocked_target in targets)
+        self.assertEqual(mocked_location, location)
