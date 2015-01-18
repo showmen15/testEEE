@@ -25,8 +25,6 @@ class DriveToPoint(object):
         self.__is_active = True
         self.__is_active_lock = threading.Condition()
 
-        self.__time_stamp = time.time()
-
     def set_targets(self, targets):
         try:
             self.__targets_and_location_lock.acquire()
@@ -65,33 +63,15 @@ class DriveToPoint(object):
         finally:
             self.__targets_and_location_lock.release()
 
-    def _get_next_target(self):
-        try:
-            self.__targets_and_location_lock.acquire()
-            return self.__next_targets[0]
-        finally:
-            self.__targets_and_location_lock.release()
-
-    def _add_target_to_visited(self, target):
-        try:
-            self.__targets_and_location_lock.acquire()
-            try:
-                self.__next_targets.pop(0)
-            except IndexError as e:
-                print e
-            self.__visited_targets.append(target)
-        finally:
-            self.__targets_and_location_lock.release()
-
     def driving_loop(self):
         while self.is_active():
             try:
                 while self.is_active():
-                    target = self._get_next_target()
-                    self._drive_to(target)
-                    self._add_target_to_visited(target)
+                    target = self.__get_next_target()
+                    self.__drive_to(target)
+                    self.__add_target_to_visited(target)
             except IndexError:
-                self._stop()
+                self.__stop()
             time.sleep(0.1)
 
     def is_active(self):
@@ -101,95 +81,93 @@ class DriveToPoint(object):
         finally:
             self.__is_active_lock.release()
 
+    def __get_next_target(self):
+        try:
+            self.__targets_and_location_lock.acquire()
+            return self.__next_targets[0]
+        finally:
+            self.__targets_and_location_lock.release()
+
+    def __set_current_location(self, location):
+        try:
+            self.__targets_and_location_lock.acquire()
+            self.__current_location = location
+        finally:
+            self.__targets_and_location_lock.release()
+
+    def __add_target_to_visited(self, target):
+        try:
+            self.__targets_and_location_lock.acquire()
+            self.__next_targets.remove(target)
+            self.__visited_targets.append(target)
+        finally:
+            self.__targets_and_location_lock.release()
+
     def terminate(self):
         try:
             self.__is_active_lock.acquire()
             self.__is_active = False
-            self.__roboclaw_proxy.terminate_proxy()
-            self.__location_proxy.terminate_proxy()
         finally:
             self.__is_active_lock.release()
 
-    def _drive_to(self, target):
+    def __drive_to(self, target):
         sys.stderr.write('Drive to %s\n' % str(target))
 
-        self.__current_location = self._get_current_location(self.__location_proxy)
+        location = self.__location_proxy.get_location().get_location()
+        self.__set_current_location(location)
 
-        _target_x, _target_y, _target_radius = target
-        while abs(self.__current_location[DriveToPoint.LOCATION_X_ENUM] - _target_x) > _target_radius \
-                or abs(self.__current_location[DriveToPoint.LOCATION_Y_ENUM] - _target_y) > _target_radius:
-            self.__current_location = self._get_current_location(self.__location_proxy)
+        while not DriveToPoint.__target_reached(location, target):
+            left, right = DriveToPoint.__compute_speed(location, target)
+            left, right = int(left), int(right)
 
-            _current_x = self.__current_location[DriveToPoint.LOCATION_X_ENUM]
-            _current_y = self.__current_location[DriveToPoint.LOCATION_Y_ENUM]
-            _current_angle = self.__current_location[DriveToPoint.LOCATION_ALPHA_ENUM]
-            _current_angle = DriveToPoint._normalize_angle(_current_angle)
+            self.__roboclaw_proxy.send_motors_command(left, right, left, right)
 
-            _target_angle = math.atan2(_target_y - _current_y, _target_x - _current_x)
-            _drive_angle = _target_angle - _current_angle
-            _drive_angle = DriveToPoint._normalize_angle(_drive_angle)
-            _drive_angle = -_drive_angle  # odbicie lustrzane mapy
+            location = self.__location_proxy.get_location().get_location()
+            self.__set_current_location(location)
 
-            _left = DriveToPoint.MAX_SPEED - DriveToPoint.DRIVING_ALPHA * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
-            _right = DriveToPoint.MAX_SPEED + DriveToPoint.DRIVING_ALPHA * _drive_angle / math.pi * DriveToPoint.MAX_SPEED
-
-            _left, _right = int(_left), int(_right)
-
-            sys.stderr.write('Drive: %d, %d\tTarget: %d, %d, %f\tLocation: %d, %d, %f\tDrive angle:%f\n' %
-                             (_left, _right,
-                              _target_x, _target_y, _target_angle,
-                              _current_x, _current_y, _current_angle,
-                              _drive_angle))
-
-            self.__roboclaw_proxy.send_motors_command(_left, _right, _left, _right)
-
-        self._stop()
+        self.__stop()
 
         sys.stderr.write('Target %s reached\n' % str(target))
 
-    def _stop(self):
+    @staticmethod
+    def __target_reached(location, target):
+        target_x, target_y, target_radius = target
+        location_x, location_y, _, _, _ = location
+
+        diff_x = location_x - target_x
+        diff_y = location_y - target_y
+
+        return math.pow(diff_x, 2) + math.pow(diff_y, 2) < math.pow(target_radius, 2)
+
+    @staticmethod
+    def __compute_speed(location, target):
+        target_x, target_y, target_radius = target
+
+        current_x, current_y, _, current_angle, _ = location
+        current_angle = DriveToPoint.__normalize_angle(current_angle)
+
+        target_angle = math.atan2(target_y - current_y, target_x - current_x)
+        drive_angle = target_angle - current_angle
+        drive_angle = DriveToPoint.__normalize_angle(drive_angle)
+
+        drive_angle = -drive_angle  # mirrored map
+
+        left = DriveToPoint.MAX_SPEED - DriveToPoint.__compute_change(drive_angle)
+        right = DriveToPoint.MAX_SPEED + DriveToPoint.__compute_change(drive_angle)
+
+        return left, right
+
+    def __stop(self):
         self.__roboclaw_proxy.send_motors_command(0, 0, 0, 0)
 
     @staticmethod
-    def _get_current_location(_location_proxy):
-        _location = _location_proxy.get_location()
-        _current_x, _current_y, _current_p, _current_angle, _current_timestamp = _location.get_location()
-        _current_x, _current_y = map(lambda value: 1000 * value, (_current_x, _current_y))
-        return _current_x, _current_y, _current_p, _current_angle, _current_timestamp
-
-    @staticmethod
-    def _normalize_angle(angle):
+    def __normalize_angle(angle):
         if angle < -math.pi:
             angle += 2 * math.pi
         elif angle > math.pi:
             angle -= 2 * math.pi
         return angle
 
-    def _get_delta_time(self):
-        _time_stamp = time.time()
-        _delta_time = _time_stamp - self.__time_stamp
-        self.__time_stamp = _time_stamp
-        return _delta_time
-
-    def _calculate_new_relative_location(self, current_speed_left, current_speed_right,
-                                         current_x, current_y, current_angle):
-        _delta_time = self._get_delta_time()
-
-        if current_speed_right == current_speed_left:
-            _x = current_x + current_speed_left * _delta_time * math.cos(current_angle)
-            _y = current_y + current_speed_right * _delta_time * math.sin(current_angle)
-
-            _robo_angle = current_angle
-
-        else:
-            _a = 0.5 * DriveToPoint.ROBO_WIDTH * (current_speed_right + current_speed_left) / \
-                 (current_speed_right - current_speed_left)
-            _robo_angle = current_angle + (current_speed_right - current_speed_left) / \
-                                          DriveToPoint.ROBO_WIDTH * _delta_time
-
-            _x = current_x + _a * (math.sin(_robo_angle) - math.sin(current_angle))
-            _y = current_y - _a * (math.cos(_robo_angle) - math.cos(current_angle))
-
-            _robo_angle = DriveToPoint._normalize_angle(_robo_angle)
-
-        return _x, _y, _robo_angle
+    @staticmethod
+    def __compute_change(drive_angle):
+        return DriveToPoint.DRIVING_ALPHA * drive_angle / math.pi * DriveToPoint.MAX_SPEED
