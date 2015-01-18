@@ -25,9 +25,6 @@ class DriveToPoint(object):
         self.__is_active = True
         self.__is_active_lock = threading.Condition()
 
-        self.__driving_thread = threading.Thread(target=self.__driving, name="driving-thread")
-        self.__driving_thread.start()
-
         self.__time_stamp = time.time()
 
     def set_targets(self, targets):
@@ -86,7 +83,7 @@ class DriveToPoint(object):
         finally:
             self.__targets_and_location_lock.release()
 
-    def __driving(self):
+    def driving_loop(self):
         while self.is_active():
             try:
                 while self.is_active():

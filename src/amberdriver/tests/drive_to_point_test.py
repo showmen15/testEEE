@@ -235,9 +235,6 @@ class DriveToPointTestCase(unittest.TestCase):
         self.mocked_location_proxy = mock.Mock()
         self.drive_to_point = DriveToPoint(self.mocked_roboclaw_proxy, self.mocked_location_proxy)
 
-    def tearDown(self):
-        self.drive_to_point.terminate()
-
 
 class SetTargetsTestCase(DriveToPointTestCase):
     def runTest(self):
@@ -247,12 +244,42 @@ class SetTargetsTestCase(DriveToPointTestCase):
         self.assertEqual(self.drive_to_point._DriveToPoint__visited_targets, [])
 
 
-class GetNextTargetsAndLocationTestCase(DriveToPointTestCase):
+class TargetAndLocationTestCase(DriveToPointTestCase):
+    def setUp(self):
+        super(TargetAndLocationTestCase, self).setUp()
+        self.mocked_next_target = mock.Mock()
+        self.mocked_next_targets = [self.mocked_next_target, ]
+        self.mocked_visited_target = mock.Mock()
+        self.mocked_visited_targets = [self.mocked_visited_target, ]
+        self.mocked_location = mock.Mock(spec=tuple)
+        self.drive_to_point._DriveToPoint__next_targets = self.mocked_next_targets
+        self.drive_to_point._DriveToPoint__visited_targets = self.mocked_visited_targets
+        self.drive_to_point._DriveToPoint__current_location = self.mocked_location
+
+
+class GetNextTargetsAndLocationTestCase(TargetAndLocationTestCase):
     def runTest(self):
-        mocked_target = mock.Mock()
-        mocked_targets, mocked_location = [mocked_target, ], mock.Mock(spec=tuple)
-        self.drive_to_point._DriveToPoint__next_targets = mocked_targets
-        self.drive_to_point._DriveToPoint__current_location = mocked_location
         targets, location = self.drive_to_point.get_next_targets_and_location()
-        self.assertTrue(mocked_target in targets)
-        self.assertEqual(mocked_location, location)
+        self.assertTrue(self.mocked_next_target in targets)
+        self.assertEqual(self.mocked_location, location)
+
+
+class GetNextTargetAndLocationTestCase(TargetAndLocationTestCase):
+    def runTest(self):
+        target, location = self.drive_to_point.get_next_target_and_location()
+        self.assertEqual(self.mocked_next_target, target)
+        self.assertEqual(self.mocked_location, location)
+
+
+class GetVisitedTargetsAndLocationTestCase(TargetAndLocationTestCase):
+    def runTest(self):
+        targets, location = self.drive_to_point.get_visited_targets_and_location()
+        self.assertTrue(self.mocked_visited_target in targets)
+        self.assertEqual(self.mocked_location, location)
+
+
+class GetVisitedTargetAndLocationTestCase(TargetAndLocationTestCase):
+    def runTest(self):
+        target, location = self.drive_to_point.get_visited_target_and_location()
+        self.assertEqual(self.mocked_visited_target, target)
+        self.assertEqual(self.mocked_location, location)
