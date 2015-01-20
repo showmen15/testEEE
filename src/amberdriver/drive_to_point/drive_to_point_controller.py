@@ -158,8 +158,12 @@ if __name__ == '__main__':
     location_proxy = LocationProxy(client_for_location, 0)
 
     drive_to_point = DriveToPoint(roboclaw_proxy, location_proxy)
+
     driving_thread = threading.Thread(target=drive_to_point.driving_loop, name="driving-thread")
     driving_thread.start()
+
+    location_thread = threading.Thread(target=drive_to_point.location_loop, name="location=thread")
+    location_thread.start()
 
     controller = DriveToPointController(sys.stdin, sys.stdout, drive_to_point)
     controller()
