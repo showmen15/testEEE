@@ -19,6 +19,10 @@ config.add_config_ini('%s/drive_to_point.ini' % pwd)
 LOGGER_NAME = 'DriveToPoint'
 
 
+def bound_sleep(value):
+    return value if 0.2 < value < 2.0 else 2.0 if value > 2.0 else 0.2
+
+
 class DriveToPoint(object):
     MAX_SPEED = 250
     DRIVING_ALPHA = 3.0  # cut at 60st
@@ -105,7 +109,7 @@ class DriveToPoint(object):
             location_interval /= 1000.0
             last_location = current_location
             sleep_interval += 0.5 * (location_interval - sleep_interval)
-            sleep_interval = sleep_interval if sleep_interval > 0.2 else 0.2
+            sleep_interval = bound_sleep(sleep_interval)
             sys.stderr.write('local:sleep %f\n' % sleep_interval)
             time.sleep(sleep_interval)
 
@@ -177,7 +181,7 @@ class DriveToPoint(object):
             location_interval = location[DriveToPoint.TIMESTAMP_FIELD] - old_location[DriveToPoint.TIMESTAMP_FIELD]
             location_interval /= 1000.0
             sleep_interval += 0.5 * (location_interval - sleep_interval)
-            sleep_interval = sleep_interval if sleep_interval > 0.2 else 0.2
+            sleep_interval = bound_sleep(sleep_interval)
 
         self.__stop()
 
