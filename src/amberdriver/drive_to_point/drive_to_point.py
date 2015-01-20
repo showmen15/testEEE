@@ -108,7 +108,7 @@ class DriveToPoint(object):
                                 last_location[DriveToPoint.TIMESTAMP_FIELD]
             location_interval /= 1000.0
             last_location = current_location
-            if location_interval > 2.0:
+            if location_interval < 2.0:
                 sleep_interval += 0.5 * (location_interval - sleep_interval)
                 sleep_interval = bound_sleep(sleep_interval)
             sys.stderr.write('local:sleep %f\n' % sleep_interval)
@@ -181,7 +181,7 @@ class DriveToPoint(object):
 
             location_interval = location[DriveToPoint.TIMESTAMP_FIELD] - old_location[DriveToPoint.TIMESTAMP_FIELD]
             location_interval /= 1000.0
-            if location_interval > 2.0:
+            if location_interval < 2.0:
                 sleep_interval += 0.5 * (location_interval - sleep_interval)
                 sleep_interval = bound_sleep(sleep_interval)
 
