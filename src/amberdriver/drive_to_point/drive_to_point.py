@@ -1,10 +1,22 @@
+import logging
+import logging.config
 import threading
 import time
 import math
 import sys
 
+import os
+
+from amberdriver.tools import config
+
 
 __author__ = 'paoolo'
+
+pwd = os.path.dirname(os.path.abspath(__file__))
+logging.config.fileConfig('%s/drive_to_point.ini' % pwd)
+config.add_config_ini('%s/drive_to_point.ini' % pwd)
+
+LOGGER_NAME = 'DriveToPoint'
 
 
 class DriveToPoint(object):
@@ -23,6 +35,7 @@ class DriveToPoint(object):
         self.__is_active_lock = threading.Condition()
 
         self.__old_left, self.__old_right = 0.0, 0.0
+        self.__logger = logging.getLogger(LOGGER_NAME)
 
     def set_targets(self, targets):
         try:
@@ -84,13 +97,15 @@ class DriveToPoint(object):
 
         time.sleep(sleep_interval)
         while self.is_active():
-            current_location = self.__location_proxy.get_location().get_location()
+            current_location = self.__location_proxy.get_location()
+            current_location = current_location.get_location()
             self.__set_current_location(current_location)
             location_interval = current_location[DriveToPoint.TIMESTAMP_FIELD] - \
                                 last_location[DriveToPoint.TIMESTAMP_FIELD]
             last_location = current_location
             sleep_interval += 0.5 * (location_interval - sleep_interval)
             sleep_interval = sleep_interval if sleep_interval > 0.5 else 0.5
+            sys.stderr.write('local:sleep %f\n' % sleep_interval)
             time.sleep(sleep_interval)
 
     def is_active(self):
@@ -137,7 +152,7 @@ class DriveToPoint(object):
             self.__is_active_lock.release()
 
     def __drive_to(self, target):
-        sys.stderr.write('Drive to %s\n' % str(target))
+        self.__logger.info('Drive to %s\n' % str(target))
 
         sleep_interval = 0.5
 
@@ -152,6 +167,7 @@ class DriveToPoint(object):
             left, right = int(left), int(right)
             self.__roboclaw_proxy.send_motors_command(left, right, left, right)
 
+            sys.stderr.write('drive:sleep %f\n' % sleep_interval)
             time.sleep(sleep_interval)
 
             old_location = location
@@ -163,7 +179,7 @@ class DriveToPoint(object):
 
         self.__stop()
 
-        sys.stderr.write('Target %s reached\n' % str(target))
+        self.__logger.info('Target %s reached\n' % str(target))
 
     def __low_pass(self, left, right):
         self.__old_left += 0.5 * (left - self.__old_left)
