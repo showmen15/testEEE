@@ -76,7 +76,6 @@ class DriveToPoint(object):
     def location_loop(self):
         sleep_interval = 0.5
         last_location = self.__location_proxy.get_location()
-        last_location.wait_available(0)
         last_location = last_location.get_location()
 
         time.sleep(sleep_interval)
