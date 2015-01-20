@@ -102,9 +102,10 @@ class DriveToPoint(object):
             self.__set_current_location(current_location)
             location_interval = current_location[DriveToPoint.TIMESTAMP_FIELD] - \
                                 last_location[DriveToPoint.TIMESTAMP_FIELD]
+            location_interval /= 1000.0
             last_location = current_location
             sleep_interval += 0.5 * (location_interval - sleep_interval)
-            sleep_interval = sleep_interval if sleep_interval > 0.5 else 0.5
+            sleep_interval = sleep_interval if sleep_interval > 0.2 else 0.2
             sys.stderr.write('local:sleep %f\n' % sleep_interval)
             time.sleep(sleep_interval)
 
@@ -174,8 +175,9 @@ class DriveToPoint(object):
             location = self.__get_current_location()
 
             location_interval = location[DriveToPoint.TIMESTAMP_FIELD] - old_location[DriveToPoint.TIMESTAMP_FIELD]
+            location_interval /= 1000.0
             sleep_interval += 0.5 * (location_interval - sleep_interval)
-            sleep_interval = sleep_interval if sleep_interval > 0.5 else 0.5
+            sleep_interval = sleep_interval if sleep_interval > 0.2 else 0.2
 
         self.__stop()
 
