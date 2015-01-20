@@ -1,7 +1,6 @@
 import struct
 
 from amberdriver.common import drivermsg_pb2
-
 from amberdriver.common.amber_pipes import AmberPipes, LEN_SIZE
 
 
@@ -16,12 +15,6 @@ class AmberPipesTestCase(unittest.TestCase):
         self.mocked_stdin, self.mocked_stdout = mock.Mock(), mock.Mock()
         self.mocked_message_handler = mock.Mock()
         self.amber_pipes = AmberPipes(self.mocked_message_handler, self.mocked_stdin, self.mocked_stdout)
-
-
-class TerminateTestCase(AmberPipesTestCase):
-    def runTest(self):
-        self.amber_pipes.terminate()
-        self.assertEqual(self.amber_pipes.is_alive(), False)
 
 
 class ReadFromPipeTestCase(AmberPipesTestCase):

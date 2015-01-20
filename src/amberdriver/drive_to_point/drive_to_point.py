@@ -9,11 +9,7 @@ __author__ = 'paoolo'
 
 class DriveToPoint(object):
     MAX_SPEED = 300
-    ROBO_WIDTH = 280.0
     DRIVING_ALPHA = 2.0
-    LOCATION_X_ENUM = 0
-    LOCATION_Y_ENUM = 1
-    LOCATION_ALPHA_ENUM = 3
 
     def __init__(self, roboclaw_proxy, location_proxy):
         self.__roboclaw_proxy = roboclaw_proxy
@@ -116,8 +112,8 @@ class DriveToPoint(object):
         location = self.__location_proxy.get_location().get_location()
         self.__set_current_location(location)
 
-        while not DriveToPoint.__target_reached(location, target):
-            left, right = DriveToPoint.__compute_speed(location, target)
+        while not DriveToPoint.target_reached(location, target):
+            left, right = DriveToPoint.compute_speed(location, target)
             left, right = int(left), int(right)
 
             self.__roboclaw_proxy.send_motors_command(left, right, left, right)
@@ -129,8 +125,11 @@ class DriveToPoint(object):
 
         sys.stderr.write('Target %s reached\n' % str(target))
 
+    def __stop(self):
+        self.__roboclaw_proxy.send_motors_command(0, 0, 0, 0)
+
     @staticmethod
-    def __target_reached(location, target):
+    def target_reached(location, target):
         target_x, target_y, target_radius = target
         location_x, location_y, _, _, _ = location
 
@@ -140,28 +139,25 @@ class DriveToPoint(object):
         return math.pow(diff_x, 2) + math.pow(diff_y, 2) < math.pow(target_radius, 2)
 
     @staticmethod
-    def __compute_speed(location, target):
+    def compute_speed(location, target):
         target_x, target_y, target_radius = target
 
         current_x, current_y, _, current_angle, _ = location
-        current_angle = DriveToPoint.__normalize_angle(current_angle)
+        current_angle = DriveToPoint.normalize_angle(current_angle)
 
         target_angle = math.atan2(target_y - current_y, target_x - current_x)
         drive_angle = target_angle - current_angle
-        drive_angle = DriveToPoint.__normalize_angle(drive_angle)
+        drive_angle = DriveToPoint.normalize_angle(drive_angle)
 
         drive_angle = -drive_angle  # mirrored map
 
-        left = DriveToPoint.MAX_SPEED - DriveToPoint.__compute_change(drive_angle)
-        right = DriveToPoint.MAX_SPEED + DriveToPoint.__compute_change(drive_angle)
+        left = DriveToPoint.MAX_SPEED - DriveToPoint.compute_change(drive_angle)
+        right = DriveToPoint.MAX_SPEED + DriveToPoint.compute_change(drive_angle)
 
         return left, right
 
-    def __stop(self):
-        self.__roboclaw_proxy.send_motors_command(0, 0, 0, 0)
-
     @staticmethod
-    def __normalize_angle(angle):
+    def normalize_angle(angle):
         if angle < -math.pi:
             angle += 2 * math.pi
         elif angle > math.pi:
@@ -169,5 +165,5 @@ class DriveToPoint(object):
         return angle
 
     @staticmethod
-    def __compute_change(drive_angle):
+    def compute_change(drive_angle):
         return DriveToPoint.DRIVING_ALPHA * drive_angle / math.pi * DriveToPoint.MAX_SPEED

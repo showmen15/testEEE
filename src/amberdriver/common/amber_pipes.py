@@ -7,7 +7,7 @@ import signal
 
 import os
 
-from amberdriver.common import drivermsg_pb2, runtime
+from amberdriver.common import drivermsg_pb2
 
 
 __author__ = 'paoolo'
@@ -25,29 +25,23 @@ class AmberPipes(object):
         self.__pipe_in, self.__pipe_out = pipe_in, pipe_out
         self.__alive = True
 
-        runtime.add_shutdown_hook(self.terminate)
-
         self.__write_lock = threading.Lock()
         self.__logger = logging.getLogger(LOGGER_NAME)
 
     def __call__(self, *args, **kwargs):
         self.__logger.info('Pipes thread started.')
-        self.__run_process()
+        self.__amber_pipes_loop()
 
     def is_alive(self):
         return self.__alive
 
-    def terminate(self):
-        self.__logger.warning('amber_pipes: terminate')
-
-        self.__alive = False
-
-    def __run_process(self):
+    def __amber_pipes_loop(self):
         try:
             while self.__alive:
                 header, message = self.__read_header_and_message_from_pipe()
                 self.__handle_header_and_message(header, message)
         except struct.error:
+            self.__logger.warning('amber_pipes: stop due to error on pipe with mediator')
             self.__alive = False
             os.kill(os.getpid(), signal.SIGTERM)
 

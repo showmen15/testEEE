@@ -8,7 +8,6 @@ from amberclient.location.location import LocationProxy
 from amberclient.roboclaw.roboclaw import RoboclawProxy
 import os
 
-from amberdriver.common import runtime
 from amberdriver.common.message_handler import MessageHandler
 from amberdriver.drive_to_point import drive_to_point_pb2
 from amberdriver.drive_to_point.drive_to_point import DriveToPoint
@@ -25,13 +24,10 @@ LOGGER_NAME = 'DriveToPointController'
 
 
 class DriveToPointController(MessageHandler):
-    def __init__(self, pipe_in, pipe_out, drive_to_point):
-        super(DriveToPointController, self).__init__(pipe_in, pipe_out)
-        self.__drive_to_point = drive_to_point
-
+    def __init__(self, pipe_in, pipe_out, driver):
+        MessageHandler.__init__(self, pipe_in, pipe_out)
+        self.__drive_to_point = driver
         self.__logger = logging.getLogger(LOGGER_NAME)
-
-        runtime.add_shutdown_hook(self.terminate)
 
     def handle_data_message(self, header, message):
         if message.HasExtension(drive_to_point_pb2.setTargets):
