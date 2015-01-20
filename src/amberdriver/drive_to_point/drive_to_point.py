@@ -16,7 +16,7 @@ class DriveToPoint(object):
         self.__roboclaw_proxy = roboclaw_proxy
         self.__location_proxy = location_proxy
 
-        self.__next_targets, self.__visited_targets, self.__current_location = [], [], (0, 0, 0, 0, 0)
+        self.__next_targets, self.__visited_targets, self.__current_location = [], [], None
         self.__targets_and_location_lock = threading.Condition()
 
         self.__is_active = True
@@ -75,6 +75,10 @@ class DriveToPoint(object):
 
     def location_loop(self):
         sleep_interval = 0.5
+
+        # FIXME(paoolo): change to wait for first location
+        time.sleep(sleep_interval)
+
         last_location = self.__location_proxy.get_location()
         last_location = last_location.get_location()
 
@@ -86,6 +90,7 @@ class DriveToPoint(object):
                                 last_location[DriveToPoint.TIMESTAMP_FIELD]
             last_location = current_location
             sleep_interval += 0.5 * (location_interval - sleep_interval)
+            sleep_interval = sleep_interval if sleep_interval > 0.5 else 0.5
             time.sleep(sleep_interval)
 
     def is_active(self):
@@ -137,6 +142,9 @@ class DriveToPoint(object):
         sleep_interval = 0.5
 
         location = self.__get_current_location()
+        while location is None:
+            time.sleep(sleep_interval)
+            location = self.__get_current_location()
 
         while not DriveToPoint.target_reached(location, target):
             left, right = DriveToPoint.compute_speed(location, target)
@@ -149,8 +157,9 @@ class DriveToPoint(object):
             old_location = location
             location = self.__get_current_location()
 
-            location_interval = old_location[DriveToPoint.TIMESTAMP_FIELD] - location[DriveToPoint.TIMESTAMP_FIELD]
+            location_interval = location[DriveToPoint.TIMESTAMP_FIELD] - old_location[DriveToPoint.TIMESTAMP_FIELD]
             sleep_interval += 0.5 * (location_interval - sleep_interval)
+            sleep_interval = sleep_interval if sleep_interval > 0.5 else 0.5
 
         self.__stop()
 
@@ -217,7 +226,7 @@ class DriveToPoint(object):
     @staticmethod
     def location_trust(location):
         _, _, location_probability, _, location_timestamp = location
-        location_timestamp /= 1000000
+        location_timestamp /= 1000
         current_timestamp = time.time()
         return location_probability * math.pow(2, location_timestamp - current_timestamp)
 
