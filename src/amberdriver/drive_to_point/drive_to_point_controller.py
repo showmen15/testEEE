@@ -143,7 +143,8 @@ class DriveToPointController(MessageHandler):
         self.__logger.debug('Unsubscribe action, nothing to do...')
 
     def handle_client_died_message(self, client_id):
-        self.__logger.info('Client %d died, nothing to do...' % client_id)
+        self.__logger.info('Client %d died, stop!', client_id)
+        self.__drive_to_point.set_targets([])
 
     def terminate(self):
         self.__logger.warning('drive_to_point: terminate')

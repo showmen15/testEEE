@@ -3,7 +3,6 @@ import logging.config
 import threading
 import time
 import math
-import sys
 
 import os
 
@@ -24,7 +23,7 @@ def bound_sleep(value):
 
 
 class DriveToPoint(object):
-    MAX_SPEED = 250
+    MAX_SPEED = 300
     DRIVING_ALPHA = 3.0  # cut at 60st
     TIMESTAMP_FIELD = 4
 
@@ -93,9 +92,6 @@ class DriveToPoint(object):
     def location_loop(self):
         sleep_interval = 0.5
 
-        # FIXME(paoolo): change to wait for first location
-        time.sleep(sleep_interval)
-
         last_location = self.__location_proxy.get_location()
         last_location = last_location.get_location()
 
@@ -104,14 +100,19 @@ class DriveToPoint(object):
             current_location = self.__location_proxy.get_location()
             current_location = current_location.get_location()
             self.__set_current_location(current_location)
-            location_interval = current_location[DriveToPoint.TIMESTAMP_FIELD] - \
-                                last_location[DriveToPoint.TIMESTAMP_FIELD]
-            location_interval /= 1000.0
+
+            try:
+                location_interval = current_location[DriveToPoint.TIMESTAMP_FIELD] - \
+                                    last_location[DriveToPoint.TIMESTAMP_FIELD]
+                location_interval /= 1000.0
+                if location_interval < 2.0:
+                    sleep_interval += 0.5 * (location_interval - sleep_interval)
+                    sleep_interval = bound_sleep(sleep_interval)
+            except TypeError:
+                pass
+
             last_location = current_location
-            if location_interval < 2.0:
-                sleep_interval += 0.5 * (location_interval - sleep_interval)
-                sleep_interval = bound_sleep(sleep_interval)
-            sys.stderr.write('local:sleep %f\n' % sleep_interval)
+
             time.sleep(sleep_interval)
 
     def is_active(self):
@@ -158,7 +159,7 @@ class DriveToPoint(object):
             self.__is_active_lock.release()
 
     def __drive_to(self, target):
-        self.__logger.info('Drive to %s\n' % str(target))
+        self.__logger.info('Drive to %s', str(target))
 
         sleep_interval = 0.5
 
@@ -173,21 +174,24 @@ class DriveToPoint(object):
             left, right = int(left), int(right)
             self.__roboclaw_proxy.send_motors_command(left, right, left, right)
 
-            sys.stderr.write('drive:sleep %f\n' % sleep_interval)
             time.sleep(sleep_interval)
 
             old_location = location
             location = self.__get_current_location()
 
-            location_interval = location[DriveToPoint.TIMESTAMP_FIELD] - old_location[DriveToPoint.TIMESTAMP_FIELD]
-            location_interval /= 1000.0
-            if location_interval < 2.0:
-                sleep_interval += 0.5 * (location_interval - sleep_interval)
-                sleep_interval = bound_sleep(sleep_interval)
+            try:
+                location_interval = location[DriveToPoint.TIMESTAMP_FIELD] - \
+                                    old_location[DriveToPoint.TIMESTAMP_FIELD]
+                location_interval /= 1000.0
+                if location_interval < 2.0:
+                    sleep_interval += 0.5 * (location_interval - sleep_interval)
+                    sleep_interval = bound_sleep(sleep_interval)
+            except TypeError:
+                pass
 
         self.__stop()
 
-        self.__logger.info('Target %s reached\n' % str(target))
+        self.__logger.info('Target %s reached', str(target))
 
     def __low_pass(self, left, right):
         self.__old_left += 0.5 * (left - self.__old_left)
@@ -202,16 +206,25 @@ class DriveToPoint(object):
         target_x, target_y, target_radius = target
         location_x, location_y, _, _, _ = location
 
-        diff_x = location_x - target_x
-        diff_y = location_y - target_y
+        try:
+            diff_x = location_x - target_x
+            diff_y = location_y - target_y
 
-        return math.pow(diff_x, 2) + math.pow(diff_y, 2) < math.pow(target_radius, 2)
+            return math.pow(diff_x, 2) + math.pow(diff_y, 2) < math.pow(target_radius, 2)
+
+        except TypeError:
+            return False
 
     @staticmethod
     def compute_speed(location, target):
         target_x, target_y, target_radius = target
 
         location_x, location_y, _, location_angle, _ = location
+
+        if location_x is None or location_y is None or location_angle is None:
+            # sth wrong, stop!
+            return 0.0, 0.0
+
         location_trust = DriveToPoint.location_trust(location)
         location_angle = DriveToPoint.normalize_angle(location_angle)
 
@@ -230,8 +243,8 @@ class DriveToPoint(object):
 
         elif abs(drive_angle) > math.pi / 3:  # 60st
             # rotate in place
-            left = DriveToPoint.MAX_SPEED * 2 / (6 * drive_angle / math.pi - 1)
-            right = -DriveToPoint.MAX_SPEED * (6 * drive_angle / math.pi - 2)
+            left = -DriveToPoint.MAX_SPEED
+            right = DriveToPoint.MAX_SPEED
             if drive_angle < 0:
                 left, right = right, left
 
@@ -250,9 +263,10 @@ class DriveToPoint(object):
     @staticmethod
     def location_trust(location):
         _, _, location_probability, _, location_timestamp = location
-        location_timestamp /= 1000
+        location_timestamp /= 1000.0
         current_timestamp = time.time()
-        return location_probability * math.pow(2, location_timestamp - current_timestamp)
+        trust_level = math.pow(2, location_timestamp - current_timestamp)
+        return location_probability
 
     @staticmethod
     def normalize_angle(angle):
