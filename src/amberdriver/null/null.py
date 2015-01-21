@@ -1,6 +1,6 @@
 import sys
 
-from amberdriver.common.amber_pipes import MessageHandler
+from amberdriver.common.message_handler import MessageHandler
 
 
 __author__ = 'paoolo'

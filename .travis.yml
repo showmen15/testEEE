@@ -3,7 +3,8 @@ python:
   - 2.7
 install:
   - pip install -r requirements.txt
-  - pip install nose pylint
+  - pip install coveralls
 script:
-  - PYTHONPATH=src pylint amber
-  - python setup.py test
+  - PYTHONPATH=src coverage run --source=amberdriver setup.py test
+after_success:
+  - coveralls

@@ -11,7 +11,7 @@ import os
 
 from amberdriver.collision_avoidance import collision_avoidance_pb2
 from amberdriver.common import runtime
-from amberdriver.common.amber_pipes import MessageHandler
+from amberdriver.common.message_handler import MessageHandler
 from amberdriver.tools import config
 
 

@@ -3,3 +3,4 @@ bitstring
 pyserial
 gprof2dot
 amber-python-clients
+mock
