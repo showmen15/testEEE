@@ -320,14 +320,3 @@ class AddTargetToVisitedTestCase(TargetAndLocationTestCase):
         self.assertTrue(self.mocked_next_target in self.mocked_visited_targets)
         self.mocked_lock.acquire.assert_called_once_with()
         self.mocked_lock.release.assert_called_once_with()
-
-
-class DriveTestCase(DriveToPointTestCase):
-    def runTest(self):
-        target_x, target_y, target_radius = float(), float(), float()
-        target = target_x, target_y, target_radius
-        location_x, location_y, location_angle = float(), float(), float()
-        location = location_x, location_y, None, location_angle, None
-        self.mocked_location_proxy.get_location().get_location = mock.Mock(return_value=location)
-        DriveToPoint.target_reached = mock.Mock(return_value=True)
-        self.drive_to_point._DriveToPoint__drive_to(target)
