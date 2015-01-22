@@ -253,7 +253,7 @@ class TargetAndLocationTestCase(DriveToPointTestCase):
 
 class SetTargetsTestCase(TargetAndLocationTestCase):
     def runTest(self):
-        targets = mock.Mock()
+        targets = list()
         self.drive_to_point.set_targets(targets)
         self.assertEqual(self.drive_to_point._DriveToPoint__next_targets, targets)
         self.assertEqual(self.drive_to_point._DriveToPoint__visited_targets, [])
