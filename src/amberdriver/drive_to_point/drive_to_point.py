@@ -18,8 +18,8 @@ config.add_config_ini('%s/drive_to_point.ini' % pwd)
 LOGGER_NAME = 'DriveToPoint'
 
 
-def bound_sleep(value):
-    return value if 0.2 < value < 2.0 else 2.0 if value > 2.0 else 0.2
+def bound_sleep_interval(value, min_value=0.2, max_value=2.0):
+    return value if min_value < value < max_value else max_value if value > max_value else min_value
 
 
 class DriveToPoint(object):
@@ -81,17 +81,6 @@ class DriveToPoint(object):
         finally:
             self.__targets_and_location_lock.release()
 
-    def driving_loop(self):
-        while self.is_active():
-            try:
-                while self.is_active():
-                    target = self.__get_next_target()
-                    self.__drive_to(target)
-                    self.__add_target_to_visited(target)
-            except IndexError:
-                self.__stop()
-            time.sleep(0.1)
-
     def location_loop(self):
         sleep_interval = 0.5
 
@@ -110,13 +99,24 @@ class DriveToPoint(object):
                 location_interval /= 1000.0
                 if location_interval < 2.0:
                     sleep_interval += 0.5 * (location_interval - sleep_interval)
-                    sleep_interval = bound_sleep(sleep_interval)
+                    sleep_interval = bound_sleep_interval(sleep_interval)
             except TypeError:
                 pass
 
             last_location = current_location
 
             time.sleep(sleep_interval)
+
+    def driving_loop(self):
+        while self.is_active():
+            try:
+                while self.is_active():
+                    target = self.__get_next_target()
+                    self.__drive_to(target)
+                    self.__add_target_to_visited(target)
+            except IndexError:
+                self.__stop()
+            time.sleep(0.1)
 
     def is_active(self):
         try:
@@ -191,7 +191,7 @@ class DriveToPoint(object):
                 location_interval /= 1000.0
                 if location_interval < 2.0:
                     sleep_interval += 0.5 * (location_interval - sleep_interval)
-                    sleep_interval = bound_sleep(sleep_interval)
+                    sleep_interval = bound_sleep_interval(sleep_interval)
             except TypeError:
                 pass
 
