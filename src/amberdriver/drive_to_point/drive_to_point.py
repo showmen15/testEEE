@@ -37,6 +37,8 @@ class DriveToPoint(object):
         self.__is_active = True
         self.__is_active_lock = threading.Condition()
 
+        self.__drive_allowed = False
+
         self.__old_left, self.__old_right = 0.0, 0.0
         self.__logger = logging.getLogger(LOGGER_NAME)
 
@@ -44,6 +46,7 @@ class DriveToPoint(object):
         try:
             self.__targets_and_location_lock.acquire()
             self.__next_targets = targets
+            self.__drive_allowed = len(targets) > 0
             self.__visited_targets = []
         finally:
             self.__targets_and_location_lock.release()
@@ -146,8 +149,11 @@ class DriveToPoint(object):
     def __add_target_to_visited(self, target):
         try:
             self.__targets_and_location_lock.acquire()
-            self.__next_targets.remove(target)
-            self.__visited_targets.append(target)
+            try:
+                self.__next_targets.remove(target)
+                self.__visited_targets.append(target)
+            except ValueError:
+                self.__logger.warning('target %s not in targets list, dropping..', str(target))
         finally:
             self.__targets_and_location_lock.release()
 
@@ -168,7 +174,7 @@ class DriveToPoint(object):
             time.sleep(sleep_interval)
             location = self.__get_current_location()
 
-        while not DriveToPoint.target_reached(location, target):
+        while not DriveToPoint.target_reached(location, target) and self.__drive_allowed:
             left, right = DriveToPoint.compute_speed(location, target)
             left, right = self.__low_pass(left, right)
             left, right = int(left), int(right)
