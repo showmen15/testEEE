@@ -259,7 +259,7 @@ class DriveToPoint(object):
             left = DriveToPoint.MAX_SPEED - DriveToPoint.compute_change(drive_angle)
             right = DriveToPoint.MAX_SPEED + DriveToPoint.compute_change(drive_angle)
 
-        if location_trust < 0.9:
+        if location_trust < 0.8:
             # control situation
             left *= location_trust
             right *= location_trust
@@ -271,7 +271,7 @@ class DriveToPoint(object):
         _, _, location_probability, _, location_timestamp = location
         location_timestamp /= 1000.0
         current_timestamp = time.time()
-        trust_level = math.pow(2, location_timestamp - current_timestamp)
+        trust_level = math.pow(4.0 / 3.0, location_timestamp - current_timestamp)
         return location_probability * trust_level
 
     @staticmethod
