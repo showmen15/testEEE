@@ -259,7 +259,7 @@ class DriveToPoint(object):
             left = DriveToPoint.MAX_SPEED - DriveToPoint.compute_change(drive_angle)
             right = DriveToPoint.MAX_SPEED + DriveToPoint.compute_change(drive_angle)
 
-        if location_trust < 0.8:
+        if location_trust < 0.9:
             # control situation
             left *= location_trust
             right *= location_trust
@@ -272,7 +272,7 @@ class DriveToPoint(object):
         location_timestamp /= 1000.0
         current_timestamp = time.time()
         trust_level = math.pow(2, location_timestamp - current_timestamp)
-        return location_probability
+        return location_probability * trust_level
 
     @staticmethod
     def normalize_angle(angle):
