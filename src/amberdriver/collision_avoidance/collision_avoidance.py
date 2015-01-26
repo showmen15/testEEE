@@ -7,6 +7,7 @@ import time
 import os
 
 from amberdriver.tools import config
+import collision_avoidance_logic as logic
 
 
 __author__ = 'paoolo'
@@ -127,6 +128,8 @@ class CollisionAvoidance(object):
         while self.is_active():
             try:
                 self.__driving_lock.acquire()
+                # wait for new driving command or scan
+                # compute amendment for driving command
                 self.__roboclaw_proxy.send_motors_command(*self.__driving_speed)
                 current_command_timestamp = self.__driving_speed_timestamp
             finally:
@@ -153,3 +156,113 @@ class CollisionAvoidance(object):
             self.__is_active = False
         finally:
             self.__is_active_lock.release()
+
+    @staticmethod
+    def limit_due_to_distance(left, right, scan):
+        if left > 0 or right > 0:
+            current_angle = logic.get_angle(left, right, config.ROBO_WIDTH)
+            current_speed = logic.get_speed(left, right)
+
+            if scan is not None:
+                min_distance, _ = logic.get_min_distance(scan, current_angle,
+                                                         config.SCANNER_DIST_OFFSET, config.ANGLE_RANGE)
+
+                if min_distance is not None:
+                    soft_limit = logic.get_soft_limit(current_speed, config.MAX_SPEED,
+                                                      config.SOFT_LIMIT, config.HARD_LIMIT, config.DISTANCE_ALPHA)
+
+                    if config.HARD_LIMIT < min_distance < soft_limit:
+                        max_speed = logic.get_max_speed(min_distance, soft_limit, config.HARD_LIMIT, config.MAX_SPEED)
+                        if current_speed > max_speed:
+                            left, right = CollisionAvoidance.__calculate_new_left_right(left, right,
+                                                                                        max_speed, current_speed)
+
+                    elif min_distance <= config.HARD_LIMIT:
+                        left, right = 0, 0
+
+            else:
+                print 'distance: no scan!'
+                left, right = 0.0, 0.0
+
+        return left, right
+
+    @staticmethod
+    def __calculate_new_left_right(left, right, max_speed, current_speed):
+        if current_speed > 0:
+            divide = max_speed / current_speed
+            return left * divide, right * divide
+        else:
+            return left, right
+
+    @staticmethod
+    def limit_to_max_speed(left, right):
+        left = CollisionAvoidance.__limit_to_max_speed(left)
+        right = CollisionAvoidance.__limit_to_max_speed(right)
+
+        return left, right
+
+    @staticmethod
+    def __limit_to_max_speed(value):
+        max_speed = config.MAX_SPEED
+        return max_speed if value > max_speed \
+            else -max_speed if value < -max_speed \
+            else value
+
+    @staticmethod
+    def limit_due_to_reverse_direction(left, right):
+        max_speed = config.MAX_SPEED
+
+        if (left + right) / 2.0 < 0:
+
+            if left < 0 and right < 0:
+                left = left if left > -max_speed else -max_speed
+                right = right if right > -max_speed else -max_speed
+
+            elif left < 0 < right:
+                right = right if right < max_speed else max_speed
+                left = -right
+
+            elif left > 0 > right:
+                left = left if left < max_speed else max_speed
+                right = -left
+
+        return left, right
+
+    @staticmethod
+    def rodeo_swap(left, right, scan):
+        current_angle = logic.get_angle(left, right, config.ROBO_WIDTH)
+        current_speed = logic.get_speed(left, right)
+
+        min_distance, min_distance_angle = logic.get_min_distance(scan, current_angle,
+                                                                  config.SCANNER_DIST_OFFSET, config.ANGLE_RANGE)
+
+        if min_distance is not None:
+            soft_limit = logic.get_soft_limit(current_speed, config.MAX_SPEED,
+                                              config.SOFT_LIMIT, config.HARD_LIMIT, config.RODEO_SWAP_ALPHA)
+
+            if min_distance < soft_limit:
+                if min_distance_angle < current_angle:
+                    if left > 0:
+                        left = left if left < config.MAX_ROTATING_SPEED else config.MAX_ROTATING_SPEED
+                        right = -left  # FIXME(paoolo)
+                    else:
+                        if right > 0:
+                            _t = left
+                            left = right
+                            right = _t
+
+                else:
+                    if right > 0:
+                        right = right if right < config.MAX_ROTATING_SPEED else config.MAX_ROTATING_SPEED
+                        left = -right  # FIXME(paoolo)
+                    else:
+                        if left > 0:
+                            _t = right
+                            right = left
+                            left = _t
+
+            elif min_distance < soft_limit * 0.4:
+                left = -left
+                right = -right
+
+        return left, right
