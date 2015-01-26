@@ -6,7 +6,6 @@ import threading
 from amberclient.common.amber_client import AmberClient
 from amberclient.hokuyo.hokuyo import HokuyoProxy
 from amberclient.roboclaw.roboclaw import RoboclawProxy
-
 import os
 
 from amberdriver.collision_avoidance import collision_avoidance_pb2
@@ -34,12 +33,6 @@ class CollisionAvoidanceController(MessageHandler):
         if message.HasExtension(collision_avoidance_pb2.setSpeed):
             self.__handle_set_speed(header, message)
 
-        elif message.HasExtension(collision_avoidance_pb2.getSpeed):
-            self.__handle_get_speed(header, message)
-
-        elif message.HasExtension(collision_avoidance_pb2.getSpeedAndScan):
-            self.__handle_get_speed_and_scan(header, message)
-
         elif message.HasExtension(collision_avoidance_pb2.getScan):
             self.__handle_get_scan(header, message)
 
@@ -49,17 +42,8 @@ class CollisionAvoidanceController(MessageHandler):
     def __handle_set_speed(self, header, message):
         self.__logger.debug('Set speed')
         motors_speed = message.Extensions[collision_avoidance_pb2.motorsSpeed]
-        self.__driver.drive(motors_speed.frontLeftSpeed, motors_speed.frontRightSpeed,
-                            motors_speed.rearLeftSpeed, motors_speed.rearRightSpeed)
-
-    @staticmethod
-    def __fill_response_with_speed(speed, response_message):
-        front_left, front_right, rear_left, rear_right = speed
-        s = response_message.Extensions[collision_avoidance_pb2.motorsSpeed]
-        s.frontLeftSpeed = int(front_left)
-        s.frontRightSpeed = int(front_right)
-        s.rearLeftSpeed = int(rear_left)
-        s.rearRightSpeed = int(rear_right)
+        self.__driver.set_speed(motors_speed.frontLeftSpeed, motors_speed.frontRightSpeed,
+                                motors_speed.rearLeftSpeed, motors_speed.rearRightSpeed)
 
     @staticmethod
     def __fill_response_with_scan(scan, response_message):
@@ -68,29 +52,6 @@ class CollisionAvoidanceController(MessageHandler):
         distances = map(lambda point: point[1], scan)
         s.angles.extend(angles)
         s.distances.extend(distances)
-
-    @MessageHandler.handle_and_response
-    def __handle_get_speed(self, received_header, received_message, response_header, response_message):
-        self.__logger.debug('Get speed')
-        speed = self.__driver.get_speed()
-
-        self.__fill_response_with_speed(speed, response_message)
-
-        response_message.Extensions[collision_avoidance_pb2.getSpeed] = True
-
-        return response_header, response_message
-
-    @MessageHandler.handle_and_response
-    def __handle_get_speed_and_scan(self, received_header, received_message, response_header, response_message):
-        self.__logger.debug('Get speed and scan')
-        speed, scan = self.__driver.get_speed_and_scan()
-
-        self.__fill_response_with_speed(speed, response_message)
-        self.__fill_response_with_scan(scan, response_message)
-
-        response_message.Extensions[collision_avoidance_pb2.getSpeedAndScan] = True
-
-        return response_header, response_message
 
     @MessageHandler.handle_and_response
     def __handle_get_scan(self, received_header, received_message, response_header, response_message):
@@ -129,9 +90,6 @@ if __name__ == '__main__':
 
     scanning_thread = threading.Thread(target=collision_avoidance.scanning_loop, name="scanning-thread")
     scanning_thread.start()
-
-    measuring_thread = threading.Thread(target=collision_avoidance.measuring_loop, name="measuring-thread")
-    measuring_thread.start()
 
     driving_thread = threading.Thread(target=collision_avoidance.driving_loop, name="driving-thread")
     driving_thread.start()
