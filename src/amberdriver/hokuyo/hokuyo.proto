@@ -8,7 +8,7 @@ extend amber.DriverMsg {
     optional bool get_single_scan = 40;
     optional Scan scan = 41;
     optional bool enable_scanning = 42;
-    optional float timestamp = 49;
+    optional int64 timestamp = 49;
 }
 
 message Scan {

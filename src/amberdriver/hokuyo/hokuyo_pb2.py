@@ -19,7 +19,7 @@ from amberdriver.common import drivermsg_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='hokuyo.proto',
   package='amber.hokuyo_proto',
-  serialized_pb=_b('\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"1\n\x04Scan\x12\x12\n\x06\x61ngles\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tdistances\x18\x02 \x03(\x05\x42\x02\x10\x01:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18( \x01(\x08:8\n\x04scan\x12\x10.amber.DriverMsg\x18) \x01(\x0b\x32\x18.amber.hokuyo_proto.Scan:)\n\x0f\x65nable_scanning\x12\x10.amber.DriverMsg\x18* \x01(\x08:#\n\ttimestamp\x12\x10.amber.DriverMsg\x18\x31 \x01(\x02\x42,\n\x1dpl.edu.agh.amber.hokuyo.protoB\x0bHokuyoProto')
+  serialized_pb=_b('\n\x0chokuyo.proto\x12\x12\x61mber.hokuyo_proto\x1a\x0f\x64rivermsg.proto\"1\n\x04Scan\x12\x12\n\x06\x61ngles\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tdistances\x18\x02 \x03(\x05\x42\x02\x10\x01:)\n\x0fget_single_scan\x12\x10.amber.DriverMsg\x18( \x01(\x08:8\n\x04scan\x12\x10.amber.DriverMsg\x18) \x01(\x0b\x32\x18.amber.hokuyo_proto.Scan:)\n\x0f\x65nable_scanning\x12\x10.amber.DriverMsg\x18* \x01(\x08:#\n\ttimestamp\x12\x10.amber.DriverMsg\x18\x31 \x01(\x03\x42,\n\x1dpl.edu.agh.amber.hokuyo.protoB\x0bHokuyoProto')
   ,
   dependencies=[drivermsg_pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -52,7 +52,7 @@ enable_scanning = _descriptor.FieldDescriptor(
 TIMESTAMP_FIELD_NUMBER = 49
 timestamp = _descriptor.FieldDescriptor(
   name='timestamp', full_name='amber.hokuyo_proto.timestamp', index=3,
-  number=49, type=2, cpp_type=6, label=1,
+  number=49, type=3, cpp_type=2, label=1,
   has_default_value=False, default_value=0,
   message_type=None, enum_type=None, containing_type=None,
   is_extension=True, extension_scope=None,

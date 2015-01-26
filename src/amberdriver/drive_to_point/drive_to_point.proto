@@ -27,7 +27,7 @@ message Location {
     optional double y = 2;
     optional double p = 3;
     optional double alfa = 4;
-    optional double timeStamp = 5;
+    optional int64 timeStamp = 5;
 }
 
 message Configuration {
