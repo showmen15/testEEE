@@ -198,8 +198,6 @@ class DriveToPoint(object):
             except TypeError:
                 pass
 
-        self.__stop()
-
         self.__logger.info('Target %s reached', str(target))
 
     def __low_pass(self, left, right):
