@@ -5,7 +5,6 @@ import threading
 import time
 
 import os
-
 import serial
 
 from amberdriver.common import runtime, drivermsg_pb2
@@ -151,7 +150,7 @@ class HokuyoController(MessageHandler):
 
     def __get_scan_now(self):
         scan = self.__hokuyo.get_single_scan()
-        timestamp = time.time()
+        timestamp = int(time.time() * 1000.0)
         angles, distances = self.__parse_scan(scan)
         self.__set_scan(angles, distances, timestamp)
         return angles, distances, timestamp
