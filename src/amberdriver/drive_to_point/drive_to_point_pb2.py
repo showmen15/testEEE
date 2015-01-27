@@ -19,7 +19,7 @@ from amberdriver.common import drivermsg_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='drive_to_point.proto',
   package='amber.drive_to_point_proto',
-  serialized_pb=_b('\n\x14\x64rive_to_point.proto\x12\x1a\x61mber.drive_to_point_proto\x1a\x0f\x64rivermsg.proto\"N\n\x07Targets\x12\x16\n\nlongitudes\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tlatitudes\x18\x02 \x03(\x01\x42\x02\x10\x01\x12\x14\n\x08radiuses\x18\x03 \x03(\x01\x42\x02\x10\x01\"L\n\x08Location\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01p\x18\x03 \x01(\x01\x12\x0c\n\x04\x61lfa\x18\x04 \x01(\x01\x12\x11\n\ttimeStamp\x18\x05 \x01(\x01\"!\n\rConfiguration\x12\x10\n\x08maxSpeed\x18\x01 \x01(\x01:$\n\nsetTargets\x12\x10.amber.DriverMsg\x18P \x01(\x08:\'\n\rgetNextTarget\x12\x10.amber.DriverMsg\x18Q \x01(\x08:(\n\x0egetNextTargets\x12\x10.amber.DriverMsg\x18R \x01(\x08:*\n\x10getVisitedTarget\x12\x10.amber.DriverMsg\x18S \x01(\x08:+\n\x11getVisitedTargets\x12\x10.amber.DriverMsg\x18T \x01(\x08:F\n\x07targets\x12\x10.amber.DriverMsg\x18U \x01(\x0b\x32#.amber.drive_to_point_proto.Targets:H\n\x08location\x12\x10.amber.DriverMsg\x18V \x01(\x0b\x32$.amber.drive_to_point_proto.Location:*\n\x10getConfiguration\x12\x10.amber.DriverMsg\x18W \x01(\x08:R\n\rconfiguration\x12\x10.amber.DriverMsg\x18X \x01(\x0b\x32).amber.drive_to_point_proto.ConfigurationB8\n#pl.edu.agh.amber.drivetopoint.protoB\x11\x44riveToPointProto')
+  serialized_pb=_b('\n\x14\x64rive_to_point.proto\x12\x1a\x61mber.drive_to_point_proto\x1a\x0f\x64rivermsg.proto\"N\n\x07Targets\x12\x16\n\nlongitudes\x18\x01 \x03(\x01\x42\x02\x10\x01\x12\x15\n\tlatitudes\x18\x02 \x03(\x01\x42\x02\x10\x01\x12\x14\n\x08radiuses\x18\x03 \x03(\x01\x42\x02\x10\x01\"L\n\x08Location\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01p\x18\x03 \x01(\x01\x12\x0c\n\x04\x61lfa\x18\x04 \x01(\x01\x12\x11\n\ttimeStamp\x18\x05 \x01(\x03\"!\n\rConfiguration\x12\x10\n\x08maxSpeed\x18\x01 \x01(\x01:$\n\nsetTargets\x12\x10.amber.DriverMsg\x18P \x01(\x08:\'\n\rgetNextTarget\x12\x10.amber.DriverMsg\x18Q \x01(\x08:(\n\x0egetNextTargets\x12\x10.amber.DriverMsg\x18R \x01(\x08:*\n\x10getVisitedTarget\x12\x10.amber.DriverMsg\x18S \x01(\x08:+\n\x11getVisitedTargets\x12\x10.amber.DriverMsg\x18T \x01(\x08:F\n\x07targets\x12\x10.amber.DriverMsg\x18U \x01(\x0b\x32#.amber.drive_to_point_proto.Targets:H\n\x08location\x12\x10.amber.DriverMsg\x18V \x01(\x0b\x32$.amber.drive_to_point_proto.Location:*\n\x10getConfiguration\x12\x10.amber.DriverMsg\x18W \x01(\x08:R\n\rconfiguration\x12\x10.amber.DriverMsg\x18X \x01(\x0b\x32).amber.drive_to_point_proto.ConfigurationB8\n#pl.edu.agh.amber.drivetopoint.protoB\x11\x44riveToPointProto')
   ,
   dependencies=[drivermsg_pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -180,7 +180,7 @@ _LOCATION = _descriptor.Descriptor(
       options=None),
     _descriptor.FieldDescriptor(
       name='timeStamp', full_name='amber.drive_to_point_proto.Location.timeStamp', index=4,
-      number=5, type=1, cpp_type=5, label=1,
+      number=5, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,

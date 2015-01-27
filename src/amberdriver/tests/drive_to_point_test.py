@@ -88,7 +88,7 @@ class HandleGetNextTargetTestCase(DriveToPointControllerTestCase):
         header, message = mock.Mock(), mock.Mock()
         longitude, latitude, radius = mock.Mock(spec=int), mock.Mock(spec=int), mock.Mock(spec=int)
         x, y, p, alfa, time_stamp = mock.Mock(spec=int), mock.Mock(spec=int), mock.Mock(spec=int), \
-                                    mock.Mock(spec=int), mock.Mock(spec=int)
+                                    mock.Mock(spec=int), int()
         next_target, current_location = [longitude, latitude, radius], [x, y, p, alfa, time_stamp]
 
         message.synNum = int()
@@ -118,7 +118,7 @@ class HandleGetNextTargetsTestCase(DriveToPointControllerTestCase):
         header, message = mock.Mock(), mock.Mock()
         longitude, latitude, radius = mock.Mock(spec=int), mock.Mock(spec=int), mock.Mock(spec=int)
         x, y, p, alfa, time_stamp = mock.Mock(spec=int), mock.Mock(spec=int), mock.Mock(spec=int), \
-                                    mock.Mock(spec=int), mock.Mock(spec=int)
+                                    mock.Mock(spec=int), int()
         next_targets, current_location = [(longitude, latitude, radius)], [x, y, p, alfa, time_stamp]
 
         message.synNum = int()
@@ -148,7 +148,7 @@ class HandleGetGetVisitedTargetTestCase(DriveToPointControllerTestCase):
         header, message = mock.Mock(), mock.Mock()
         longitude, latitude, radius = mock.Mock(spec=int), mock.Mock(spec=int), mock.Mock(spec=int)
         x, y, p, alfa, time_stamp = mock.Mock(spec=int), mock.Mock(spec=int), mock.Mock(spec=int), \
-                                    mock.Mock(spec=int), mock.Mock(spec=int)
+                                    mock.Mock(spec=int), int()
         visited_target, current_location = [longitude, latitude, radius], [x, y, p, alfa, time_stamp]
 
         message.synNum = int()
@@ -178,7 +178,7 @@ class HandleGetVisitedTargetsTestCase(DriveToPointControllerTestCase):
         header, message = mock.Mock(), mock.Mock()
         longitude, latitude, radius = mock.Mock(spec=int), mock.Mock(spec=int), mock.Mock(spec=int)
         x, y, p, alfa, time_stamp = mock.Mock(spec=int), mock.Mock(spec=int), mock.Mock(spec=int), \
-                                    mock.Mock(spec=int), mock.Mock(spec=int)
+                                    mock.Mock(spec=int), int()
         visited_targets, current_location = [(longitude, latitude, radius)], [x, y, p, alfa, time_stamp]
 
         message.synNum = int()
