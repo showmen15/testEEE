@@ -47,7 +47,7 @@ class DriveToPoint(object):
         try:
             self.__targets_and_location_lock.acquire()
             self.__next_targets = targets
-            self.__next_targets_timestamp = int(time.time())
+            self.__next_targets_timestamp = time.time()
             self.__drive_allowed = len(targets) > 0
             self.__visited_targets = []
         finally:
@@ -166,7 +166,7 @@ class DriveToPoint(object):
         finally:
             self.__is_active_lock.release()
 
-    def __drive_to(self, target, list_timestamp):
+    def __drive_to(self, target, next_targets_timestamp):
         self.__logger.info('Drive to %s', str(target))
 
         sleep_interval = 0.5
@@ -177,7 +177,7 @@ class DriveToPoint(object):
             location = self.__get_current_location()
 
         while not DriveToPoint.target_reached(location, target) and self.__drive_allowed \
-                and self.__next_targets_timestamp == list_timestamp:
+                and not self.__next_targets_timestamp > next_targets_timestamp:
             left, right = DriveToPoint.compute_speed(location, target)
             left, right = self.__low_pass(left, right)
             left, right = int(left), int(right)
