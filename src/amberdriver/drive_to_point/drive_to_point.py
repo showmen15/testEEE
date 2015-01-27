@@ -32,6 +32,7 @@ class DriveToPoint(object):
         self.__location_proxy = location_proxy
 
         self.__next_targets, self.__visited_targets, self.__current_location = [], [], None
+        self.__next_targets_timestamp = 0.0
         self.__targets_and_location_lock = threading.Condition()
 
         self.__is_active = True
@@ -46,6 +47,7 @@ class DriveToPoint(object):
         try:
             self.__targets_and_location_lock.acquire()
             self.__next_targets = targets
+            self.__next_targets_timestamp = time.time()
             self.__drive_allowed = len(targets) > 0
             self.__visited_targets = []
         finally:
@@ -112,7 +114,7 @@ class DriveToPoint(object):
             try:
                 while self.is_active():
                     target = self.__get_next_target()
-                    self.__drive_to(target)
+                    self.__drive_to(target, self.__next_targets_timestamp)
                     self.__add_target_to_visited(target)
             except IndexError:
                 self.__stop()
@@ -164,7 +166,7 @@ class DriveToPoint(object):
         finally:
             self.__is_active_lock.release()
 
-    def __drive_to(self, target):
+    def __drive_to(self, target, next_targets_timestamp):
         self.__logger.info('Drive to %s', str(target))
 
         sleep_interval = 0.5
@@ -174,7 +176,8 @@ class DriveToPoint(object):
             time.sleep(sleep_interval)
             location = self.__get_current_location()
 
-        while not DriveToPoint.target_reached(location, target) and self.__drive_allowed:
+        while not DriveToPoint.target_reached(location, target) and self.__drive_allowed \
+                and not self.__next_targets_timestamp > next_targets_timestamp:
             left, right = DriveToPoint.compute_speed(location, target)
             left, right = self.__low_pass(left, right)
             left, right = int(left), int(right)
@@ -194,8 +197,6 @@ class DriveToPoint(object):
                     sleep_interval = bound_sleep_interval(sleep_interval)
             except TypeError:
                 pass
-
-        self.__stop()
 
         self.__logger.info('Target %s reached', str(target))
 
