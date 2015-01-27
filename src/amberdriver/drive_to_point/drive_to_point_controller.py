@@ -4,6 +4,7 @@ import sys
 import threading
 
 import os
+from amberclient.collision_avoidance.collision_avoidance_proxy import CollisionAvoidanceProxy
 from amberclient.common.amber_client import AmberClient
 from amberclient.location.location import LocationProxy
 from amberclient.roboclaw.roboclaw import RoboclawProxy
@@ -155,13 +156,17 @@ class DriveToPointController(MessageHandler):
 
 
 if __name__ == '__main__':
-    client_for_roboclaw = AmberClient('127.0.0.1', name="roboclaw")
+    client_for_driver = AmberClient('127.0.0.1', name="roboclaw")
     client_for_location = AmberClient('127.0.0.1', name="location")
 
-    roboclaw_proxy = RoboclawProxy(client_for_roboclaw, 0)
+    if '__COLLISION_AVOIDANCE_ENABLE' in os.environ:
+        driver_proxy = CollisionAvoidanceProxy(client_for_driver, 0)
+    else:
+        driver_proxy = RoboclawProxy(client_for_driver, 0)
+
     location_proxy = LocationProxy(client_for_location, 0)
 
-    drive_to_point = DriveToPoint(roboclaw_proxy, location_proxy)
+    drive_to_point = DriveToPoint(driver_proxy, location_proxy)
 
     driving_thread = threading.Thread(target=drive_to_point.driving_loop, name="driving-thread")
     driving_thread.start()
