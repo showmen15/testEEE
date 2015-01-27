@@ -5,6 +5,7 @@ import threading
 
 from amberclient.common.amber_client import AmberClient
 from amberclient.hokuyo.hokuyo import HokuyoProxy
+from amberclient.roboclaw import roboclaw_pb2
 from amberclient.roboclaw.roboclaw import RoboclawProxy
 import os
 
@@ -33,36 +34,14 @@ class CollisionAvoidanceController(MessageHandler):
         if message.HasExtension(collision_avoidance_pb2.setSpeed):
             self.__handle_set_speed(header, message)
 
-        elif message.HasExtension(collision_avoidance_pb2.getScan):
-            self.__handle_get_scan(header, message)
-
         else:
             self.__logger.warning('No request in message')
 
     def __handle_set_speed(self, header, message):
         self.__logger.debug('Set speed')
-        motors_speed = message.Extensions[collision_avoidance_pb2.motorsSpeed]
+        motors_speed = message.Extensions[roboclaw_pb2.motorsCommand]
         self.__driver.set_speed(motors_speed.frontLeftSpeed, motors_speed.frontRightSpeed,
                                 motors_speed.rearLeftSpeed, motors_speed.rearRightSpeed)
-
-    @staticmethod
-    def __fill_response_with_scan(scan, response_message):
-        s = response_message.Extensions[collision_avoidance_pb2.scan]
-        angles = map(lambda point: point[0], scan)
-        distances = map(lambda point: point[1], scan)
-        s.angles.extend(angles)
-        s.distances.extend(distances)
-
-    @MessageHandler.handle_and_response
-    def __handle_get_scan(self, received_header, received_message, response_header, response_message):
-        self.__logger.debug('Get scan')
-        scan = self.__driver.get_scan()
-
-        self.__fill_response_with_scan(scan, response_message)
-
-        response_message.Extensions[collision_avoidance_pb2.getScan] = True
-
-        return response_header, response_message
 
     def handle_subscribe_message(self, header, message):
         self.__logger.debug('Subscribe action, nothing to do...')
