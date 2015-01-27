@@ -34,17 +34,21 @@ class HokuyoController(MessageHandler):
     def __init__(self, pipe_in, pipe_out, port):
         super(HokuyoController, self).__init__(pipe_in, pipe_out)
 
-        self.__hokuyo = Hokuyo(port)
         self.__hokuyo_lock = threading.Lock()
+        self.__hokuyo_lock.acquire()
+        try:
+            self.__hokuyo = Hokuyo(port)
 
-        sys.stderr.write('RESET:\n%s\n' % self.__hokuyo.reset())
-        sys.stderr.write('LASER_ON:\n%s\n' % self.__hokuyo.laser_on())
-        sys.stderr.write('HIGH_SENSITIVE:\n%s\n' % self.__hokuyo.set_high_sensitive(HIGH_SENSITIVE))
-        sys.stderr.write('SPEED_MOTOR:\n%s\n' % self.__hokuyo.set_motor_speed(SPEED_MOTOR))
+            sys.stderr.write('RESET:\n%s\n' % self.__hokuyo.reset())
+            sys.stderr.write('LASER_ON:\n%s\n' % self.__hokuyo.laser_on())
+            sys.stderr.write('HIGH_SENSITIVE:\n%s\n' % self.__hokuyo.set_high_sensitive(HIGH_SENSITIVE))
+            sys.stderr.write('SPEED_MOTOR:\n%s\n' % self.__hokuyo.set_motor_speed(SPEED_MOTOR))
 
-        sys.stderr.write('SENSOR_SPECS:\n%s\n' % self.__hokuyo.get_sensor_specs())
-        sys.stderr.write('SENSOR_STATE:\n%s\n' % self.__hokuyo.get_sensor_state())
-        sys.stderr.write('VERSION_INFO:\n%s\n' % self.__hokuyo.get_version_info())
+            sys.stderr.write('SENSOR_SPECS:\n%s\n' % self.__hokuyo.get_sensor_specs())
+            sys.stderr.write('SENSOR_STATE:\n%s\n' % self.__hokuyo.get_sensor_state())
+            sys.stderr.write('VERSION_INFO:\n%s\n' % self.__hokuyo.get_version_info())
+        finally:
+            self.__hokuyo_lock.release()
 
         self.__timestamp, self.__angles, self.__distances = None, [], []
         self.__scan_lock = threading.Lock()
@@ -64,15 +68,10 @@ class HokuyoController(MessageHandler):
     def __handle_get_single_scan(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get single scan')
 
-        try:
-            self.__subscribers_lock.acquire()
-            if len(self.__subscribers) == 0:
-                angles, distances, timestamp = self.__get_and_set_scan_now()
-            else:
-                angles, distances, timestamp = self.__get_scan()
-
-        finally:
-            self.__subscribers_lock.release()
+        if self.__get_subscribers_count() == 0:
+            angles, distances, timestamp = self.__get_and_set_scan_now()
+        else:
+            angles, distances, timestamp = self.__get_last_scan()
 
         response_message = HokuyoController.__fill_scan(response_message, angles, distances, timestamp)
 
