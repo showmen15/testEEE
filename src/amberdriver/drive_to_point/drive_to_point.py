@@ -131,7 +131,7 @@ class DriveToPoint(object):
         self.__targets_lock.acquire()
         try:
             while not len(self.__next_targets) > 0 and self.__is_active:
-                self.__targets_lock.wait()
+                self.__targets_lock.wait(0.5)
         finally:
             self.__targets_lock.release()
 
