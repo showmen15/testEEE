@@ -5,6 +5,7 @@ import time
 import math
 
 import os
+from ambercommon.common import runtime
 
 from amberdriver.tools import config
 
@@ -53,6 +54,8 @@ class DriveToPoint(object):
 
         self.__old_left, self.__old_right = 0.0, 0.0
         self.__logger = logging.getLogger(LOGGER_NAME)
+
+        runtime.add_shutdown_hook(self.terminate)
 
     def set_targets(self, targets):
         self.__targets_lock.acquire()
@@ -116,24 +119,20 @@ class DriveToPoint(object):
 
     def driving_loop(self):
         # FIXME(paoolo) it blocks!
+        driving = False
         while self.__is_active:
-            self.__wait_for_new_targets()
             try:
                 while self.__is_active:
                     target = self.__next_targets[0]
+                    driving = True
                     self.__drive_to(target, self.__next_targets_timestamp)
                     self.__add_target_to_visited(target)
             except IndexError:
-                self.__logger.warning('Next targets list is empty, stop driving.')
-                self.__stop()
-
-    def __wait_for_new_targets(self):
-        self.__targets_lock.acquire()
-        try:
-            while not len(self.__next_targets) > 0 and self.__is_active:
-                self.__targets_lock.wait(0.5)
-        finally:
-            self.__targets_lock.release()
+                if driving:
+                    self.__logger.warning('Next targets list is empty, stop driving.')
+                    self.__stop()
+                    driving = False
+            time.sleep(0.1)
 
     def __add_target_to_visited(self, target):
         self.__targets_lock.acquire()

@@ -6,7 +6,6 @@ import time
 
 import os
 import serial
-
 from ambercommon.common import runtime
 
 from amberdriver.common import drivermsg_pb2
