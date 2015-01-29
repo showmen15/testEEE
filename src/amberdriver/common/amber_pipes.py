@@ -164,8 +164,8 @@ class AmberPipes(object):
         :param message: object of DriverMsg
         :return: nothing
         """
-        self.__logger.debug('Write header and message to pipe:\nHEADER:\n%s\n---\nMESSAGE:\n%s\n---' %
-                            (str(header).strip(), str(message).strip()[:200]))
+        self.__logger.debug('Write header and message to pipe:\nHEADER:\n%s\n---\nMESSAGE:\n%s\n---',
+                            str(header).strip(), str(message).strip()[:200])
 
         self.__write_lock.acquire()
 

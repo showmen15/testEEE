@@ -7,7 +7,9 @@ import time
 import os
 import serial
 
-from amberdriver.common import runtime, drivermsg_pb2
+from ambercommon.common import runtime
+
+from amberdriver.common import drivermsg_pb2
 from amberdriver.common.message_handler import MessageHandler
 from amberdriver.hokuyo import hokuyo_pb2
 from amberdriver.hokuyo.hokuyo import Hokuyo
@@ -72,13 +74,13 @@ class HokuyoController(MessageHandler):
         finally:
             self.__subscribers_condition.release()
 
-        response_message = self.__fill_scan(response_message, angles, distances, timestamp)
+        response_message = HokuyoController.__fill_scan(response_message, angles, distances, timestamp)
 
         return response_header, response_message
 
     def __handle_enable_scanning(self, header, message):
         self.__enable_scanning = message.Extensions[hokuyo_pb2.enable_scanning]
-        self.__logger.debug('Enable scanning, set to %s' % ('true' if self.__enable_scanning else 'false'))
+        self.__logger.debug('Enable scanning, set to %s', bool(str(self.__enable_scanning)))
 
         if self.__enable_scanning:
             self.__try_to_start_scanning_thread()
@@ -110,14 +112,14 @@ class HokuyoController(MessageHandler):
     def handle_unsubscribe_message(self, header, message):
         self.__logger.debug('Unsubscribe action')
 
-        map(lambda client_id: self.__remove_subscriber(client_id), header.clientIDs)
+        map(self.__remove_subscriber, header.clientIDs)
 
     def handle_client_died_message(self, client_id):
-        self.__logger.info('Client %d died' % client_id)
+        self.__logger.info('Client %d died', client_id)
 
         self.__remove_subscriber(client_id)
 
-    def __scanning_thread(self):
+    def __scanning_loop(self):
         try:
             while self.is_alive():
                 subscribers = self.__get_subscribers()
@@ -134,7 +136,7 @@ class HokuyoController(MessageHandler):
                 response_message.ackNum = 0
 
                 response_header.clientIDs.extend(subscribers)
-                response_message = self.__fill_scan(response_message, angles, distances, timestamp)
+                response_message = HokuyoController.__fill_scan(response_message, angles, distances, timestamp)
 
                 self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
@@ -143,15 +145,10 @@ class HokuyoController(MessageHandler):
         finally:
             self.__remove_scanning_thread()
 
-    def __parse_scan(self, scan):
-        angles = sorted(scan.keys())
-        distances = map(scan.get, self.__angles)
-        return angles, distances
-
     def __get_scan_now(self):
         scan = self.__hokuyo.get_single_scan()
         timestamp = int(time.time() * 1000.0)
-        angles, distances = self.__parse_scan(scan)
+        angles, distances = HokuyoController.__parse_scan(scan)
         self.__set_scan(angles, distances, timestamp)
         return angles, distances, timestamp
 
@@ -212,7 +209,7 @@ class HokuyoController(MessageHandler):
             self.__subscribers.remove(client_id)
 
         except ValueError:
-            self.__logger.warning('Client %d does not registered as subscriber' % client_id)
+            self.__logger.warning('Client %d does not registered as subscriber', client_id)
 
         finally:
             self.__subscribers_condition.release()
@@ -222,7 +219,7 @@ class HokuyoController(MessageHandler):
             self.__scanning_thread_condition.acquire()
 
             if self.__scanning_thread is None:
-                self.__scanning_thread = threading.Thread(target=self.__scanning_thread, name="scanning-thread")
+                self.__scanning_thread = threading.Thread(target=self.__scanning_loop, name="scanning-thread")
                 self.__scanning_thread.start()
 
         finally:

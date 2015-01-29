@@ -7,7 +7,6 @@ import sys
 import os
 
 from amberdriver.common import drivermsg_pb2
-
 from amberdriver.common.message_handler import MessageHandler
 from amberdriver.dummy import dummy_pb2
 from amberdriver.dummy.dummy import Dummy
@@ -130,7 +129,7 @@ class DummyController(MessageHandler):
         :return:
         """
         self.__logger.debug('Unsubscribe action')
-        map(lambda client_id: self.__remove_subscriber(client_id), header.clientIDs)
+        map(self.__remove_subscriber, header.clientIDs)
 
     def handle_client_died_message(self, client_id):
         """
@@ -139,14 +138,14 @@ class DummyController(MessageHandler):
         :param client_id:
         :return:
         """
-        self.__logger.info('Client %d died' % client_id)
+        self.__logger.info('Client %d died', client_id)
         self.__remove_subscriber(client_id)
 
     def __remove_subscriber(self, client_id):
         try:
             self.__subscribers.remove(client_id)
         except ValueError:
-            self.__logger.warning('Client %d does not registered as subscriber' % client_id)
+            self.__logger.warning('Client %d does not registered as subscriber', client_id)
 
     def __run(self):
         """

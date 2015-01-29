@@ -8,9 +8,9 @@ from amberclient.common import amber_client
 from amberclient.roboclaw import roboclaw
 from amberclient.hokuyo import hokuyo
 import os
+from ambercommon.common import runtime
 
 from amberdriver.collision_avoidance import collision_avoidance_pb2
-from amberdriver.common import runtime
 from amberdriver.common.message_handler import MessageHandler
 from amberdriver.tools import config
 
@@ -167,7 +167,7 @@ class CollisionAvoidanceController(MessageHandler):
                                          motors_speed.rearLeftSpeed, motors_speed.rearRightSpeed)
 
     @staticmethod
-    def _fill_response_with_speed(speed, response_message):
+    def __fill_response_with_speed(speed, response_message):
         front_left, front_right, rear_left, rear_right = speed
         s = response_message.Extensions[collision_avoidance_pb2.motorsSpeed]
         s.frontLeftSpeed = int(front_left)
@@ -176,7 +176,7 @@ class CollisionAvoidanceController(MessageHandler):
         s.rearRightSpeed = int(rear_right)
 
     @staticmethod
-    def _fill_response_with_scan(scan, response_message):
+    def __fill_response_with_scan(scan, response_message):
         s = response_message.Extensions[collision_avoidance_pb2.scan]
         angles = map(lambda point: point[0], scan)
         distances = map(lambda point: point[1], scan)
@@ -188,7 +188,7 @@ class CollisionAvoidanceController(MessageHandler):
         self.__logger.debug('Get speed')
         speed = self.__collision_avoidance.get_speed()
 
-        self._fill_response_with_speed(speed, response_message)
+        CollisionAvoidanceController.__fill_response_with_speed(speed, response_message)
 
         response_message.Extensions[collision_avoidance_pb2.getSpeed] = True
 
@@ -199,8 +199,8 @@ class CollisionAvoidanceController(MessageHandler):
         self.__logger.debug('Get speed and scan')
         speed, scan = self.__collision_avoidance.get_speed_and_scan()
 
-        self._fill_response_with_speed(speed, response_message)
-        self._fill_response_with_scan(scan, response_message)
+        CollisionAvoidanceController.__fill_response_with_speed(speed, response_message)
+        CollisionAvoidanceController.__fill_response_with_scan(scan, response_message)
 
         response_message.Extensions[collision_avoidance_pb2.getSpeedAndScan] = True
 
@@ -211,7 +211,7 @@ class CollisionAvoidanceController(MessageHandler):
         self.__logger.debug('Get scan')
         scan = self.__collision_avoidance.get_scan()
 
-        self._fill_response_with_scan(scan, response_message)
+        CollisionAvoidanceController.__fill_response_with_scan(scan, response_message)
 
         response_message.Extensions[collision_avoidance_pb2.getScan] = True
 
