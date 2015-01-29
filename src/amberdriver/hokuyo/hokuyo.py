@@ -107,7 +107,7 @@ class Hokuyo(object):
             line = 0
             while line < lines:
                 char = self.__port.read_byte()
-                if not char is None:
+                if char is not None:
                     char = chr(char)
                     result += char
                     if char == '\n':

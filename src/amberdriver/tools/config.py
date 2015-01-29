@@ -10,11 +10,10 @@ class Config(object):
         self.add_config_ini(*args)
 
     def __getattr__(self, name):
-        # noinspection PyBroadException
         return self.__config.get('default', name)
 
     def add_config_ini(self, *args):
-        map(lambda config_file_path: self.__config.read(config_file_path), args)
+        map(self.__config.read, args)
 
 
 sys.modules[__name__] = Config('./main.ini', )

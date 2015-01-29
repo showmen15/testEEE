@@ -12,6 +12,8 @@ enum DeviceType {
     DUMMY = 5;
     LOCATION = 6;
     MAESTRO = 7;
+    DRIVE_TO_POINT = 8;
+    COLLISION_AVOIDANCE = 9;
 }
 
 message DriverHdr {

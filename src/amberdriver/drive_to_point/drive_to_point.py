@@ -224,7 +224,7 @@ class DriveToPoint(object):
 
     @staticmethod
     def compute_speed(location, target):
-        target_x, target_y, target_radius = target
+        target_x, target_y, _ = target
 
         location_x, location_y, _, location_angle, _ = location
 
