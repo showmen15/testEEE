@@ -106,6 +106,14 @@ if __name__ == '__main__':
 
         hokuyo = Hokuyo(_serial_port)
 
+        sys.stderr.write('RESET:\n%s\n' % hokuyo.reset())
+        sys.stderr.write('HIGH_SENSITIVE:\n%s\n' % hokuyo.set_high_sensitive(HIGH_SENSITIVE))
+        sys.stderr.write('SPEED_MOTOR:\n%s\n' % hokuyo.set_motor_speed(SPEED_MOTOR))
+
+        sys.stderr.write('SENSOR_SPECS:\n%s\n' % hokuyo.get_sensor_specs())
+        sys.stderr.write('SENSOR_STATE:\n%s\n' % hokuyo.get_sensor_state())
+        sys.stderr.write('VERSION_INFO:\n%s\n' % hokuyo.get_version_info())
+
         scanning_thread = threading.Thread(target=hokuyo.scanning_loop, name="scanning-thread")
         scanning_thread.start()
 

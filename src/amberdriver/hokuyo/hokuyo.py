@@ -181,8 +181,9 @@ class Hokuyo(object):
     def get_sensor_specs(self):
         return self.__long_command(Hokuyo.SENSOR_SPECS, Hokuyo.SENSOR_SPECS_LINES)
 
-    def __get_and_parse_scan(self, result, cluster_count, start_step, stop_step):
+    def __get_and_parse_scan(self, cluster_count, start_step, stop_step):
         distances = {}
+        result = ''
 
         count = ((stop_step - start_step) * Hokuyo.CHARS_PER_VALUE * Hokuyo.CHARS_PER_LINE)
         count /= (Hokuyo.CHARS_PER_BLOCK * cluster_count)
@@ -225,8 +226,8 @@ class Hokuyo(object):
             result = self.__port.read(6)
             assert result[-1] == '\n'
 
-            result = ''
-            return self.__get_and_parse_scan(result, cluster_count, start_step, stop_step)
+            scan = self.__get_and_parse_scan(cluster_count, start_step, stop_step)
+            return scan
 
         except BaseException as e:
             traceback.print_exc()
@@ -236,8 +237,8 @@ class Hokuyo(object):
         finally:
             self.__port_lock.release()
 
-    def get_multiple_scan(self, start_step=START_STEP, stop_step=STOP_STEP, cluster_count=1,
-                          scan_interval=0, number_of_scans=0):
+    def __get_multiple_scans(self, start_step=START_STEP, stop_step=STOP_STEP, cluster_count=1,
+                             scan_interval=0, number_of_scans=0):
         self.__port_lock.acquire()
         try:
             cmd = 'MD%04d%04d%02d%01d%02d\n' % (start_step, stop_step, cluster_count, scan_interval, number_of_scans)
@@ -259,8 +260,8 @@ class Hokuyo(object):
                 result = self.__port.read(6)
                 assert result[-1] == '\n'
 
-                result = ''
-                yield self.__get_and_parse_scan(result, cluster_count, start_step, stop_step)
+                scan = self.__get_and_parse_scan(cluster_count, start_step, stop_step)
+                yield scan
 
         except BaseException as e:
             traceback.print_exc()
@@ -298,9 +299,11 @@ class Hokuyo(object):
         while self.__is_active:
             if self.__scanning_allowed:
                 self.laser_on()
-                for scan in self.get_multiple_scan():
+                self.__port_lock.acquire()
+                for scan in self.__get_multiple_scans():
                     self.__set_scan(scan)
                     if not self.__scanning_allowed or not self.__is_active:
+                        self.__port_lock.release()
                         self.laser_off()
                         break
             time.sleep(0.1)
