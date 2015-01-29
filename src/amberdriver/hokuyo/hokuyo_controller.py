@@ -6,7 +6,6 @@ import time
 
 import os
 import serial
-
 from ambercommon.common import runtime
 
 from amberdriver.common import drivermsg_pb2
@@ -32,10 +31,11 @@ TIMEOUT = 0.3
 
 
 class HokuyoController(MessageHandler):
-    def __init__(self, pipe_in, pipe_out, port, _disable_assert=False):
+    def __init__(self, pipe_in, pipe_out, port):
         super(HokuyoController, self).__init__(pipe_in, pipe_out)
 
-        self.__hokuyo = Hokuyo(port, _disable_assert=_disable_assert)
+        self.__hokuyo = Hokuyo(port)
+        self.__hokuyo_lock = threading.Lock()
 
         sys.stderr.write('RESET:\n%s\n' % self.__hokuyo.reset())
         sys.stderr.write('LASER_ON:\n%s\n' % self.__hokuyo.laser_on())
@@ -47,16 +47,16 @@ class HokuyoController(MessageHandler):
         sys.stderr.write('VERSION_INFO:\n%s\n' % self.__hokuyo.get_version_info())
 
         self.__timestamp, self.__angles, self.__distances = None, [], []
-        self.__scan_condition = threading.Condition()
+        self.__scan_lock = threading.Lock()
 
         self.__logger = logging.getLogger(LOGGER_NAME)
 
         self.__subscribers = []
-        self.__subscribers_condition = threading.Condition()
+        self.__subscribers_lock = threading.Lock()
 
         self.__enable_scanning = False
         self.__scanning_thread = None
-        self.__scanning_thread_condition = threading.Condition()
+        self.__scanning_thread_lock = threading.Lock()
 
         runtime.add_shutdown_hook(self.terminate)
 
@@ -67,7 +67,7 @@ class HokuyoController(MessageHandler):
         try:
             self.__subscribers_condition.acquire()
             if len(self.__subscribers) == 0:
-                angles, distances, timestamp = self.__get_scan_now()
+                angles, distances, timestamp = self.__get_and_set_scan_now()
             else:
                 angles, distances, timestamp = self.__get_scan()
 
@@ -98,19 +98,17 @@ class HokuyoController(MessageHandler):
     def handle_subscribe_message(self, header, message):
         self.__logger.debug('Subscribe action')
 
+        self.__subscribers_lock.acquire()
         try:
-            self.__subscribers_condition.acquire()
-
-            current_subscribers_count = len(self.__subscribers)
+            before_extend_subscribers_count = len(self.__subscribers)
             self.__subscribers.extend(header.clientIDs)
-            if current_subscribers_count == 0:
+            if before_extend_subscribers_count == 0:
                 self.__try_to_start_scanning_thread()
-
         finally:
-            self.__subscribers_condition.release()
+            self.__subscribers_lock.release()
 
     def handle_unsubscribe_message(self, header, message):
-        self.__logger.debug('Unsubscribe action')
+        self.__logger.debug('Unsubscribe action for clients %s', str(header.clientIDs))
 
         map(self.__remove_subscriber, header.clientIDs)
 
@@ -122,12 +120,12 @@ class HokuyoController(MessageHandler):
     def __scanning_loop(self):
         try:
             while self.is_alive():
-                subscribers = self.__get_subscribers()
+                subscribers = self.__get_subscribers_copy()
 
                 if len(subscribers) == 0 and self.__enable_scanning is False:
                     break
 
-                angles, distances, timestamp = self.__get_scan_now()
+                angles, distances, timestamp = self.__get_and_set_scan_now()
 
                 response_header = drivermsg_pb2.DriverHdr()
                 response_message = drivermsg_pb2.DriverMsg()
@@ -145,28 +143,35 @@ class HokuyoController(MessageHandler):
         finally:
             self.__remove_scanning_thread()
 
-    def __get_scan_now(self):
-        scan = self.__hokuyo.get_single_scan()
+    def __parse_scan(self, scan):
+        angles = sorted(scan.keys())
+        distances = map(scan.get, self.__angles)
+        return angles, distances
+
+    def __get_and_set_scan_now(self):
+        self.__hokuyo_lock.acquire()
+        try:
+            scan = self.__hokuyo.get_single_scan()
+        finally:
+            self.__hokuyo_lock.release()
+
         timestamp = int(time.time() * 1000.0)
-        angles, distances = HokuyoController.__parse_scan(scan)
-        self.__set_scan(angles, distances, timestamp)
+        angles, distances = self.__parse_scan(scan)
+
+        self.__scan_lock.acquire()
+        try:
+            self.__angles, self.__distances, self.__timestamp = angles, distances, timestamp
+        finally:
+            self.__scan_lock.release()
+
         return angles, distances, timestamp
 
-    def __set_scan(self, angles, distances, timestamp):
+    def __get_last_scan(self):
+        self.__scan_lock.acquire()
         try:
-            self.__scan_condition.acquire()
-            self.__angles, self.__distances, self.__timestamp = angles, distances, timestamp
-
-        finally:
-            self.__scan_condition.release()
-
-    def __get_scan(self):
-        try:
-            self.__scan_condition.acquire()
             return self.__angles, self.__distances, self.__timestamp
-
         finally:
-            self.__scan_condition.release()
+            self.__scan_lock.release()
 
     @staticmethod
     def __fill_scan(response_message, angles, distances, timestamp):
@@ -175,63 +180,44 @@ class HokuyoController(MessageHandler):
         response_message.Extensions[hokuyo_pb2.timestamp] = timestamp
         return response_message
 
-    def __return_current_count_and_add_subscribers(self, client_ids):
+    def __get_subscribers_copy(self):
+        self.__subscribers_lock.acquire()
         try:
-            self.__subscribers_condition.acquire()
-
-            current_count = len(self.__subscribers)
-            self.__subscribers.extend(client_ids)
-
-            return current_count
-
-        finally:
-            self.__subscribers_condition.release()
-
-    def __get_subscribers(self):
-        try:
-            self.__subscribers_condition.acquire()
             return list(self.__subscribers)
-
         finally:
-            self.__subscribers_condition.release()
+            self.__subscribers_lock.release()
 
     def __get_subscribers_count(self):
+        self.__subscribers_lock.acquire()
         try:
-            self.__subscribers_condition.acquire()
             return len(self.__subscribers)
-
         finally:
-            self.__subscribers_condition.release()
+            self.__subscribers_lock.release()
 
     def __remove_subscriber(self, client_id):
+        self.__subscribers_lock.acquire()
         try:
-            self.__subscribers_condition.acquire()
             self.__subscribers.remove(client_id)
-
         except ValueError:
             self.__logger.warning('Client %d does not registered as subscriber', client_id)
-
         finally:
-            self.__subscribers_condition.release()
+            self.__subscribers_lock.release()
 
     def __try_to_start_scanning_thread(self):
+        self.__scanning_thread_lock.acquire()
         try:
-            self.__scanning_thread_condition.acquire()
-
             if self.__scanning_thread is None:
                 self.__scanning_thread = threading.Thread(target=self.__scanning_loop, name="scanning-thread")
                 self.__scanning_thread.start()
-
         finally:
-            self.__scanning_thread_condition.release()
+            self.__scanning_thread_lock.release()
 
     def __remove_scanning_thread(self):
+        self.__scanning_thread_lock.acquire()
         try:
-            self.__scanning_thread_condition.acquire()
             self.__scanning_thread = None
-
         finally:
-            self.__scanning_thread_condition.release()
+            self.__scanning_thread_lock.release()
 
     @staticmethod
     def __parse_scan(scan):
@@ -241,7 +227,11 @@ class HokuyoController(MessageHandler):
 
     def terminate(self):
         self.__logger.warning('hokuyo: terminate')
-        self.__hokuyo.close()
+        self.__hokuyo_lock.acquire()
+        try:
+            self.__hokuyo.close()
+        finally:
+            self.__hokuyo_lock.release()
 
 
 if __name__ == '__main__':

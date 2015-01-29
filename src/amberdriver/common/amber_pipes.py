@@ -168,7 +168,6 @@ class AmberPipes(object):
                             str(header).strip(), str(message).strip()[:200])
 
         self.__write_lock.acquire()
-
         try:
             header_data = header.SerializeToString()
             message_data = message.SerializeToString()
@@ -177,10 +176,13 @@ class AmberPipes(object):
             message_binary_data = struct.pack('!h', len(message_data)) + message_data
 
             self.__write_to_pipe(header_binary_data + message_binary_data)
+
         except BaseException as e:
             traceback.print_exc(e)
+            # FIXME: silent pass?
 
-        self.__write_lock.release()
+        finally:
+            self.__write_lock.release()
 
     def __write_to_pipe(self, binary_string):
         """
