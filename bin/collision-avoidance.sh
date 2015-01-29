@@ -10,7 +10,7 @@ then
 
     if [ -z "${_APP_PROFILE}" ];
     then
-        ${__dir}/__envi/bin/python -u ${PYTHONPATH}/amberdriver/collision_avoidance/collision_avoidance.py
+        ${__dir}/__envi/bin/python -u ${PYTHONPATH}/amberdriver/collision_avoidance/collision_avoidance_controller.py
     else
         export _APP_TEMP=$(mktemp -d)
 
