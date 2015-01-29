@@ -65,14 +65,14 @@ class HokuyoController(MessageHandler):
         self.__logger.debug('Get single scan')
 
         try:
-            self.__subscribers_condition.acquire()
+            self.__subscribers_lock.acquire()
             if len(self.__subscribers) == 0:
                 angles, distances, timestamp = self.__get_and_set_scan_now()
             else:
                 angles, distances, timestamp = self.__get_scan()
 
         finally:
-            self.__subscribers_condition.release()
+            self.__subscribers_lock.release()
 
         response_message = HokuyoController.__fill_scan(response_message, angles, distances, timestamp)
 
