@@ -1,6 +1,9 @@
 import threading
 import traceback
 import sys
+import time
+
+from ambercommon.common import runtime
 
 
 __author__ = 'paoolo'
@@ -49,6 +52,14 @@ class Hokuyo(object):
         self.__port = port
         self.__port_lock = threading.RLock()
 
+        self.__timestamp, self.__angles, self.__distances = None, [], []
+        self.__scan_lock = threading.Lock()
+
+        self.__is_active = True
+        self.__scanning_allowed = True
+
+        runtime.add_shutdown_hook(self.terminate)
+
     def __offset(self):
         count = 2
         result = ''
@@ -83,7 +94,6 @@ class Hokuyo(object):
 
     def __short_command(self, command, check_response=True):
         result = ''
-        # noinspection PyBroadException
         self.__port_lock.acquire()
         try:
             try:
@@ -105,7 +115,6 @@ class Hokuyo(object):
 
     def __long_command(self, cmd, lines, check_response=True):
         result = ''
-        # noinspection PyBroadException
         self.__port_lock.acquire()
         try:
             try:
@@ -138,7 +147,10 @@ class Hokuyo(object):
         finally:
             self.__port_lock.release()
 
-    def close(self):
+    def terminate(self):
+        self.reset()
+
+        self.__is_active = False
         self.__port_lock.acquire()
         try:
             self.__port.close()
@@ -257,3 +269,44 @@ class Hokuyo(object):
 
         finally:
             self.__port_lock.release()
+
+    def enable_scanning(self, _enable_scanning):
+        self.__scanning_allowed = _enable_scanning
+
+    def __set_scan(self, scan):
+        timestamp = int(time.time() * 1000.0)
+        angles, distances = Hokuyo.__parse_scan(scan)
+
+        self.__scan_lock.acquire()
+        try:
+            self.__angles, self.__distances, self.__timestamp = angles, distances, timestamp
+        finally:
+            self.__scan_lock.release()
+
+    def get_scan(self):
+        if not self.__scanning_allowed:
+            scan = self.get_single_scan()
+            self.__set_scan(scan)
+
+        self.__scan_lock.acquire()
+        try:
+            return self.__angles, self.__distances, self.__timestamp
+        finally:
+            self.__scan_lock.release()
+
+    def scanning_loop(self):
+        while self.__is_active:
+            if self.__scanning_allowed:
+                self.laser_on()
+                for scan in self.get_multiple_scan():
+                    self.__set_scan(scan)
+                    if not self.__scanning_allowed or not self.__is_active:
+                        self.laser_off()
+                        break
+            time.sleep(0.1)
+
+    @staticmethod
+    def __parse_scan(scan):
+        angles = sorted(scan.keys())
+        distances = map(scan.get, angles)
+        return angles, distances

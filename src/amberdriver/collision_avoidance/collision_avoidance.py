@@ -4,6 +4,7 @@ import threading
 import time
 import math
 
+from ambercommon.common import runtime
 import os
 
 from amberdriver.tools import config
@@ -37,11 +38,12 @@ class CollisionAvoidance(object):
         self.__driving_lock = threading.Condition()
 
         self.__is_active = True
-        self.__is_active_lock = threading.Condition()
 
         self.__wait_for_data_lock = threading.Condition()
 
         self.__logger = logging.getLogger(LOGGER_NAME)
+
+        runtime.add_shutdown_hook(self.terminate)
 
     def set_speed(self, front_left, front_right, rear_left, rear_right):
         try:
@@ -66,7 +68,7 @@ class CollisionAvoidance(object):
         sleep_interval = 0.2
         last_scan_timestamp = 0.0
 
-        while self.is_active():
+        while self.__is_active:
             scan = self.__hokuyo_proxy.get_single_scan()
             if scan.is_available():
                 try:
@@ -92,7 +94,7 @@ class CollisionAvoidance(object):
         last_command_timestamp = 0.0
         last_left, last_right = 0.0, 0.0
 
-        while self.is_active():
+        while self.__is_active:
             self.__wait(wait_timeout * 1.1)
 
             try:
@@ -145,19 +147,9 @@ class CollisionAvoidance(object):
                 wait_timeout += 0.5 * (min_interval - wait_timeout)
                 wait_timeout = bound_sleep_interval(wait_timeout)
 
-    def is_active(self):
-        try:
-            self.__is_active_lock.acquire()
-            return self.__is_active
-        finally:
-            self.__is_active_lock.release()
-
     def terminate(self):
-        try:
-            self.__is_active_lock.acquire()
-            self.__is_active = False
-        finally:
-            self.__is_active_lock.release()
+        self.stop()
+        self.__is_active = False
 
     @staticmethod
     def limit_due_to_distance(left, right, scan):
@@ -246,7 +238,7 @@ class CollisionAvoidance(object):
                 if min_distance_angle < current_angle:
                     if left > 0:
                         left = left if left < config.MAX_ROTATING_SPEED else config.MAX_ROTATING_SPEED
-                        right = -left  # FIXME(paoolo)
+                        right = -left
                     else:
                         if right > 0:
                             _t = left
@@ -256,7 +248,7 @@ class CollisionAvoidance(object):
                 else:
                     if right > 0:
                         right = right if right < config.MAX_ROTATING_SPEED else config.MAX_ROTATING_SPEED
-                        left = -right  # FIXME(paoolo)
+                        left = -right
                     else:
                         if left > 0:
                             _t = right
@@ -271,6 +263,7 @@ class CollisionAvoidance(object):
 
     @staticmethod
     def low_pass_filter(left, right):
+        # TODO implement low pass filter
         return left, right
 
     @staticmethod
@@ -282,15 +275,15 @@ class CollisionAvoidance(object):
         return math.pow(4.0 / 3.0, command_timestamp / 1000.0 - current_timestamp)
 
     def __notify(self):
+        self.__wait_for_data_lock.acquire()
         try:
-            self.__wait_for_data_lock.acquire()
             self.__wait_for_data_lock.notify_all()
         finally:
             self.__wait_for_data_lock.release()
 
     def __wait(self, wait_timeout):
+        self.__wait_for_data_lock.acquire()
         try:
-            self.__wait_for_data_lock.acquire()
             self.__wait_for_data_lock.wait(wait_timeout)
         finally:
             self.__wait_for_data_lock.release()

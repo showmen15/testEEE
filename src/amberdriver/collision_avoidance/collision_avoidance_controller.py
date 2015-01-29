@@ -53,10 +53,6 @@ class CollisionAvoidanceController(MessageHandler):
         self.__logger.info('Client %d died, stop!' % client_id)
         self.__driver.stop()
 
-    def terminate(self):
-        self.__logger.warning('collision_avoidance: terminate')
-        self.__driver.terminate()
-
 
 if __name__ == '__main__':
     client_for_roboclaw = AmberClient('127.0.0.1', name='roboclaw')
