@@ -31,17 +31,7 @@ TIMEOUT = 0.3
 class HokuyoController(MessageHandler):
     def __init__(self, pipe_in, pipe_out, driver):
         super(HokuyoController, self).__init__(pipe_in, pipe_out)
-
         self.__hokuyo = driver
-
-        sys.stderr.write('RESET:\n%s\n' % self.__hokuyo.reset())
-        sys.stderr.write('HIGH_SENSITIVE:\n%s\n' % self.__hokuyo.set_high_sensitive(HIGH_SENSITIVE))
-        sys.stderr.write('SPEED_MOTOR:\n%s\n' % self.__hokuyo.set_motor_speed(SPEED_MOTOR))
-
-        sys.stderr.write('SENSOR_SPECS:\n%s\n' % self.__hokuyo.get_sensor_specs())
-        sys.stderr.write('SENSOR_STATE:\n%s\n' % self.__hokuyo.get_sensor_state())
-        sys.stderr.write('VERSION_INFO:\n%s\n' % self.__hokuyo.get_version_info())
-
         self.__logger = logging.getLogger(LOGGER_NAME)
 
     def handle_data_message(self, header, message):

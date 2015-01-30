@@ -109,7 +109,6 @@ class Hokuyo(object):
                 sys.stderr.write('RESULT: "%s"' % result)
                 traceback.print_exc()
                 self.__offset()
-                raise e
         finally:
             self.__port_lock.release()
 
@@ -143,7 +142,6 @@ class Hokuyo(object):
                 sys.stderr.write('RESULT: "%s"' % result)
                 traceback.print_exc()
                 self.__offset()
-                raise e
         finally:
             self.__port_lock.release()
 
@@ -232,7 +230,6 @@ class Hokuyo(object):
         except BaseException as e:
             traceback.print_exc()
             self.__offset()
-            raise e
 
         finally:
             self.__port_lock.release()
@@ -266,7 +263,6 @@ class Hokuyo(object):
         except BaseException as e:
             traceback.print_exc()
             self.__offset()
-            raise e
 
         finally:
             self.__port_lock.release()
