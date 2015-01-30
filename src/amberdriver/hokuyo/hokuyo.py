@@ -271,14 +271,15 @@ class Hokuyo(object):
         self.__scanning_allowed = _enable_scanning
 
     def __set_scan(self, scan):
-        timestamp = int(time.time() * 1000.0)
-        angles, distances = Hokuyo.__parse_scan(scan)
+        if scan is not None:
+            timestamp = int(time.time() * 1000.0)
+            angles, distances = Hokuyo.__parse_scan(scan)
 
-        self.__scan_lock.acquire()
-        try:
-            self.__angles, self.__distances, self.__timestamp = angles, distances, timestamp
-        finally:
-            self.__scan_lock.release()
+            self.__scan_lock.acquire()
+            try:
+                self.__angles, self.__distances, self.__timestamp = angles, distances, timestamp
+            finally:
+                self.__scan_lock.release()
 
     def get_scan(self):
         if not self.__scanning_allowed:
