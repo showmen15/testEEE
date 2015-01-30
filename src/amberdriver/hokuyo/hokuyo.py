@@ -52,7 +52,7 @@ class Hokuyo(object):
         self.__port = port
         self.__port_lock = threading.RLock()
 
-        self.__timestamp, self.__angles, self.__distances = None, [], []
+        self.__timestamp, self.__angles, self.__distances = 0, [], []
         self.__scan_lock = threading.Lock()
 
         self.__is_active = True
