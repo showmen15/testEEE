@@ -21,7 +21,7 @@ logging.config.fileConfig('%s/hokuyo.ini' % pwd)
 config.add_config_ini('%s/hokuyo.ini' % pwd)
 
 LOGGER_NAME = 'HokuyoController'
-HIGH_SENSITIVE = bool(config.HOKUYO_HIGH_SENSITIVE_ENABLE)
+HIGH_SENSITIVE = config.HOKUYO_HIGH_SENSITIVE_ENABLE == 'True'
 SPEED_MOTOR = int(config.HOKUYO_SPEED_MOTOR)
 SERIAL_PORT = config.HOKUYO_SERIAL_PORT
 BAUD_RATE = config.HOKUYO_BAUD_RATE

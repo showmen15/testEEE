@@ -22,7 +22,7 @@ logging.config.fileConfig('%s/drive_to_point.ini' % pwd)
 config.add_config_ini('%s/drive_to_point.ini' % pwd)
 
 LOGGER_NAME = 'DriveToPointController'
-USE_COLLISION_AVOIDANCE = bool(config.DRIVE_TO_POINT_USE_COLLISION_AVOIDANCE)
+USE_COLLISION_AVOIDANCE = config.DRIVE_TO_POINT_USE_COLLISION_AVOIDANCE == 'True'
 
 
 class DriveToPointController(MessageHandler):
