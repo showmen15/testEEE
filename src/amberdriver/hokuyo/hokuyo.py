@@ -56,7 +56,7 @@ class Hokuyo(object):
         self.__scan_lock = threading.Lock()
 
         self.__is_active = True
-        self.__scanning_allowed = True
+        self.__scanning_allowed = False
 
         runtime.add_shutdown_hook(self.terminate)
 
