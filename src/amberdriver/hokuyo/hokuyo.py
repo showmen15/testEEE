@@ -295,13 +295,11 @@ class Hokuyo(object):
     def scanning_loop(self):
         while self.__is_active:
             if self.__scanning_allowed:
-                self.laser_on()
                 self.__port_lock.acquire()
                 for scan in self.__get_multiple_scans():
                     self.__set_scan(scan)
                     if not self.__scanning_allowed or not self.__is_active:
                         self.__port_lock.release()
-                        self.laser_off()
                         break
             time.sleep(0.1)
 

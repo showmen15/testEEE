@@ -97,6 +97,7 @@ if __name__ == '__main__':
         hokuyo = Hokuyo(_serial_port)
 
         sys.stderr.write('RESET:\n%s\n' % hokuyo.reset())
+        sys.stderr.write('LASER_ON:\n%s\n' % hokuyo.laser_on())
         sys.stderr.write('HIGH_SENSITIVE:\n%s\n' % hokuyo.set_high_sensitive(HIGH_SENSITIVE))
         sys.stderr.write('SPEED_MOTOR:\n%s\n' % hokuyo.set_motor_speed(SPEED_MOTOR))
 
