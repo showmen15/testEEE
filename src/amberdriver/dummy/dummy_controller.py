@@ -29,11 +29,13 @@ class DummyController(MessageHandler):
     Need to extends `MessageHandler` from `amber.driver.common.amber_pipes`.
     """
 
-    def __init__(self, pipe_in, pipe_out, dummy):
+    def __init__(self, pipe_in, pipe_out, driver):
         super(DummyController, self).__init__(pipe_in, pipe_out)
-        self.__dummy = dummy
+        self.__dummy = driver
 
         self.__subscribers = []
+        self.__subscribers_lock = threading.Lock()
+
         self.__subscribe_thread = None
 
         self.__value = 0
@@ -113,8 +115,12 @@ class DummyController(MessageHandler):
         """
         self.__logger.debug('Subscribe action')
 
-        no_subscribers = (len(self.__subscribers) == 0)
-        self.__subscribers.extend(header.clientIDs)
+        self.__subscribers_lock.acquire()
+        try:
+            no_subscribers = (len(self.__subscribers) == 0)
+            self.__subscribers.extend(header.clientIDs)
+        finally:
+            self.__subscribers_lock.release()
 
         if no_subscribers or self.__subscribe_thread is None:
             self.__subscribe_thread = threading.Thread(target=self.__run, name="subscribe-thread")
@@ -142,10 +148,14 @@ class DummyController(MessageHandler):
         self.__remove_subscriber(client_id)
 
     def __remove_subscriber(self, client_id):
+        self.__subscribers_lock.acquire()
         try:
             self.__subscribers.remove(client_id)
         except ValueError:
             self.__logger.warning('Client %d does not registered as subscriber', client_id)
+            # FIXME: silent pass?
+        finally:
+            self.__subscribers_lock.release()
 
     def __run(self):
         """
@@ -153,19 +163,25 @@ class DummyController(MessageHandler):
 
         :return:
         """
-        while self.is_alive() and len(self.__subscribers) > 0:
+        are_subscribes = True
+        while self.is_alive() and are_subscribes:
             response_header = drivermsg_pb2.DriverHdr()
             response_message = drivermsg_pb2.DriverMsg()
 
-            response_message.type = drivermsg_pb2.DriverMsg.DATA
-            response_message.ackNum = 0
+            self.__subscribers_lock.acquire()
+            try:
+                are_subscribes = len(self.__subscribers) > 0
+                if are_subscribes:
+                    response_header.clientIDs.extend(self.__subscribers)
+            finally:
+                self.__subscribers_lock.release()
 
-            response_header.clientIDs.extend(self.__subscribers)
-
-            response_message.Extensions[dummy_pb2.message] = 'Response %d' % self.__value
-            self.__value += 1
-
-            self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
+            if are_subscribes:
+                response_message.type = drivermsg_pb2.DriverMsg.DATA
+                response_message.ackNum = 0
+                response_message.Extensions[dummy_pb2.message] = 'Response %d' % self.__value
+                self.__value += 1
+                self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
             time.sleep(0.01)
 
@@ -181,6 +197,7 @@ if __name__ == '__main__':
 
     except BaseException as e:
         sys.stderr.write('%s\nRun without Dummy.' % str(e))
+        # FIXME: silent pass?
 
         controller = NullController(sys.stdin, sys.stdout)
         controller()

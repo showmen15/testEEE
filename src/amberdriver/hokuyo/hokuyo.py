@@ -45,22 +45,26 @@ class Hokuyo(object):
     SENSOR_STATE_LINES = 8
     SENSOR_SPECS_LINES = 9
 
-    def __init__(self, port, _disable_assert=False):
+    def __init__(self, port):
         self.__port = port
-        self.__disable_assert = _disable_assert
-        self.__cond = threading.Condition()
+        self.__port_lock = threading.RLock()
 
     def __offset(self):
         count = 2
         result = ''
-        a = self.__port.read(1)
-        b = self.__port.read(1)
 
-        while not ((a == '\n' and b == '\n') or (a == '' and b == '')):
-            result += a
-            a = b
+        self.__port_lock.acquire()
+        try:
+            a = self.__port.read(1)
             b = self.__port.read(1)
-            count += 1
+
+            while not ((a == '\n' and b == '\n') or (a == '' and b == '')):
+                result += a
+                a = b
+                b = self.__port.read(1)
+                count += 1
+        finally:
+            self.__port_lock.release()
 
         result += a
         result += b
@@ -68,64 +72,78 @@ class Hokuyo(object):
         sys.stderr.write('READ %d EXTRA BYTES: "%s"\n' % (count, str(result)))
 
     def __execute_command(self, command):
-        self.__port.write(command)
-
-        result = self.__port.read(len(command))
-        assert self.__disable_assert or result == command
-
+        self.__port_lock.acquire()
+        try:
+            self.__port.write(command)
+            result = self.__port.read(len(command))
+            assert result == command
+        finally:
+            self.__port_lock.release()
         return result
 
     def __short_command(self, command, check_response=True):
         result = ''
         # noinspection PyBroadException
+        self.__port_lock.acquire()
         try:
-            result += self.__execute_command(command)
+            try:
+                result += self.__execute_command(command)
+                result += self.__port.read(Hokuyo.SHORT_COMMAND_LEN)
 
-            result += self.__port.read(Hokuyo.SHORT_COMMAND_LEN)
-            if check_response:
-                assert self.__disable_assert or result[-5:-2] == '00P'
-            assert self.__disable_assert or result[-2:] == '\n\n'
+                if check_response:
+                    assert result[-5:-2] == '00P'
+                assert result[-2:] == '\n\n'
 
-            return result
-        except BaseException as e:
-            sys.stderr.write('RESULT: "%s"' % result)
-            traceback.print_exc()
-            self.__offset()
-            raise e
+                return result
+            except BaseException as e:
+                sys.stderr.write('RESULT: "%s"' % result)
+                traceback.print_exc()
+                self.__offset()
+                raise e
+        finally:
+            self.__port_lock.release()
 
     def __long_command(self, cmd, lines, check_response=True):
         result = ''
         # noinspection PyBroadException
+        self.__port_lock.acquire()
         try:
-            result += self.__execute_command(cmd)
+            try:
+                result += self.__execute_command(cmd)
 
-            result += self.__port.read(4)
-            if check_response:
-                assert self.__disable_assert or result[-4:-1] == '00P'
-            assert self.__disable_assert or result[-1:] == '\n'
+                result += self.__port.read(4)
+                if check_response:
+                    assert result[-4:-1] == '00P'
+                assert result[-1:] == '\n'
 
-            line = 0
-            while line < lines:
-                char = self.__port.read_byte()
-                if char is not None:
-                    char = chr(char)
-                    result += char
-                    if char == '\n':
+                line = 0
+                while line < lines:
+                    char = self.__port.read_byte()
+                    if not char is None:
+                        char = chr(char)
+                        result += char
+                        if char == '\n':
+                            line += 1
+                    else:  # char is None
                         line += 1
-                else:  # char is None
-                    line += 1
 
-            assert self.__disable_assert or result[-2:] == '\n\n'
+                assert result[-2:] == '\n\n'
 
-            return result
-        except BaseException as e:
-            sys.stderr.write('RESULT: "%s"' % result)
-            traceback.print_exc()
-            self.__offset()
-            raise e
+                return result
+            except BaseException as e:
+                sys.stderr.write('RESULT: "%s"' % result)
+                traceback.print_exc()
+                self.__offset()
+                raise e
+        finally:
+            self.__port_lock.release()
 
     def close(self):
-        self.__port.close()
+        self.__port_lock.acquire()
+        try:
+            self.__port.close()
+        finally:
+            self.__port_lock.release()
 
     def laser_on(self):
         return self.__short_command(Hokuyo.LASER_ON, check_response=True)
@@ -158,7 +176,12 @@ class Hokuyo(object):
         count /= (Hokuyo.CHARS_PER_BLOCK * cluster_count)
         count += 1.0 + 4.0  # paoolo(FIXME): why +4.0?
         count = int(count)
-        result += self.__port.read(count)
+
+        self.__port_lock.acquire()
+        try:
+            result += self.__port.read(count)
+        finally:
+            self.__port_lock.release()
 
         assert result[-2:] == '\n\n'
 
@@ -175,10 +198,8 @@ class Hokuyo(object):
         return distances
 
     def get_single_scan(self, start_step=START_STEP, stop_step=STOP_STEP, cluster_count=1):
-        # noinspection PyBroadException
+        self.__port_lock.acquire()
         try:
-            self.__cond.acquire()
-
             cmd = 'GD%04d%04d%02d\n' % (start_step, stop_step, cluster_count)
             self.__port.write(cmd)
 
@@ -201,14 +222,12 @@ class Hokuyo(object):
             raise e
 
         finally:
-            self.__cond.release()
+            self.__port_lock.release()
 
     def get_multiple_scan(self, start_step=START_STEP, stop_step=STOP_STEP, cluster_count=1,
                           scan_interval=0, number_of_scans=0):
-        # noinspection PyBroadException
+        self.__port_lock.acquire()
         try:
-            self.__cond.acquire()
-
             cmd = 'MD%04d%04d%02d%01d%02d\n' % (start_step, stop_step, cluster_count, scan_interval, number_of_scans)
             self.__port.write(cmd)
 
@@ -237,4 +256,4 @@ class Hokuyo(object):
             raise e
 
         finally:
-            self.__cond.release()
+            self.__port_lock.release()

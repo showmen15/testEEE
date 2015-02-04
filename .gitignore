@@ -13,5 +13,8 @@ MANIFEST
 build/
 dist/
 *.egg-info/
+*.egg
 
 __envi/
+
+*_pb2.py

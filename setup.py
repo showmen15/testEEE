@@ -21,7 +21,8 @@ setup(
         'amberdriver.drive_to_point',
         'amberdriver.collision_avoidance',
         'amberdriver.null',
-        'amberdriver.tools'
+        'amberdriver.tools',
+        'amberdriver.tests'
     ],
     package_dir={
         'amberdriver': 'src/amberdriver',
@@ -31,7 +32,8 @@ setup(
         'amberdriver.drive_to_point': 'src/amberdriver/drive_to_point',
         'amberdriver.collision_avoidance': 'src/amberdriver/collision_avoidance',
         'amberdriver.null': 'src/amberdriver/null',
-        'amberdriver.tools': 'src/amberdriver/tools'
+        'amberdriver.tools': 'src/amberdriver/tools',
+        'amberdriver.tests': 'src/amberdriver/tests'
     },
     package_data={'': [
         'src/amberdriver/common/amber.ini',
