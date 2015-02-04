@@ -19,5 +19,4 @@ ${__dir}/__envi/bin/pip install --upgrade -r ${__dir}/requirements.txt
 
 pushd ${__dir}
     ${__dir}/protoc.sh
-    ${__dir}/repair.sh
 popd
