@@ -1,3 +1,4 @@
 include requirements.txt
-include src/amber/*/*.proto
+include src/amberdriver/*/*.proto
+include src/amberdriver/*/*.ini
 include *.sh
