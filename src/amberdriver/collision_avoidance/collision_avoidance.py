@@ -1,236 +1,305 @@
 import logging
 import logging.config
-import sys
 import threading
 import time
+import math
 
-from amberclient.common import amber_client
-from amberclient.roboclaw import roboclaw
-from amberclient.hokuyo import hokuyo
-import os
 from ambercommon.common import runtime
+import os
 
-from amberdriver.collision_avoidance import collision_avoidance_pb2
-from amberdriver.common.message_handler import MessageHandler
 from amberdriver.tools import config
+import collision_avoidance_logic as logic
 
 
 __author__ = 'paoolo'
 
-LOGGER_NAME = 'CollisionAvoidanceController'
 pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/collision_avoidance.ini' % pwd)
 config.add_config_ini('%s/collision_avoidance.ini' % pwd)
 
+LOGGER_NAME = 'CollisionAvoidance'
+
+ROBO_WIDTH = float(config.ROBO_WIDTH)
+
+MAX_SPEED = float(config.MAX_SPEED)
+MAX_ROTATING_SPEED = float(config.MAX_ROTATING_SPEED)
+SOFT_LIMIT = float(config.SOFT_LIMIT)
+HARD_LIMIT = float(config.HARD_LIMIT)
+
+SCANNER_DIST_OFFSET = float(config.SCANNER_DIST_OFFSET)
+ANGLE_RANGE = float(config.ANGLE_RANGE)
+
+DISTANCE_ALPHA = float(config.DISTANCE_ALPHA)
+RODEO_SWAP_ALPHA = float(config.RODEO_SWAP_ALPHA)
+
+
+def bound_sleep_interval(value, min_value=0.2, max_value=2.0):
+    return value if min_value < value < max_value else max_value if value > max_value else min_value
+
 
 class CollisionAvoidance(object):
-    def __init__(self):
-        self._client_for_roboclaw = amber_client.AmberClient('127.0.0.1')
-        self._roboclaw_proxy = roboclaw.RoboclawProxy(self._client_for_roboclaw, 0)
+    def __init__(self, roboclaw_proxy, hokuyo_proxy):
+        self.__roboclaw_proxy = roboclaw_proxy
+        self.__hokuyo_proxy = hokuyo_proxy
 
-        self._client_for_hokuyo = amber_client.AmberClient('127.0.0.1')
-        self._hokuyo_proxy = hokuyo.HokuyoProxy(self._client_for_hokuyo, 0)
+        self.__scan = []
+        self.__scan_timestamp = 0.0
+        self.__scanning_lock = threading.Condition()
 
-        self._is_active = True
-        self._is_active_lock = threading.Condition()
+        self.__driving_speed = (0, 0, 0, 0)
+        self.__driving_speed_timestamp = 0.0
+        self.__driving_lock = threading.Condition()
 
-        self._scan = []
-        self._scanning_thread = threading.Thread(target=self.__scanning, name="scanning-thread")
-        self._scanning_thread.start()
-        self._scanning_lock = threading.Condition()
+        self.__is_active = True
 
-        self._measuring_speed = (0, 0, 0, 0)
-        self._measuring_thread = threading.Thread(target=self.__measuring, name="measuring-thread")
-        self._measuring_thread.start()
-        self._measuring_lock = threading.Condition()
-
-        self._driving_speed = (0, 0, 0, 0)
-        self._driving_thread = threading.Thread(target=self.__driving, name="driving-thread")
-        self._driving_thread.start()
-        self._driving_lock = threading.Condition()
-
-    def drive(self, front_left, front_right, rear_left, rear_right):
-        try:
-            self._driving_lock.acquire()
-            self._driving_speed = front_left, front_right, rear_left, rear_right
-        finally:
-            self._driving_lock.release()
-
-    def stop(self):
-        self.drive(0, 0, 0, 0)
-
-    def __scanning(self):
-        while self.is_active():
-            scan = self._hokuyo_proxy.get_single_scan()
-            if scan.is_available():
-                try:
-                    self._scanning_lock.acquire()
-                    self._scan = scan.get_points()
-                finally:
-                    self._scanning_lock.release()
-                    time.sleep(0.1)
-
-    def get_scan(self):
-        try:
-            self._scanning_lock.acquire()
-            return self._scan
-        finally:
-            self._scanning_lock.release()
-
-    def __measuring(self):
-        while self.is_active():
-            current_motors_speed = self._roboclaw_proxy.get_current_motors_speed()
-            if current_motors_speed.is_available():
-                try:
-                    self._measuring_lock.acquire()
-                    self._measuring_speed = (current_motors_speed.get_front_left_speed(),
-                                             current_motors_speed.get_front_right_speed(),
-                                             current_motors_speed.get_rear_left_speed(),
-                                             current_motors_speed.get_rear_right_speed())
-                finally:
-                    self._measuring_lock.release()
-                    time.sleep(0.1)
-
-    def get_speed(self):
-        try:
-            self._measuring_lock.acquire()
-            return self._measuring_speed
-        finally:
-            self._measuring_lock.release()
-
-    def get_speed_and_scan(self):
-        try:
-            self._measuring_lock.acquire()
-            speed = self._measuring_speed
-        finally:
-            self._measuring_lock.release()
-        try:
-            self._scanning_lock.acquire()
-            scan = self._scan
-        finally:
-            self._scanning_lock.release()
-        return speed, scan
-
-    def __driving(self):
-        while self.is_active():
-            try:
-                self._driving_lock.acquire()
-                self._roboclaw_proxy.send_motors_command(*self._driving_speed)
-            finally:
-                self._driving_lock.release()
-                time.sleep(0.1)
-
-    def is_active(self):
-        try:
-            self._is_active_lock.acquire()
-            return self._is_active
-        finally:
-            self._is_active_lock.release()
-
-    def terminate(self):
-        try:
-            self._is_active_lock.acquire()
-            self._is_active = False
-        finally:
-            self._is_active_lock.release()
-
-
-class CollisionAvoidanceController(MessageHandler):
-    def __init__(self, pipe_in, pipe_out):
-        super(CollisionAvoidanceController, self).__init__(pipe_in, pipe_out)
-        self.__collision_avoidance = CollisionAvoidance()
+        self.__wait_for_data_lock = threading.Condition()
 
         self.__logger = logging.getLogger(LOGGER_NAME)
 
         runtime.add_shutdown_hook(self.terminate)
 
-    def handle_data_message(self, header, message):
-        if message.HasExtension(collision_avoidance_pb2.setSpeed):
-            self.__handle_set_speed(header, message)
+    def set_speed(self, front_left, front_right, rear_left, rear_right):
+        try:
+            self.__driving_lock.acquire()
+            self.__driving_speed = front_left, front_right, rear_left, rear_right
+            self.__driving_speed_timestamp = time.time()
+            self.__notify()
+        finally:
+            self.__driving_lock.release()
 
-        elif message.HasExtension(collision_avoidance_pb2.getSpeed):
-            self.__handle_get_speed(header, message)
+    def stop(self):
+        self.set_speed(0, 0, 0, 0)
 
-        elif message.HasExtension(collision_avoidance_pb2.getSpeedAndScan):
-            self.__handle_get_speed_and_scan(header, message)
+    def get_scan(self):
+        try:
+            self.__scanning_lock.acquire()
+            return self.__scan
+        finally:
+            self.__scanning_lock.release()
 
-        elif message.HasExtension(collision_avoidance_pb2.getScan):
-            self.__handle_get_scan(header, message)
+    def scanning_loop(self):
+        sleep_interval = 0.2
+        last_scan_timestamp = 0.0
 
-        else:
-            self.__logger.warning('No request in message')
+        while self.__is_active:
+            scan = self.__hokuyo_proxy.get_single_scan()
+            scan.wait_available(sleep_interval * 1.1)
+            if scan.is_available():
+                try:
+                    self.__scanning_lock.acquire()
+                    self.__scan = scan.get_points()
+                    self.__scan_timestamp = scan.get_timestamp()
+                    current_scan_timestamp = scan.get_timestamp()
+                    self.__notify()
+                finally:
+                    self.__scanning_lock.release()
 
-    def __handle_set_speed(self, header, message):
-        self.__logger.debug('Set speed')
-        motors_speed = message.Extensions[collision_avoidance_pb2.motorsSpeed]
-        self.__collision_avoidance.drive(motors_speed.frontLeftSpeed, motors_speed.frontRightSpeed,
-                                         motors_speed.rearLeftSpeed, motors_speed.rearRightSpeed)
+                scan_interval = current_scan_timestamp - last_scan_timestamp
+                last_scan_timestamp = current_scan_timestamp
+                if scan_interval < 2.0:
+                    sleep_interval += 0.5 * (scan_interval - sleep_interval)
+                    sleep_interval = bound_sleep_interval(sleep_interval)
 
-    @staticmethod
-    def __fill_response_with_speed(speed, response_message):
-        front_left, front_right, rear_left, rear_right = speed
-        s = response_message.Extensions[collision_avoidance_pb2.motorsSpeed]
-        s.frontLeftSpeed = int(front_left)
-        s.frontRightSpeed = int(front_right)
-        s.rearLeftSpeed = int(rear_left)
-        s.rearRightSpeed = int(rear_right)
+            time.sleep(sleep_interval)
 
-    @staticmethod
-    def __fill_response_with_scan(scan, response_message):
-        s = response_message.Extensions[collision_avoidance_pb2.scan]
-        angles = map(lambda point: point[0], scan)
-        distances = map(lambda point: point[1], scan)
-        s.angles.extend(angles)
-        s.distances.extend(distances)
+    def driving_loop(self):
+        wait_timeout = 0.2
+        last_scan_timestamp = 0.0
+        last_command_timestamp = 0.0
+        last_left, last_right = 0.0, 0.0
 
-    @MessageHandler.handle_and_response
-    def __handle_get_speed(self, received_header, received_message, response_header, response_message):
-        self.__logger.debug('Get speed')
-        speed = self.__collision_avoidance.get_speed()
+        while self.__is_active:
+            self.__wait(wait_timeout * 1.1)
 
-        CollisionAvoidanceController.__fill_response_with_speed(speed, response_message)
+            try:
+                self.__driving_lock.acquire()
+                front_left, front_right, rear_left, rear_right = self.__driving_speed
+                current_command_timestamp = self.__driving_speed_timestamp
+            finally:
+                self.__driving_lock.release()
 
-        response_message.Extensions[collision_avoidance_pb2.getSpeed] = True
+            try:
+                self.__scanning_lock.acquire()
+                scan = self.__scan
+                current_scan_timestamp = self.__scan_timestamp
+            finally:
+                self.__scanning_lock.release()
 
-        return response_header, response_message
+            if current_scan_timestamp > last_scan_timestamp or current_command_timestamp > last_command_timestamp:
+                left = sum([front_left, rear_left]) / 2.0
+                right = sum([front_right, rear_right]) / 2.0
 
-    @MessageHandler.handle_and_response
-    def __handle_get_speed_and_scan(self, received_header, received_message, response_header, response_message):
-        self.__logger.debug('Get speed and scan')
-        speed, scan = self.__collision_avoidance.get_speed_and_scan()
+                left, right = CollisionAvoidance.rodeo_swap(left, right, scan)
+                left, right = CollisionAvoidance.limit_due_to_reverse_direction(left, right)
+                left, right = CollisionAvoidance.limit_due_to_distance(left, right, scan)
+                left, right = CollisionAvoidance.low_pass_filter(left, right)
+                left, right = CollisionAvoidance.limit_to_max_speed(left, right)
 
-        CollisionAvoidanceController.__fill_response_with_speed(speed, response_message)
-        CollisionAvoidanceController.__fill_response_with_scan(scan, response_message)
+            else:
+                left, right = last_left, last_right
 
-        response_message.Extensions[collision_avoidance_pb2.getSpeedAndScan] = True
+            current_timestamp = time.time()
+            trust_level = CollisionAvoidance.scan_trust(current_scan_timestamp, current_timestamp) * \
+                          CollisionAvoidance.command_trust(current_command_timestamp, current_timestamp)
 
-        return response_header, response_message
+            left *= trust_level
+            right *= trust_level
 
-    @MessageHandler.handle_and_response
-    def __handle_get_scan(self, received_header, received_message, response_header, response_message):
-        self.__logger.debug('Get scan')
-        scan = self.__collision_avoidance.get_scan()
+            left, right = int(left), int(right)
 
-        CollisionAvoidanceController.__fill_response_with_scan(scan, response_message)
+            self.__roboclaw_proxy.send_motors_command(left, right, left, right)
+            last_left, last_right = left, right
 
-        response_message.Extensions[collision_avoidance_pb2.getScan] = True
+            command_interval = current_command_timestamp - last_command_timestamp
+            last_command_timestamp = current_command_timestamp
 
-        return response_header, response_message
+            scan_interval = current_scan_timestamp - last_scan_timestamp
+            last_scan_timestamp = current_command_timestamp
 
-    def handle_subscribe_message(self, header, message):
-        self.__logger.debug('Subscribe action, nothing to do...')
-
-    def handle_unsubscribe_message(self, header, message):
-        self.__logger.debug('Unsubscribe action, nothing to do...')
-
-    def handle_client_died_message(self, client_id):
-        self.__logger.info('Client %d died, nothing to do...' % client_id)
+            min_interval = min(command_interval, scan_interval)
+            if min_interval < 2.0:
+                wait_timeout += 0.5 * (min_interval - wait_timeout)
+                wait_timeout = bound_sleep_interval(wait_timeout)
 
     def terminate(self):
-        self.__logger.warning('collision_avoidance: terminate')
-        self.__collision_avoidance.terminate()
+        self.stop()
+        self.__is_active = False
 
+    @staticmethod
+    def limit_due_to_distance(left, right, scan):
+        if left > 0 or right > 0:
+            current_angle = logic.get_angle(left, right, ROBO_WIDTH)
+            current_speed = logic.get_speed(left, right)
 
-if __name__ == '__main__':
-    controller = CollisionAvoidanceController(sys.stdin, sys.stdout)
-    controller()
+            if scan is not None:
+                min_distance, _ = logic.get_min_distance(scan, current_angle,
+                                                         SCANNER_DIST_OFFSET, ANGLE_RANGE)
+
+                if min_distance is not None:
+                    soft_limit = logic.get_soft_limit(current_speed, MAX_SPEED,
+                                                      SOFT_LIMIT * 1.3, HARD_LIMIT * 1.3, DISTANCE_ALPHA)
+
+                    if HARD_LIMIT * 1.3 < min_distance < soft_limit:
+                        max_speed = logic.get_max_speed(min_distance, soft_limit, HARD_LIMIT * 1.3, MAX_SPEED)
+                        if current_speed > max_speed:
+                            left, right = CollisionAvoidance.__calculate_new_left_right(left, right,
+                                                                                        max_speed, current_speed)
+
+                    elif min_distance <= HARD_LIMIT * 1.3:
+                        left, right = 0, 0
+
+            else:
+                print 'distance: no scan!'
+                left, right = 0.0, 0.0
+
+        return left, right
+
+    @staticmethod
+    def __calculate_new_left_right(left, right, max_speed, current_speed):
+        if current_speed > 0:
+            divide = max_speed / current_speed
+            return left * divide, right * divide
+        else:
+            return left, right
+
+    @staticmethod
+    def limit_to_max_speed(left, right):
+        left = CollisionAvoidance.__limit_to_max_speed(left)
+        right = CollisionAvoidance.__limit_to_max_speed(right)
+
+        return left, right
+
+    @staticmethod
+    def __limit_to_max_speed(value):
+        max_speed = MAX_SPEED
+        return max_speed if value > max_speed \
+            else -max_speed if value < -max_speed \
+            else value
+
+    @staticmethod
+    def limit_due_to_reverse_direction(left, right):
+        max_speed = MAX_SPEED
+
+        if (left + right) / 2.0 < 0:
+
+            if left < 0 and right < 0:
+                left = left if left > -max_speed else -max_speed
+                right = right if right > -max_speed else -max_speed
+
+            elif left < 0 < right:
+                right = right if right < max_speed else max_speed
+                left = -right
+
+            elif left > 0 > right:
+                left = left if left < max_speed else max_speed
+                right = -left
+
+        return left, right
+
+    @staticmethod
+    def rodeo_swap(left, right, scan):
+        current_angle = logic.get_angle(left, right, ROBO_WIDTH)
+        current_speed = logic.get_speed(left, right)
+
+        min_distance, min_distance_angle = logic.get_min_distance(scan, current_angle,
+                                                                  SCANNER_DIST_OFFSET, ANGLE_RANGE)
+
+        if min_distance is not None:
+            soft_limit = logic.get_soft_limit(current_speed, MAX_SPEED,
+                                              SOFT_LIMIT, HARD_LIMIT, RODEO_SWAP_ALPHA)
+
+            if min_distance < soft_limit:
+                if min_distance_angle < current_angle:
+                    if left > 0:
+                        left = left if left < MAX_ROTATING_SPEED else MAX_ROTATING_SPEED
+                        right = -left
+                    else:
+                        if right > 0:
+                            _t = left
+                            left = right
+                            right = _t
+
+                else:
+                    if right > 0:
+                        right = right if right < MAX_ROTATING_SPEED else MAX_ROTATING_SPEED
+                        left = -right
+                    else:
+                        if left > 0:
+                            _t = right
+                            right = left
+                            left = _t
+
+            elif min_distance < soft_limit * 0.4:
+                left = -left
+                right = -right
+
+        return left, right
+
+    @staticmethod
+    def low_pass_filter(left, right):
+        # TODO implement low pass filter
+        return left, right
+
+    @staticmethod
+    def scan_trust(scan_timestamp, current_timestamp):
+        val = scan_timestamp / 1000.0 - current_timestamp
+        return math.pow(4.0 / 3.0, val)
+
+    @staticmethod
+    def command_trust(command_timestamp, current_timestamp):
+        val = command_timestamp - current_timestamp
+        return math.pow(4.0 / 3.0, val)
+
+    def __notify(self):
+        self.__wait_for_data_lock.acquire()
+        try:
+            self.__wait_for_data_lock.notify_all()
+        finally:
+            self.__wait_for_data_lock.release()
+
+    def __wait(self, wait_timeout):
+        self.__wait_for_data_lock.acquire()
+        try:
+            self.__wait_for_data_lock.wait(wait_timeout)
+        finally:
+            self.__wait_for_data_lock.release()

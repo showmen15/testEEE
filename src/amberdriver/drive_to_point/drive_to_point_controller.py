@@ -4,10 +4,10 @@ import sys
 import threading
 
 import os
+from amberclient.collision_avoidance.collision_avoidance_proxy import CollisionAvoidanceProxy
 from amberclient.common.amber_client import AmberClient
 from amberclient.location.location import LocationProxy
 from amberclient.roboclaw.roboclaw import RoboclawProxy
-from ambercommon.common import runtime
 
 from amberdriver.common.message_handler import MessageHandler
 from amberdriver.drive_to_point import drive_to_point_pb2
@@ -22,6 +22,7 @@ logging.config.fileConfig('%s/drive_to_point.ini' % pwd)
 config.add_config_ini('%s/drive_to_point.ini' % pwd)
 
 LOGGER_NAME = 'DriveToPointController'
+USE_COLLISION_AVOIDANCE = config.DRIVE_TO_POINT_USE_COLLISION_AVOIDANCE == 'True'
 
 
 class DriveToPointController(MessageHandler):
@@ -29,8 +30,6 @@ class DriveToPointController(MessageHandler):
         MessageHandler.__init__(self, pipe_in, pipe_out)
         self.__drive_to_point = driver
         self.__logger = logging.getLogger(LOGGER_NAME)
-
-        runtime.add_shutdown_hook(self.terminate)
 
     def handle_data_message(self, header, message):
         if message.HasExtension(drive_to_point_pb2.setTargets):
@@ -149,19 +148,18 @@ class DriveToPointController(MessageHandler):
         self.__logger.info('Client %d died, stop!', client_id)
         self.__drive_to_point.set_targets([])
 
-    def terminate(self):
-        self.__logger.warning('drive_to_point: terminate')
-        self.__drive_to_point.terminate()
-
 
 if __name__ == '__main__':
-    client_for_roboclaw = AmberClient('127.0.0.1', name="roboclaw")
     client_for_location = AmberClient('127.0.0.1', name="location")
+    client_for_driver = AmberClient('127.0.0.1', name="driver")
 
-    roboclaw_proxy = RoboclawProxy(client_for_roboclaw, 0)
     location_proxy = LocationProxy(client_for_location, 0)
+    if USE_COLLISION_AVOIDANCE:
+        driver_proxy = CollisionAvoidanceProxy(client_for_driver, 0)
+    else:
+        driver_proxy = RoboclawProxy(client_for_driver, 0)
 
-    drive_to_point = DriveToPoint(roboclaw_proxy, location_proxy)
+    drive_to_point = DriveToPoint(driver_proxy, location_proxy)
 
     driving_thread = threading.Thread(target=drive_to_point.driving_loop, name="driving-thread")
     driving_thread.start()

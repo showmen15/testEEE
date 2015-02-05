@@ -11,10 +11,14 @@ class DummyControllerTestCase(unittest.TestCase):
     def setUp(self):
         self.mocked_stdin, self.mocked_stdout = mock.Mock(), mock.Mock()
         self.mocked_amber_pipes = mock.Mock()
+        self.mocked_amber_pipes.is_alive = mock.Mock(return_value=True)
         self.mocked_dummy = mock.Mock()
 
         self.controller = DummyController(self.mocked_stdin, self.mocked_stdout, self.mocked_dummy)
         self.controller._MessageHandler__amber_pipes = self.mocked_amber_pipes
+
+    def tearDown(self):
+        self.mocked_amber_pipes.is_alive = mock.Mock(return_value=False)
 
 
 class HandleDataMessageTestCase(DummyControllerTestCase):
