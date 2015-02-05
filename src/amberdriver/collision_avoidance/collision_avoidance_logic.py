@@ -27,7 +27,7 @@ def points_degrees(points):
 
 
 def get_min_distance(scan, current_angle, scanner_dist_offset, angle_range):
-    points = points_radians(scan.get_points())
+    points = points_radians(scan)
     min_distance = None
     min_distance_angle = None
 
@@ -42,7 +42,7 @@ def get_min_distance(scan, current_angle, scanner_dist_offset, angle_range):
 
 
 def get_max_distance(scan, current_angle, scanner_dist_offset, angle_range):
-    points = points_radians(scan.get_points())
+    points = points_radians(scan)
     max_distance = None
     max_distance_angle = None
     max_diff_angle = 0.0

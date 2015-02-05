@@ -19,8 +19,21 @@ config.add_config_ini('%s/collision_avoidance.ini' % pwd)
 
 LOGGER_NAME = 'CollisionAvoidance'
 
+ROBO_WIDTH = float(config.ROBO_WIDTH)
 
-def bound_sleep_interval(value, min_value=0.1, max_value=2.0):
+MAX_SPEED = float(config.MAX_SPEED)
+MAX_ROTATING_SPEED = float(config.MAX_ROTATING_SPEED)
+SOFT_LIMIT = float(config.SOFT_LIMIT)
+HARD_LIMIT = float(config.HARD_LIMIT)
+
+SCANNER_DIST_OFFSET = float(config.SCANNER_DIST_OFFSET)
+ANGLE_RANGE = float(config.ANGLE_RANGE)
+
+DISTANCE_ALPHA = float(config.DISTANCE_ALPHA)
+RODEO_SWAP_ALPHA = float(config.RODEO_SWAP_ALPHA)
+
+
+def bound_sleep_interval(value, min_value=0.2, max_value=2.0):
     return value if min_value < value < max_value else max_value if value > max_value else min_value
 
 
@@ -70,6 +83,7 @@ class CollisionAvoidance(object):
 
         while self.__is_active:
             scan = self.__hokuyo_proxy.get_single_scan()
+            scan.wait_available(sleep_interval * 1.1)
             if scan.is_available():
                 try:
                     self.__scanning_lock.acquire()
@@ -154,24 +168,24 @@ class CollisionAvoidance(object):
     @staticmethod
     def limit_due_to_distance(left, right, scan):
         if left > 0 or right > 0:
-            current_angle = logic.get_angle(left, right, config.ROBO_WIDTH)
+            current_angle = logic.get_angle(left, right, ROBO_WIDTH)
             current_speed = logic.get_speed(left, right)
 
             if scan is not None:
                 min_distance, _ = logic.get_min_distance(scan, current_angle,
-                                                         config.SCANNER_DIST_OFFSET, config.ANGLE_RANGE)
+                                                         SCANNER_DIST_OFFSET, ANGLE_RANGE)
 
                 if min_distance is not None:
-                    soft_limit = logic.get_soft_limit(current_speed, config.MAX_SPEED,
-                                                      config.SOFT_LIMIT, config.HARD_LIMIT, config.DISTANCE_ALPHA)
+                    soft_limit = logic.get_soft_limit(current_speed, MAX_SPEED,
+                                                      SOFT_LIMIT * 1.3, HARD_LIMIT * 1.3, DISTANCE_ALPHA)
 
-                    if config.HARD_LIMIT < min_distance < soft_limit:
-                        max_speed = logic.get_max_speed(min_distance, soft_limit, config.HARD_LIMIT, config.MAX_SPEED)
+                    if HARD_LIMIT * 1.3 < min_distance < soft_limit:
+                        max_speed = logic.get_max_speed(min_distance, soft_limit, HARD_LIMIT * 1.3, MAX_SPEED)
                         if current_speed > max_speed:
                             left, right = CollisionAvoidance.__calculate_new_left_right(left, right,
                                                                                         max_speed, current_speed)
 
-                    elif min_distance <= config.HARD_LIMIT:
+                    elif min_distance <= HARD_LIMIT * 1.3:
                         left, right = 0, 0
 
             else:
@@ -197,14 +211,14 @@ class CollisionAvoidance(object):
 
     @staticmethod
     def __limit_to_max_speed(value):
-        max_speed = config.MAX_SPEED
+        max_speed = MAX_SPEED
         return max_speed if value > max_speed \
             else -max_speed if value < -max_speed \
             else value
 
     @staticmethod
     def limit_due_to_reverse_direction(left, right):
-        max_speed = config.MAX_SPEED
+        max_speed = MAX_SPEED
 
         if (left + right) / 2.0 < 0:
 
@@ -224,20 +238,20 @@ class CollisionAvoidance(object):
 
     @staticmethod
     def rodeo_swap(left, right, scan):
-        current_angle = logic.get_angle(left, right, config.ROBO_WIDTH)
+        current_angle = logic.get_angle(left, right, ROBO_WIDTH)
         current_speed = logic.get_speed(left, right)
 
         min_distance, min_distance_angle = logic.get_min_distance(scan, current_angle,
-                                                                  config.SCANNER_DIST_OFFSET, config.ANGLE_RANGE)
+                                                                  SCANNER_DIST_OFFSET, ANGLE_RANGE)
 
         if min_distance is not None:
-            soft_limit = logic.get_soft_limit(current_speed, config.MAX_SPEED,
-                                              config.SOFT_LIMIT, config.HARD_LIMIT, config.RODEO_SWAP_ALPHA)
+            soft_limit = logic.get_soft_limit(current_speed, MAX_SPEED,
+                                              SOFT_LIMIT, HARD_LIMIT, RODEO_SWAP_ALPHA)
 
             if min_distance < soft_limit:
                 if min_distance_angle < current_angle:
                     if left > 0:
-                        left = left if left < config.MAX_ROTATING_SPEED else config.MAX_ROTATING_SPEED
+                        left = left if left < MAX_ROTATING_SPEED else MAX_ROTATING_SPEED
                         right = -left
                     else:
                         if right > 0:
@@ -247,7 +261,7 @@ class CollisionAvoidance(object):
 
                 else:
                     if right > 0:
-                        right = right if right < config.MAX_ROTATING_SPEED else config.MAX_ROTATING_SPEED
+                        right = right if right < MAX_ROTATING_SPEED else MAX_ROTATING_SPEED
                         left = -right
                     else:
                         if left > 0:
@@ -268,11 +282,13 @@ class CollisionAvoidance(object):
 
     @staticmethod
     def scan_trust(scan_timestamp, current_timestamp):
-        return math.pow(4.0 / 3.0, scan_timestamp / 1000.0 - current_timestamp)
+        val = scan_timestamp / 1000.0 - current_timestamp
+        return math.pow(4.0 / 3.0, val)
 
     @staticmethod
     def command_trust(command_timestamp, current_timestamp):
-        return math.pow(4.0 / 3.0, command_timestamp / 1000.0 - current_timestamp)
+        val = command_timestamp - current_timestamp
+        return math.pow(4.0 / 3.0, val)
 
     def __notify(self):
         self.__wait_for_data_lock.acquire()
