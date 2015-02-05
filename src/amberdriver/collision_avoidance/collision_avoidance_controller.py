@@ -5,7 +5,6 @@ import threading
 
 from amberclient.common.amber_client import AmberClient
 from amberclient.hokuyo.hokuyo import HokuyoProxy
-from amberclient.roboclaw import roboclaw_pb2
 from amberclient.roboclaw.roboclaw import RoboclawProxy
 import os
 
@@ -39,7 +38,7 @@ class CollisionAvoidanceController(MessageHandler):
 
     def __handle_set_speed(self, header, message):
         self.__logger.debug('Set speed')
-        motors_speed = message.Extensions[roboclaw_pb2.motorsCommand]
+        motors_speed = message.Extensions[collision_avoidance_pb2.motorsSpeed]
         self.__driver.set_speed(motors_speed.frontLeftSpeed, motors_speed.frontRightSpeed,
                                 motors_speed.rearLeftSpeed, motors_speed.rearRightSpeed)
 
