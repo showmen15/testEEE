@@ -3,13 +3,16 @@ import logging.config
 import sys
 import traceback
 
+from amberclient.common.amber_client import AmberClient
+from amberclient.hokuyo.hokuyo import HokuyoProxy
+from amberclient.ninedof.ninedof import NinedofProxy
 import serial
 import os
 
 from amberdriver.common.message_handler import MessageHandler
+from amberdriver.driver_support.driver_support import DriverSupport
 from amberdriver.null.null import NullController
 from amberdriver.roboclaw import roboclaw_pb2
-
 from amberdriver.roboclaw.roboclaw import Roboclaw
 from amberdriver.tools import serial_port, config
 
@@ -36,10 +39,9 @@ TIMEOUT = 0.3
 
 
 class RoboclawController(MessageHandler):
-    def __init__(self, pipe_in, pipe_out, driver_front, driver_rear):
+    def __init__(self, pipe_in, pipe_out, driver):
         super(RoboclawController, self).__init__(pipe_in, pipe_out)
-        self.__roboclaw_front = driver_front
-        self.__roboclaw_rear = driver_rear
+        self.__driver = driver
         self.__logger = logging.getLogger(LOGGER_NAME)
 
     def handle_data_message(self, header, message):
@@ -56,13 +58,9 @@ class RoboclawController(MessageHandler):
     def __handle_current_speed_request(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get current speed')
 
-        front_left = self.__roboclaw_front.read_m1_speed()
-        front_right = self.__roboclaw_front.read_m2_speed()
-        rear_left = self.__roboclaw_rear.read_m1_speed()
-        rear_right = self.__roboclaw_rear.read_m2_speed()
+        (front_left, front_right, rear_left, rear_right), _ = self.__driver.get_measured_speeds()
 
         current_speed = response_message.Extensions[roboclaw_pb2.currentSpeed]
-
         current_speed.frontLeftSpeed = int(front_left[0])
         current_speed.frontRightSpeed = int(front_right[0])
         current_speed.rearLeftSpeed = int(rear_left[0])
@@ -78,8 +76,7 @@ class RoboclawController(MessageHandler):
         rear_left = message.Extensions[roboclaw_pb2.motorsCommand].rearLeftSpeed
         rear_right = message.Extensions[roboclaw_pb2.motorsCommand].rearRightSpeed
 
-        self.__roboclaw_front.set_mixed_duty(front_left, front_right)
-        self.__roboclaw_rear.set_mixed_duty(rear_left, rear_right)
+        self.__driver.set_speeds((front_left, front_right, rear_left, rear_right))
 
     def handle_subscribe_message(self, header, message):
         self.__logger.debug('Subscribe action for %s' % str(header.clientIDs))
@@ -104,7 +101,15 @@ if __name__ == '__main__':
         roboclaw_rear.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
         roboclaw_rear.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
 
-        controller = RoboclawController(sys.stdin, sys.stdout, roboclaw_front, roboclaw_rear)
+        client_for_hokuyo = AmberClient('127.0.0.1', name='hokuyo')
+        client_for_ninedof = AmberClient('127.0.0.1', name='roboclaw')
+
+        hokuyo_proxy = HokuyoProxy(client_for_hokuyo, 0)
+        ninedof_proxy = NinedofProxy(client_for_ninedof, 0)
+
+        driver_support = DriverSupport(roboclaw_front, roboclaw_rear, hokuyo_proxy, ninedof_proxy)
+
+        controller = RoboclawController(sys.stdin, sys.stdout, driver_support)
         controller()
 
     except BaseException as e:

@@ -6,6 +6,9 @@ class Roboclaw(object):
         self.__port = port
         self.__rc_address = rc_address
 
+    def close(self):
+        self.__port.close()
+
     def m1_forward(self, val):
         self.__port.send_command(self.__rc_address, 0)
         self.__port.write_byte(val)

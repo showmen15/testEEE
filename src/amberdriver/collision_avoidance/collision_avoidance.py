@@ -85,8 +85,8 @@ class CollisionAvoidance(object):
             scan = self.__hokuyo_proxy.get_single_scan()
             scan.wait_available(sleep_interval * 1.1)
             if scan.is_available():
+                self.__scanning_lock.acquire()
                 try:
-                    self.__scanning_lock.acquire()
                     self.__scan = scan.get_points()
                     self.__scan_timestamp = scan.get_timestamp()
                     current_scan_timestamp = scan.get_timestamp()
