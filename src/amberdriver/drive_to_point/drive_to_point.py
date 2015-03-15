@@ -58,6 +58,9 @@ class DriveToPoint(object):
 
         runtime.add_shutdown_hook(self.stop)
 
+    def stop(self):
+        self.__is_active = False
+
     def set_targets(self, targets):
         self.__targets_lock.acquire()
         try:
@@ -103,6 +106,7 @@ class DriveToPoint(object):
         sleep_interval = 0.5
         last_location = self.__location_proxy.get_location()
         last_location = last_location.get_location()
+        self.__current_location = last_location
         time.sleep(sleep_interval)
         while self.__is_active:
             current_location = self.__location_proxy.get_location()
@@ -137,20 +141,6 @@ class DriveToPoint(object):
                     driving = False
             time.sleep(0.1)
 
-    def __add_target_to_visited(self, target):
-        self.__targets_lock.acquire()
-        try:
-            self.__next_targets.remove(target)
-            self.__visited_targets.append(target)
-        except ValueError:
-            self.__logger.warning('Target %s is not in next targets list, not added to visited targets list.',
-                                  str(target))
-        finally:
-            self.__targets_lock.release()
-
-    def stop(self):
-        self.__is_active = False
-
     def __drive_to(self, target, next_targets_timestamp):
         self.__logger.info('Drive to %s', str(target))
 
@@ -179,13 +169,24 @@ class DriveToPoint(object):
 
         self.__logger.info('Target %s reached', str(target))
 
+    def __add_target_to_visited(self, target):
+        self.__targets_lock.acquire()
+        try:
+            self.__next_targets.remove(target)
+            self.__visited_targets.append(target)
+        except ValueError:
+            self.__logger.warning('Target %s is not in next targets list, not added to visited targets list.',
+                                  str(target))
+            # finally:
+            self.__targets_lock.release()
+
+    def __stop(self):
+        self.__driver_proxy.send_motors_command(0, 0, 0, 0)
+
     def __low_pass(self, left, right):
         self.__old_left += 0.5 * (left - self.__old_left)
         self.__old_right += 0.5 * (right - self.__old_right)
         return self.__old_left, self.__old_right
-
-    def __stop(self):
-        self.__driver_proxy.send_motors_command(0, 0, 0, 0)
 
     @staticmethod
     def target_reached(location, target):

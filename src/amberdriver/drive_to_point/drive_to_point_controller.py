@@ -62,15 +62,15 @@ class DriveToPointController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_next_target(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get next target')
-        _next_target, _current_location = self.__drive_to_point.get_next_target_and_location()
+        next_target, current_location = self.__drive_to_point.get_next_target_and_location()
 
-        _targets = response_message.Extensions[drive_to_point_pb2.targets]
-        _targets.longitudes.extend([_next_target[0]])
-        _targets.latitudes.extend([_next_target[1]])
-        _targets.radiuses.extend([_next_target[2]])
+        targets = response_message.Extensions[drive_to_point_pb2.targets]
+        targets.longitudes.extend([next_target[0]])
+        targets.latitudes.extend([next_target[1]])
+        targets.radiuses.extend([next_target[2]])
 
-        _location = response_message.Extensions[drive_to_point_pb2.location]
-        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
+        location = response_message.Extensions[drive_to_point_pb2.location]
+        location.x, location.y, location.p, location.alfa, location.timeStamp = current_location
 
         response_message.Extensions[drive_to_point_pb2.getNextTarget] = True
 
@@ -79,15 +79,15 @@ class DriveToPointController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_next_targets(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get next targets')
-        next_targets, _current_location = self.__drive_to_point.get_next_targets_and_location()
+        next_targets, current_location = self.__drive_to_point.get_next_targets_and_location()
 
-        _targets = response_message.Extensions[drive_to_point_pb2.targets]
-        _targets.longitudes.extend(map(lambda next_target: next_target[0], next_targets))
-        _targets.latitudes.extend(map(lambda next_target: next_target[1], next_targets))
-        _targets.radiuses.extend(map(lambda next_target: next_target[2], next_targets))
+        targets = response_message.Extensions[drive_to_point_pb2.targets]
+        targets.longitudes.extend(map(lambda next_target: next_target[0], next_targets))
+        targets.latitudes.extend(map(lambda next_target: next_target[1], next_targets))
+        targets.radiuses.extend(map(lambda next_target: next_target[2], next_targets))
 
-        _location = response_message.Extensions[drive_to_point_pb2.location]
-        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
+        location = response_message.Extensions[drive_to_point_pb2.location]
+        location.x, location.y, location.p, location.alfa, location.timeStamp = current_location
 
         response_message.Extensions[drive_to_point_pb2.getNextTargets] = True
 
@@ -96,15 +96,15 @@ class DriveToPointController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_visited_target(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get visited target')
-        visited_target, _current_location = self.__drive_to_point.get_visited_target_and_location()
+        visited_target, current_location = self.__drive_to_point.get_visited_target_and_location()
 
-        _targets = response_message.Extensions[drive_to_point_pb2.targets]
-        _targets.longitudes.extend([visited_target[0]])
-        _targets.latitudes.extend([visited_target[1]])
-        _targets.radiuses.extend([visited_target[2]])
+        targets = response_message.Extensions[drive_to_point_pb2.targets]
+        targets.longitudes.extend([visited_target[0]])
+        targets.latitudes.extend([visited_target[1]])
+        targets.radiuses.extend([visited_target[2]])
 
-        _location = response_message.Extensions[drive_to_point_pb2.location]
-        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
+        location = response_message.Extensions[drive_to_point_pb2.location]
+        location.x, location.y, location.p, location.alfa, location.timeStamp = current_location
 
         response_message.Extensions[drive_to_point_pb2.getVisitedTarget] = True
 
@@ -113,15 +113,15 @@ class DriveToPointController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_visited_targets(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get visited targets')
-        visited_targets, _current_location = self.__drive_to_point.get_visited_targets_and_location()
+        visited_targets, current_location = self.__drive_to_point.get_visited_targets_and_location()
 
-        _targets = response_message.Extensions[drive_to_point_pb2.targets]
-        _targets.longitudes.extend(map(lambda target: target[0], visited_targets))
-        _targets.latitudes.extend(map(lambda target: target[1], visited_targets))
-        _targets.radiuses.extend(map(lambda target: target[2], visited_targets))
+        targets = response_message.Extensions[drive_to_point_pb2.targets]
+        targets.longitudes.extend(map(lambda target: target[0], visited_targets))
+        targets.latitudes.extend(map(lambda target: target[1], visited_targets))
+        targets.radiuses.extend(map(lambda target: target[2], visited_targets))
 
-        _location = response_message.Extensions[drive_to_point_pb2.location]
-        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
+        location = response_message.Extensions[drive_to_point_pb2.location]
+        location.x, location.y, location.p, location.alfa, location.timeStamp = current_location
 
         response_message.Extensions[drive_to_point_pb2.getVisitedTargets] = True
 
@@ -131,8 +131,8 @@ class DriveToPointController(MessageHandler):
     def __handle_get_configuration(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get configuration')
 
-        _configuration = response_message.Extensions[drive_to_point_pb2.configuration]
-        _configuration.maxSpeed = self.__drive_to_point.MAX_SPEED
+        configuration = response_message.Extensions[drive_to_point_pb2.configuration]
+        configuration.maxSpeed = self.__drive_to_point.MAX_SPEED
 
         response_message.Extensions[drive_to_point_pb2.getConfiguration] = True
 

@@ -1,11 +1,10 @@
 from functools import wraps
 import logging
 import threading
-
 import logging.config
 import time
-
 import abc
+
 import os
 
 from amberdriver.common import drivermsg_pb2
