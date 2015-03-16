@@ -36,7 +36,7 @@ class CollisionAvoidanceController(MessageHandler):
         else:
             self.__logger.warning('No request in message')
 
-    def __handle_set_speed(self, header, message):
+    def __handle_set_speed(self, _, message):
         self.__logger.debug('Set speed')
         motors_speed = message.Extensions[collision_avoidance_pb2.motorsSpeed]
         self.__driver.set_speed(motors_speed.frontLeftSpeed, motors_speed.frontRightSpeed,
@@ -49,7 +49,7 @@ class CollisionAvoidanceController(MessageHandler):
         self.__logger.debug('Unsubscribe action, nothing to do...')
 
     def handle_client_died_message(self, client_id):
-        self.__logger.info('Client %d died, stop!' % client_id)
+        self.__logger.info('Client %d died, stop!', client_id)
         self.__driver.stop()
 
 

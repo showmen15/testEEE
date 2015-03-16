@@ -18,3 +18,5 @@ dist/
 __envi/
 
 *_pb2.py
+
+.coverage

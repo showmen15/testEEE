@@ -45,13 +45,13 @@ class HokuyoController(MessageHandler):
             self.__logger.warning('No recognizable request in message')
 
     @MessageHandler.handle_and_response
-    def __handle_get_single_scan(self, received_header, received_message, response_header, response_message):
+    def __handle_get_single_scan(self, _received_header, _received_message, response_header, response_message):
         self.__logger.debug('Get single scan')
         angles, distances, timestamp = self.__hokuyo.get_scan()
         response_message = HokuyoController.__fill_scan(response_message, angles, distances, timestamp)
         return response_header, response_message
 
-    def __handle_enable_scanning(self, header, message):
+    def __handle_enable_scanning(self, _header, message):
         _enable_scanning = message.Extensions[hokuyo_pb2.enable_scanning]
         self.__logger.debug('Enable scanning, set to %s', bool(str(_enable_scanning)))
         self.__hokuyo.enable_scanning(_enable_scanning)
