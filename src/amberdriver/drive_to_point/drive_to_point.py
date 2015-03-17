@@ -177,7 +177,7 @@ class DriveToPoint(object):
         except ValueError:
             self.__logger.warning('Target %s is not in next targets list, not added to visited targets list.',
                                   str(target))
-            # finally:
+        finally:
             self.__targets_lock.release()
 
     def __stop(self):
