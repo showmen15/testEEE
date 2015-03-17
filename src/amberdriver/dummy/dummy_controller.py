@@ -1,13 +1,12 @@
-import threading
-import time
 import logging
 import logging.config
 import sys
+import traceback
 
 import os
 
-from amberdriver.common import drivermsg_pb2
 from amberdriver.common.message_handler import MessageHandler
+
 from amberdriver.dummy import dummy_pb2
 from amberdriver.dummy.dummy import Dummy
 from amberdriver.null.null import NullController
@@ -32,12 +31,6 @@ class DummyController(MessageHandler):
     def __init__(self, pipe_in, pipe_out, driver):
         super(DummyController, self).__init__(pipe_in, pipe_out)
         self.__dummy = driver
-
-        self.__subscribers = []
-        self.__subscribers_lock = threading.Lock()
-
-        self.__subscribe_thread = None
-
         self.__value = 0
         self.__logger = logging.getLogger(LOGGER_NAME)
 
@@ -61,7 +54,7 @@ class DummyController(MessageHandler):
             self.__handle_get_status(header, message)
 
         else:
-            self.__logger.warning('No request in message')
+            self.__logger.warning('No recognizable request in message')
 
     def __handle_set_enable(self, header, message):
         """
@@ -99,11 +92,13 @@ class DummyController(MessageHandler):
         :return:
         """
         self.__logger.debug('Get status')
-
-        response_message.Extensions[dummy_pb2.enable] = self.__dummy.enable
-        response_message.Extensions[dummy_pb2.message] = self.__dummy.message
-
+        DummyController.__fill_status(response_message, self.__dummy.enable, self.__dummy.message)
         return response_header, response_message
+
+    @staticmethod
+    def __fill_status(response_message, enable, message):
+        response_message.Extensions[dummy_pb2.enable] = enable
+        response_message.Extensions[dummy_pb2.message] = message
 
     def handle_subscribe_message(self, header, message):
         """
@@ -114,17 +109,7 @@ class DummyController(MessageHandler):
         :return:
         """
         self.__logger.debug('Subscribe action')
-
-        self.__subscribers_lock.acquire()
-        try:
-            no_subscribers = (len(self.__subscribers) == 0)
-            self.__subscribers.extend(header.clientIDs)
-        finally:
-            self.__subscribers_lock.release()
-
-        if no_subscribers or self.__subscribe_thread is None:
-            self.__subscribe_thread = threading.Thread(target=self.__run, name="subscribe-thread")
-            self.__subscribe_thread.start()
+        self.add_subscribers(header.clientIDs)
 
     def handle_unsubscribe_message(self, header, message):
         """
@@ -134,8 +119,8 @@ class DummyController(MessageHandler):
         :param message:
         :return:
         """
-        self.__logger.debug('Unsubscribe action')
-        map(self.__remove_subscriber, header.clientIDs)
+        self.__logger.debug('Unsubscribe action for clients %s', str(header.clientIDs))
+        map(self.remove_subscriber, header.clientIDs)
 
     def handle_client_died_message(self, client_id):
         """
@@ -145,45 +130,16 @@ class DummyController(MessageHandler):
         :return:
         """
         self.__logger.info('Client %d died', client_id)
-        self.__remove_subscriber(client_id)
+        self.remove_subscriber(client_id)
 
-    def __remove_subscriber(self, client_id):
-        self.__subscribers_lock.acquire()
-        try:
-            self.__subscribers.remove(client_id)
-        except ValueError:
-            self.__logger.warning('Client %d does not registered as subscriber', client_id)
-            # FIXME: silent pass?
-        finally:
-            self.__subscribers_lock.release()
+    def fill_subscription_response(self, response_message):
+        self.__value += 1
+        return DummyController.__fill_response(response_message, self.__value)
 
-    def __run(self):
-        """
-        Implementation of function used to service subscribed clients.
-
-        :return:
-        """
-        are_subscribes = True
-        while self.is_alive() and are_subscribes:
-            response_header = drivermsg_pb2.DriverHdr()
-            response_message = drivermsg_pb2.DriverMsg()
-
-            self.__subscribers_lock.acquire()
-            try:
-                are_subscribes = len(self.__subscribers) > 0
-                if are_subscribes:
-                    response_header.clientIDs.extend(self.__subscribers)
-            finally:
-                self.__subscribers_lock.release()
-
-            if are_subscribes:
-                response_message.type = drivermsg_pb2.DriverMsg.DATA
-                response_message.ackNum = 0
-                response_message.Extensions[dummy_pb2.message] = 'Response %d' % self.__value
-                self.__value += 1
-                self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
-
-            time.sleep(0.01)
+    @staticmethod
+    def __fill_response(response_message, value):
+        response_message.Extensions[dummy_pb2.message] = 'Response %d' % value
+        return response_message
 
 
 if __name__ == '__main__':
@@ -196,8 +152,8 @@ if __name__ == '__main__':
         controller()
 
     except BaseException as e:
-        sys.stderr.write('%s\nRun without Dummy.' % str(e))
-        # FIXME: silent pass?
+        sys.stderr.write('Run without Dummy.\n')
+        traceback.print_exc()
 
         controller = NullController(sys.stdin, sys.stdout)
         controller()

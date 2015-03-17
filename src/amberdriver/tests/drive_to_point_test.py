@@ -14,10 +14,14 @@ class DriveToPointControllerTestCase(unittest.TestCase):
     def setUp(self):
         self.mocked_stdin, self.mocked_stdout = mock.Mock(), mock.Mock()
         self.mocked_amber_pipes = mock.Mock()
+        self.mocked_amber_pipes.is_alive = mock.Mock(return_value=True)
         self.mocked_drive_to_point = mock.Mock()
 
         self.controller = DriveToPointController(self.mocked_stdin, self.mocked_stdout, self.mocked_drive_to_point)
         self.controller._MessageHandler__amber_pipes = self.mocked_amber_pipes
+
+    def tearDown(self):
+        self.mocked_amber_pipes.is_alive = mock.Mock(return_value=False)
 
 
 class HandleDataMessageTestCase(DriveToPointControllerTestCase):
@@ -221,12 +225,6 @@ class HandleGetConfigurationTestCase(DriveToPointControllerTestCase):
             side_effect=write_to_pipe)
 
         self.controller._DriveToPointController__handle_get_configuration(header, message)
-
-
-class TerminateTestCase(DriveToPointControllerTestCase):
-    def runTest(self):
-        self.controller.terminate()
-        self.mocked_drive_to_point.terminate.assert_called_once_with()
 
 
 class DriveToPointTestCase(unittest.TestCase):

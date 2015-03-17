@@ -4,10 +4,10 @@ import sys
 import threading
 
 import os
+from amberclient.collision_avoidance.collision_avoidance_proxy import CollisionAvoidanceProxy
 from amberclient.common.amber_client import AmberClient
 from amberclient.location.location import LocationProxy
 from amberclient.roboclaw.roboclaw import RoboclawProxy
-from ambercommon.common import runtime
 
 from amberdriver.common.message_handler import MessageHandler
 from amberdriver.drive_to_point import drive_to_point_pb2
@@ -22,6 +22,7 @@ logging.config.fileConfig('%s/drive_to_point.ini' % pwd)
 config.add_config_ini('%s/drive_to_point.ini' % pwd)
 
 LOGGER_NAME = 'DriveToPointController'
+USE_COLLISION_AVOIDANCE = config.DRIVE_TO_POINT_USE_COLLISION_AVOIDANCE == 'True'
 
 
 class DriveToPointController(MessageHandler):
@@ -29,8 +30,6 @@ class DriveToPointController(MessageHandler):
         MessageHandler.__init__(self, pipe_in, pipe_out)
         self.__drive_to_point = driver
         self.__logger = logging.getLogger(LOGGER_NAME)
-
-        runtime.add_shutdown_hook(self.terminate)
 
     def handle_data_message(self, header, message):
         if message.HasExtension(drive_to_point_pb2.setTargets):
@@ -63,15 +62,15 @@ class DriveToPointController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_next_target(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get next target')
-        _next_target, _current_location = self.__drive_to_point.get_next_target_and_location()
+        next_target, current_location = self.__drive_to_point.get_next_target_and_location()
 
-        _targets = response_message.Extensions[drive_to_point_pb2.targets]
-        _targets.longitudes.extend([_next_target[0]])
-        _targets.latitudes.extend([_next_target[1]])
-        _targets.radiuses.extend([_next_target[2]])
+        targets = response_message.Extensions[drive_to_point_pb2.targets]
+        targets.longitudes.extend([next_target[0]])
+        targets.latitudes.extend([next_target[1]])
+        targets.radiuses.extend([next_target[2]])
 
-        _location = response_message.Extensions[drive_to_point_pb2.location]
-        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
+        location = response_message.Extensions[drive_to_point_pb2.location]
+        location.x, location.y, location.p, location.alfa, location.timeStamp = current_location
 
         response_message.Extensions[drive_to_point_pb2.getNextTarget] = True
 
@@ -80,15 +79,15 @@ class DriveToPointController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_next_targets(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get next targets')
-        next_targets, _current_location = self.__drive_to_point.get_next_targets_and_location()
+        next_targets, current_location = self.__drive_to_point.get_next_targets_and_location()
 
-        _targets = response_message.Extensions[drive_to_point_pb2.targets]
-        _targets.longitudes.extend(map(lambda next_target: next_target[0], next_targets))
-        _targets.latitudes.extend(map(lambda next_target: next_target[1], next_targets))
-        _targets.radiuses.extend(map(lambda next_target: next_target[2], next_targets))
+        targets = response_message.Extensions[drive_to_point_pb2.targets]
+        targets.longitudes.extend(map(lambda next_target: next_target[0], next_targets))
+        targets.latitudes.extend(map(lambda next_target: next_target[1], next_targets))
+        targets.radiuses.extend(map(lambda next_target: next_target[2], next_targets))
 
-        _location = response_message.Extensions[drive_to_point_pb2.location]
-        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
+        location = response_message.Extensions[drive_to_point_pb2.location]
+        location.x, location.y, location.p, location.alfa, location.timeStamp = current_location
 
         response_message.Extensions[drive_to_point_pb2.getNextTargets] = True
 
@@ -97,15 +96,15 @@ class DriveToPointController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_visited_target(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get visited target')
-        visited_target, _current_location = self.__drive_to_point.get_visited_target_and_location()
+        visited_target, current_location = self.__drive_to_point.get_visited_target_and_location()
 
-        _targets = response_message.Extensions[drive_to_point_pb2.targets]
-        _targets.longitudes.extend([visited_target[0]])
-        _targets.latitudes.extend([visited_target[1]])
-        _targets.radiuses.extend([visited_target[2]])
+        targets = response_message.Extensions[drive_to_point_pb2.targets]
+        targets.longitudes.extend([visited_target[0]])
+        targets.latitudes.extend([visited_target[1]])
+        targets.radiuses.extend([visited_target[2]])
 
-        _location = response_message.Extensions[drive_to_point_pb2.location]
-        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
+        location = response_message.Extensions[drive_to_point_pb2.location]
+        location.x, location.y, location.p, location.alfa, location.timeStamp = current_location
 
         response_message.Extensions[drive_to_point_pb2.getVisitedTarget] = True
 
@@ -114,15 +113,15 @@ class DriveToPointController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_visited_targets(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get visited targets')
-        visited_targets, _current_location = self.__drive_to_point.get_visited_targets_and_location()
+        visited_targets, current_location = self.__drive_to_point.get_visited_targets_and_location()
 
-        _targets = response_message.Extensions[drive_to_point_pb2.targets]
-        _targets.longitudes.extend(map(lambda target: target[0], visited_targets))
-        _targets.latitudes.extend(map(lambda target: target[1], visited_targets))
-        _targets.radiuses.extend(map(lambda target: target[2], visited_targets))
+        targets = response_message.Extensions[drive_to_point_pb2.targets]
+        targets.longitudes.extend(map(lambda target: target[0], visited_targets))
+        targets.latitudes.extend(map(lambda target: target[1], visited_targets))
+        targets.radiuses.extend(map(lambda target: target[2], visited_targets))
 
-        _location = response_message.Extensions[drive_to_point_pb2.location]
-        _location.x, _location.y, _location.p, _location.alfa, _location.timeStamp = _current_location
+        location = response_message.Extensions[drive_to_point_pb2.location]
+        location.x, location.y, location.p, location.alfa, location.timeStamp = current_location
 
         response_message.Extensions[drive_to_point_pb2.getVisitedTargets] = True
 
@@ -132,8 +131,8 @@ class DriveToPointController(MessageHandler):
     def __handle_get_configuration(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get configuration')
 
-        _configuration = response_message.Extensions[drive_to_point_pb2.configuration]
-        _configuration.maxSpeed = self.__drive_to_point.MAX_SPEED
+        configuration = response_message.Extensions[drive_to_point_pb2.configuration]
+        configuration.maxSpeed = self.__drive_to_point.MAX_SPEED
 
         response_message.Extensions[drive_to_point_pb2.getConfiguration] = True
 
@@ -149,19 +148,18 @@ class DriveToPointController(MessageHandler):
         self.__logger.info('Client %d died, stop!', client_id)
         self.__drive_to_point.set_targets([])
 
-    def terminate(self):
-        self.__logger.warning('drive_to_point: terminate')
-        self.__drive_to_point.terminate()
-
 
 if __name__ == '__main__':
-    client_for_roboclaw = AmberClient('127.0.0.1', name="roboclaw")
     client_for_location = AmberClient('127.0.0.1', name="location")
+    client_for_driver = AmberClient('127.0.0.1', name="driver")
 
-    roboclaw_proxy = RoboclawProxy(client_for_roboclaw, 0)
     location_proxy = LocationProxy(client_for_location, 0)
+    if USE_COLLISION_AVOIDANCE:
+        driver_proxy = CollisionAvoidanceProxy(client_for_driver, 0)
+    else:
+        driver_proxy = RoboclawProxy(client_for_driver, 0)
 
-    drive_to_point = DriveToPoint(roboclaw_proxy, location_proxy)
+    drive_to_point = DriveToPoint(driver_proxy, location_proxy)
 
     driving_thread = threading.Thread(target=drive_to_point.driving_loop, name="driving-thread")
     driving_thread.start()

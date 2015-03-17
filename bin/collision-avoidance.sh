@@ -10,11 +10,11 @@ then
 
     if [ -z "${_APP_PROFILE}" ];
     then
-        ${__dir}/__envi/bin/python -u ${PYTHONPATH}/amberdriver/collision_avoidance/collision_avoidance.py
+        ${__dir}/__envi/bin/python -u ${PYTHONPATH}/amberdriver/collision_avoidance/collision_avoidance_controller.py
     else
         export _APP_TEMP=$(mktemp -d)
 
-        ${__dir}/__envi/bin/python -u -m cProfile -o ${_APP_TEMP}/output.pstats ${PYTHONPATH}/amberdriver/collision_avoidance/collision_avoidance.py
+        ${__dir}/__envi/bin/python -u -m cProfile -o ${_APP_TEMP}/output.pstats ${PYTHONPATH}/amberdriver/collision_avoidance/collision_avoidance_controller.py
 
         ${__dir}/__envi/bin/gprof2dot -f pstats --output ${_APP_TEMP}/output.dot ${_APP_TEMP}/output.pstats
         # TODO(paoolo) check if `dot` exists?

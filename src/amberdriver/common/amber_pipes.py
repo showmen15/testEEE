@@ -5,6 +5,8 @@ import threading
 import traceback
 import signal
 
+from ambercommon.common import runtime
+
 import os
 
 from amberdriver.common import drivermsg_pb2
@@ -19,30 +21,38 @@ pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/amber.ini' % pwd)
 
 
+class AmberException(Exception):
+    def __init__(self, message=None, cause=None):
+        super(AmberException, self).__init__(message + u', caused by ' + repr(cause))
+        self.cause = cause
+
+
 class AmberPipes(object):
     def __init__(self, message_handler, pipe_in, pipe_out):
         self.__message_handler = message_handler
         self.__pipe_in, self.__pipe_out = pipe_in, pipe_out
-        self.__alive = True
+        self.__is_alive = True
 
         self.__write_lock = threading.Lock()
         self.__logger = logging.getLogger(LOGGER_NAME)
+
+        runtime.add_shutdown_hook(self.terminate)
 
     def __call__(self, *args, **kwargs):
         self.__logger.info('Pipes thread started.')
         self.__amber_pipes_loop()
 
     def is_alive(self):
-        return self.__alive
+        return self.__is_alive
 
     def __amber_pipes_loop(self):
         try:
-            while self.__alive:
+            while self.__is_alive:
                 header, message = self.__read_header_and_message_from_pipe()
                 self.__handle_header_and_message(header, message)
         except struct.error:
             self.__logger.warning('amber_pipes: stop due to error on pipe with mediator')
-            self.__alive = False
+            self.__is_alive = False
             os.kill(os.getpid(), signal.SIGTERM)
 
         self.__logger.warning('amber_pipes: stop')
@@ -179,7 +189,7 @@ class AmberPipes(object):
 
         except BaseException as e:
             traceback.print_exc(e)
-            # FIXME: silent pass?
+            raise AmberException(cause=e)
 
         finally:
             self.__write_lock.release()
@@ -193,3 +203,6 @@ class AmberPipes(object):
         """
         self.__pipe_out.write(binary_string)
         self.__pipe_out.flush()
+
+    def terminate(self):
+        self.__is_alive = False

@@ -46,3 +46,5 @@ class MessageHandlerTestCase(unittest.TestCase):
 
         amber_pipes.write_header_and_message_to_pipe.assert_called_once_with(self.response_header,
                                                                              self.response_message)
+
+        amber_pipes.is_alive = mock.Mock(return_value=False)

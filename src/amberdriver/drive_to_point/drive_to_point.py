@@ -3,6 +3,7 @@ import logging.config
 import threading
 import time
 import math
+import traceback
 
 import os
 from ambercommon.common import runtime
@@ -41,28 +42,31 @@ class DriveToPoint(object):
     DRIVING_ALPHA = 3.0  # cut at 60st
     TIMESTAMP_FIELD = 4
 
-    def __init__(self, roboclaw_proxy, location_proxy):
-        self.__roboclaw_proxy = roboclaw_proxy
+    def __init__(self, driver_proxy, location_proxy):
+        self.__driver_proxy = driver_proxy
         self.__location_proxy = location_proxy
 
-        self.__next_targets, self.__visited_targets, self.__current_location = [], [], None
-        self.__next_targets_timestamp = 0.0
+        self.__next_targets, self.__visited_targets = [], []
+        self.__current_location, self.__next_targets_timestamp = None, 0.0
         self.__targets_lock = threading.Condition()
 
         self.__is_active = True
-        self.__drive_allowed = False
+        self.__driving_allowed = False
 
         self.__old_left, self.__old_right = 0.0, 0.0
         self.__logger = logging.getLogger(LOGGER_NAME)
 
-        runtime.add_shutdown_hook(self.terminate)
+        runtime.add_shutdown_hook(self.stop)
+
+    def stop(self):
+        self.__is_active = False
 
     def set_targets(self, targets):
         self.__targets_lock.acquire()
         try:
             self.__next_targets = targets
             self.__next_targets_timestamp = time.time()
-            self.__drive_allowed = len(targets) > 0
+            self.__driving_allowed = len(targets) > 0
             self.__visited_targets = []
             self.__targets_lock.notify_all()
         finally:
@@ -102,6 +106,7 @@ class DriveToPoint(object):
         sleep_interval = 0.5
         last_location = self.__location_proxy.get_location()
         last_location = last_location.get_location()
+        self.__current_location = last_location
         time.sleep(sleep_interval)
         while self.__is_active:
             current_location = self.__location_proxy.get_location()
@@ -112,19 +117,21 @@ class DriveToPoint(object):
                                                         last_location[DriveToPoint.TIMESTAMP_FIELD],
                                                         sleep_interval)
             except TypeError:
-                # FIXME: silent pass?
-                pass
+                traceback.print_exc()
             last_location = current_location
             time.sleep(sleep_interval)
 
     def driving_loop(self):
-        # FIXME(paoolo) it blocks!
         driving = False
         while self.__is_active:
             try:
                 while self.__is_active:
-                    target = self.__next_targets[0]
-                    driving = True
+                    self.__targets_lock.acquire()
+                    try:
+                        target = self.__next_targets[0]
+                        driving = True
+                    finally:
+                        self.__targets_lock.release()
                     self.__drive_to(target, self.__next_targets_timestamp)
                     self.__add_target_to_visited(target)
             except IndexError:
@@ -133,6 +140,34 @@ class DriveToPoint(object):
                     self.__stop()
                     driving = False
             time.sleep(0.1)
+
+    def __drive_to(self, target, next_targets_timestamp):
+        self.__logger.info('Drive to %s', str(target))
+
+        sleep_interval = 0.5
+        location = self.__current_location
+        while location is None:
+            time.sleep(sleep_interval)
+            location = self.__current_location
+
+        while not DriveToPoint.target_reached(location, target) and self.__driving_allowed and self.__is_active \
+                and not self.__next_targets_timestamp > next_targets_timestamp:
+            left, right = DriveToPoint.compute_speed(location, target)
+            left, right = self.__low_pass(left, right)
+            left, right = int(left), int(right)
+            self.__driver_proxy.send_motors_command(left, right, left, right)
+
+            time.sleep(sleep_interval)
+            old_location = location
+            location = self.__current_location
+            try:
+                sleep_interval = compute_sleep_interval(location[DriveToPoint.TIMESTAMP_FIELD],
+                                                        old_location[DriveToPoint.TIMESTAMP_FIELD],
+                                                        sleep_interval)
+            except TypeError:
+                traceback.print_exc()
+
+        self.__logger.info('Target %s reached', str(target))
 
     def __add_target_to_visited(self, target):
         self.__targets_lock.acquire()
@@ -145,41 +180,13 @@ class DriveToPoint(object):
         finally:
             self.__targets_lock.release()
 
-    def terminate(self):
-        self.__is_active = False
-
-    def __drive_to(self, target, next_targets_timestamp):
-        self.__logger.info('Drive to %s', str(target))
-
-        sleep_interval = 0.5
-        location = self.__current_location
-        while location is None:
-            time.sleep(sleep_interval)
-            location = self.__current_location
-
-        while not DriveToPoint.target_reached(location, target) and self.__drive_allowed \
-                and not self.__next_targets_timestamp > next_targets_timestamp:
-            left, right = DriveToPoint.compute_speed(location, target)
-            left, right = self.__low_pass(left, right)
-            left, right = int(left), int(right)
-            self.__roboclaw_proxy.send_motors_command(left, right, left, right)
-
-            time.sleep(sleep_interval)
-            old_location = location
-            location = self.__current_location
-            sleep_interval = compute_sleep_interval(location[DriveToPoint.TIMESTAMP_FIELD],
-                                                    old_location[DriveToPoint.TIMESTAMP_FIELD],
-                                                    sleep_interval)
-
-        self.__logger.info('Target %s reached', str(target))
+    def __stop(self):
+        self.__driver_proxy.send_motors_command(0, 0, 0, 0)
 
     def __low_pass(self, left, right):
         self.__old_left += 0.5 * (left - self.__old_left)
         self.__old_right += 0.5 * (right - self.__old_right)
         return self.__old_left, self.__old_right
-
-    def __stop(self):
-        self.__roboclaw_proxy.send_motors_command(0, 0, 0, 0)
 
     @staticmethod
     def target_reached(location, target):
@@ -190,7 +197,7 @@ class DriveToPoint(object):
             diff_y = location_y - target_y
             return math.pow(diff_x, 2) + math.pow(diff_y, 2) < math.pow(target_radius, 2)
         except TypeError:
-            # FIXME: silent pass?
+            traceback.print_exc()
             return False
 
     @staticmethod
