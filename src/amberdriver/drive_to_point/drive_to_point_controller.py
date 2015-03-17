@@ -150,8 +150,8 @@ class DriveToPointController(MessageHandler):
 
 
 if __name__ == '__main__':
-    client_for_location = AmberClient('127.0.0.1', name="location")
-    client_for_driver = AmberClient('127.0.0.1', name="driver")
+    client_for_location = AmberClient('127.0.0.1', name='location')
+    client_for_driver = AmberClient('127.0.0.1', name='driver')
 
     location_proxy = LocationProxy(client_for_location, 0)
     if USE_COLLISION_AVOIDANCE:
@@ -161,10 +161,10 @@ if __name__ == '__main__':
 
     drive_to_point = DriveToPoint(driver_proxy, location_proxy)
 
-    driving_thread = threading.Thread(target=drive_to_point.driving_loop, name="driving-thread")
+    driving_thread = threading.Thread(target=drive_to_point.driving_loop, name='driving-thread')
     driving_thread.start()
 
-    location_thread = threading.Thread(target=drive_to_point.location_loop, name="location-thread")
+    location_thread = threading.Thread(target=drive_to_point.location_loop, name='location-thread')
     location_thread.start()
 
     controller = DriveToPointController(sys.stdin, sys.stdout, drive_to_point)

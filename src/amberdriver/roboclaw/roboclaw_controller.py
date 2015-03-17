@@ -3,14 +3,10 @@ import logging.config
 import sys
 import traceback
 
-from amberclient.common.amber_client import AmberClient
-from amberclient.hokuyo.hokuyo import HokuyoProxy
-from amberclient.ninedof.ninedof import NinedofProxy
 import serial
 import os
 
 from amberdriver.common.message_handler import MessageHandler
-from amberdriver.driver_support.driver_support import DriverSupport
 from amberdriver.null.null import NullController
 from amberdriver.roboclaw import roboclaw_pb2
 from amberdriver.roboclaw.roboclaw import Roboclaw
@@ -76,7 +72,7 @@ class RoboclawController(MessageHandler):
         rear_left = message.Extensions[roboclaw_pb2.motorsCommand].rearLeftSpeed
         rear_right = message.Extensions[roboclaw_pb2.motorsCommand].rearRightSpeed
 
-        self.__driver.set_speeds((front_left, front_right, rear_left, rear_right))
+        self.__driver.set_speeds(front_left, front_right, rear_left, rear_right)
 
     def handle_subscribe_message(self, header, message):
         self.__logger.debug('Subscribe action for %s' % str(header.clientIDs))
@@ -85,7 +81,28 @@ class RoboclawController(MessageHandler):
         self.__logger.debug('Unsubscribe action for %s' % str(header.clientIDs))
 
     def handle_client_died_message(self, client_id):
-        self.__logger.debug('Client died %s' % str(client_id))
+        self.__logger.info('Client %d died, stop!', client_id)
+        self.__driver.stop()
+
+
+class RoboclawDriver(object):
+    def __init__(self, front, rear):
+        self.__front, self.__rear = front, rear
+
+    def get_measured_speeds(self):
+        front_left = self.__front.read_m1_speed()
+        front_right = self.__front.read_m2_speed()
+        rear_left = self.__rear.read_m1_speed()
+        rear_right = self.__rear.read_m2_speed()
+        return front_left, front_right, rear_left, rear_right
+
+    def set_speeds(self, front_left, front_right, rear_left, rear_right):
+        self.__front.set_mixed_duty(front_left, front_right)
+        self.__rear.set_mixed_duty(rear_left, rear_right)
+
+    def stop(self):
+        self.__front.set_mixed_duty(0, 0)
+        self.__rear.set_mixed_duty(0, 0)
 
 
 if __name__ == '__main__':
@@ -101,15 +118,8 @@ if __name__ == '__main__':
         roboclaw_rear.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
         roboclaw_rear.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
 
-        client_for_hokuyo = AmberClient('127.0.0.1', name='hokuyo')
-        client_for_ninedof = AmberClient('127.0.0.1', name='roboclaw')
-
-        hokuyo_proxy = HokuyoProxy(client_for_hokuyo, 0)
-        ninedof_proxy = NinedofProxy(client_for_ninedof, 0)
-
-        driver_support = DriverSupport(roboclaw_front, roboclaw_rear, hokuyo_proxy, ninedof_proxy)
-
-        controller = RoboclawController(sys.stdin, sys.stdout, driver_support)
+        roboclaw_driver = RoboclawDriver(roboclaw_front, roboclaw_rear)
+        controller = RoboclawController(sys.stdin, sys.stdout, roboclaw_driver)
         controller()
 
     except BaseException as e:

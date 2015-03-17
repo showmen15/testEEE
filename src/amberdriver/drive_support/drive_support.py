@@ -28,16 +28,18 @@ class SensorDataHandler(Listener):
         self.__driver_support.set_sensor_data(response)
 
 
-class DriverSupport(object):
+class DriveSupport(object):
     def __init__(self, roboclaw_front, roboclaw_rear, hokuyo_proxy, ninedof_proxy):
+        self.__scan, self.__sensor_data = None, None
+
         self.__roboclaw_front, self.__roboclaw_rear = roboclaw_front, roboclaw_rear
         self.__roboclaw_lock = threading.Lock()
 
         self.__speeds_timestamp, self.__speeds = 0, (0, 0, 0, 0)
         self.__speeds_lock = threading.Lock()
 
-        self.__measure_speeds_timestamp, self.__measure_speeds = 0, None
-        self.__measure_speeds_lock = threading.Lock()
+        self.__measured_speeds_timestamp, self.__measured_speeds = 0, None
+        self.__measured_speeds_lock = threading.Lock()
 
         self.__is_active = True
 
@@ -58,10 +60,15 @@ class DriverSupport(object):
 
         self.__roboclaw_lock.acquire()
         try:
+            self.stop()
             self.__roboclaw_front.close()
             self.__roboclaw_rear.close()
         finally:
             self.__roboclaw_lock.release()
+
+    def stop(self):
+        self.__roboclaw_front.set_mixed_duty(0, 0)
+        self.__roboclaw_rear.set_mixed_duty(0, 0)
 
     def set_scan(self, scan):
         self.__scan = scan
@@ -69,10 +76,10 @@ class DriverSupport(object):
     def set_sensor_data(self, sensor_data):
         self.__sensor_data = sensor_data
 
-    def set_speeds(self, speeds):
+    def set_speeds(self, front_left, front_right, rear_left, rear_right):
         self.__speeds_lock.acquire()
         try:
-            self.__speeds = speeds
+            self.__speeds = (front_left, front_right, rear_left, rear_right)
             self.__speeds_timestamp = time.time()
         finally:
             self.__speeds_lock.release()
@@ -86,22 +93,20 @@ class DriverSupport(object):
 
     def __set_measure_speeds(self, speeds):
         if speeds is not None:
-            timestamp = int(time.time() * 1000.0)
-
-            self.__measure_speeds_lock.acquire()
+            self.__measured_speeds_lock.acquire()
             try:
-                self.__measure_speeds, self.__measure_speeds_timestamp = speeds, timestamp
+                self.__measured_speeds = speeds
             finally:
-                self.__measure_speeds_lock.release()
+                self.__measured_speeds_lock.release()
 
     def get_measured_speeds(self):
-        self.__measure_speeds_lock.acquire()
+        self.__measured_speeds_lock.acquire()
         try:
-            return self.__measure_speeds, self.__measure_speeds_timestamp
+            return self.__measured_speeds
         finally:
-            self.__measure_speeds_lock.release()
+            self.__measured_speeds_lock.release()
 
-    def measure_loop(self):
+    def measuring_loop(self):
         while self.__is_active:
             self.__roboclaw_lock.acquire()
             try:
@@ -112,6 +117,10 @@ class DriverSupport(object):
                 self.__set_measure_speeds((front_left, front_right, rear_left, rear_right))
             finally:
                 self.__roboclaw_lock.release()
+            time.sleep(0.1)
+
+    def avoiding_loop(self):
+        while self.__is_active:
             time.sleep(0.1)
 
     def driving_loop(self):
