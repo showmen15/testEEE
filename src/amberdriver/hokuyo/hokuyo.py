@@ -105,7 +105,7 @@ class Hokuyo(object):
                 assert result[-2:] == '\n\n'
 
                 return result
-            except BaseException as e:
+            except BaseException:
                 sys.stderr.write('RESULT: "%s"' % result)
                 traceback.print_exc()
                 self.__offset()
@@ -227,7 +227,7 @@ class Hokuyo(object):
             scan = self.__get_and_parse_scan(cluster_count, start_step, stop_step)
             return scan
 
-        except:
+        except BaseException:
             traceback.print_exc()
             self.__offset()
 
@@ -260,7 +260,7 @@ class Hokuyo(object):
                 scan = self.__get_and_parse_scan(cluster_count, start_step, stop_step)
                 yield scan
 
-        except:
+        except BaseException:
             traceback.print_exc()
             self.__offset()
 
