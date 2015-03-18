@@ -2,6 +2,7 @@ import logging
 import logging.config
 import sys
 import threading
+import traceback
 
 import os
 from amberclient.collision_avoidance.collision_avoidance_proxy import CollisionAvoidanceProxy
@@ -12,6 +13,7 @@ from amberclient.roboclaw.roboclaw import RoboclawProxy
 from amberdriver.common.message_handler import MessageHandler
 from amberdriver.drive_to_point import drive_to_point_pb2
 from amberdriver.drive_to_point.drive_to_point import DriveToPoint
+from amberdriver.null.null import NullController
 from amberdriver.tools import config
 
 
@@ -150,22 +152,30 @@ class DriveToPointController(MessageHandler):
 
 
 if __name__ == '__main__':
-    client_for_location = AmberClient('127.0.0.1', name='location')
-    client_for_driver = AmberClient('127.0.0.1', name='driver')
+    try:
+        client_for_location = AmberClient('127.0.0.1', name='location')
+        client_for_driver = AmberClient('127.0.0.1', name='driver')
 
-    location_proxy = LocationProxy(client_for_location, 0)
-    if USE_COLLISION_AVOIDANCE:
-        driver_proxy = CollisionAvoidanceProxy(client_for_driver, 0)
-    else:
-        driver_proxy = RoboclawProxy(client_for_driver, 0)
+        location_proxy = LocationProxy(client_for_location, 0)
+        if USE_COLLISION_AVOIDANCE:
+            driver_proxy = CollisionAvoidanceProxy(client_for_driver, 0)
+        else:
+            driver_proxy = RoboclawProxy(client_for_driver, 0)
 
-    drive_to_point = DriveToPoint(driver_proxy, location_proxy)
+        drive_to_point = DriveToPoint(driver_proxy, location_proxy)
 
-    driving_thread = threading.Thread(target=drive_to_point.driving_loop, name='driving-thread')
-    driving_thread.start()
+        driving_thread = threading.Thread(target=drive_to_point.driving_loop, name='driving-thread')
+        driving_thread.start()
 
-    location_thread = threading.Thread(target=drive_to_point.location_loop, name='location-thread')
-    location_thread.start()
+        location_thread = threading.Thread(target=drive_to_point.location_loop, name='location-thread')
+        location_thread.start()
 
-    controller = DriveToPointController(sys.stdin, sys.stdout, drive_to_point)
-    controller.run()
+        controller = DriveToPointController(sys.stdin, sys.stdout, drive_to_point)
+        controller.run()
+
+    except BaseException as e:
+        sys.stderr.write('Run without DriveToPoint.\n')
+        traceback.print_exc()
+
+        controller = NullController(sys.stdin, sys.stdout)
+        controller.run()

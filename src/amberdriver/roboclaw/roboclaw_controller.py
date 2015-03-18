@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
         roboclaw_driver = RoboclawDriver(roboclaw_front, roboclaw_rear)
         controller = RoboclawController(sys.stdin, sys.stdout, roboclaw_driver)
-        controller()
+        controller.run()
 
     except BaseException as e:
         sys.stderr.write('Run without Roboclaw.\n')

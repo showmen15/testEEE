@@ -159,7 +159,7 @@ if __name__ == '__main__':
         sending_thread = threading.Thread(target=sending_loop, args=(controller,))
         sending_thread.start()
         # It's running in infinite loop.
-        controller()
+        controller.run()
 
     except BaseException as e:
         sys.stderr.write('Run without Dummy.\n')

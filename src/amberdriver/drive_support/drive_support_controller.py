@@ -69,11 +69,11 @@ if __name__ == '__main__':
         driving_thread.start()
 
         controller = RoboclawController(sys.stdin, sys.stdout, driver_support)
-        controller()
+        controller.run()
 
     except BaseException as e:
         sys.stderr.write('Run without DriveSupport.\n')
         traceback.print_exc()
 
         controller = NullController(sys.stdin, sys.stdout)
-        controller()
+        controller.run()

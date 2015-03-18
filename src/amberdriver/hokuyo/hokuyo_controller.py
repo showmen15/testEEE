@@ -106,7 +106,7 @@ if __name__ == '__main__':
         scanning_thread.start()
 
         controller = HokuyoController(sys.stdin, sys.stdout, hokuyo)
-        controller()
+        controller.run()
 
     except BaseException as e:
         sys.stderr.write('Run without Hokuyo.\n')
