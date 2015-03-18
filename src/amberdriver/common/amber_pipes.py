@@ -6,7 +6,6 @@ import traceback
 import signal
 
 from ambercommon.common import runtime
-
 import os
 
 from amberdriver.common import drivermsg_pb2
@@ -39,6 +38,9 @@ class AmberPipes(object):
         runtime.add_shutdown_hook(self.terminate)
 
     def __call__(self, *args, **kwargs):
+        self.run()
+
+    def run(self):
         self.__logger.info('Pipes thread started.')
         self.__amber_pipes_loop()
 

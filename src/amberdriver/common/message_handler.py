@@ -29,6 +29,9 @@ class MessageHandler(object):
     def __call__(self, *args, **kwargs):
         self.__amber_pipes(*args, **kwargs)
 
+    def run(self):
+        self.__amber_pipes.run()
+
     def is_alive(self):
         return self.__amber_pipes.is_alive()
 

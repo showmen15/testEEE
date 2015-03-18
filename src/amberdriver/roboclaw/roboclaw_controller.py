@@ -36,7 +36,7 @@ TIMEOUT = 0.3
 
 class RoboclawController(MessageHandler):
     def __init__(self, pipe_in, pipe_out, driver):
-        super(RoboclawController, self).__init__(pipe_in, pipe_out)
+        MessageHandler.__init__(self, pipe_in, pipe_out)
         self.__driver = driver
         self.__logger = logging.getLogger(LOGGER_NAME)
 
@@ -75,10 +75,10 @@ class RoboclawController(MessageHandler):
         self.__driver.set_speeds(front_left, front_right, rear_left, rear_right)
 
     def handle_subscribe_message(self, header, message):
-        self.__logger.debug('Subscribe action for %s' % str(header.clientIDs))
+        self.__logger.debug('Subscribe action for %s', str(header.clientIDs))
 
     def handle_unsubscribe_message(self, header, message):
-        self.__logger.debug('Unsubscribe action for %s' % str(header.clientIDs))
+        self.__logger.debug('Unsubscribe action for %s', str(header.clientIDs))
 
     def handle_client_died_message(self, client_id):
         self.__logger.info('Client %d died, stop!', client_id)
@@ -127,4 +127,4 @@ if __name__ == '__main__':
         traceback.print_exc()
 
         controller = NullController(sys.stdin, sys.stdout)
-        controller()
+        controller.run()

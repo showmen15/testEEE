@@ -168,4 +168,4 @@ if __name__ == '__main__':
     location_thread.start()
 
     controller = DriveToPointController(sys.stdin, sys.stdout, drive_to_point)
-    controller()
+    controller.run()
