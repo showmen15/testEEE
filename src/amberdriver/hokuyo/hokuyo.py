@@ -3,10 +3,19 @@ import traceback
 import sys
 import time
 
+import os
+
 from ambercommon.common import runtime
+
+from amberdriver.tools import config
 
 
 __author__ = 'paoolo'
+
+pwd = os.path.dirname(os.path.abspath(__file__))
+config.add_config_ini('%s/hokuyo.ini' % pwd)
+
+MAX_MULTI_SCAN_IDLE_TIMEOUT = float(config.HOKUYO_MAX_MULTI_SCAN_IDLE_TIMEOUT)
 
 
 def chunks(l, n):
@@ -52,11 +61,11 @@ class Hokuyo(object):
         self.__port = port
         self.__port_lock = threading.RLock()
 
-        self.__timestamp, self.__angles, self.__distances = 0, [], []
-        self.__scan_lock = threading.RLock()
+        self.__scan = 0, [], []
+        self.__last_get_scan = 0.0
 
         self.__is_active = True
-        self.__scanning_allowed = False
+        self.__scanning_enabled = False
 
         runtime.add_shutdown_hook(self.terminate)
 
@@ -88,9 +97,9 @@ class Hokuyo(object):
             self.__port.write(command)
             result = self.__port.read(len(command))
             assert result == command
+            return result
         finally:
             self.__port_lock.release()
-        return result
 
     def __short_command(self, command, check_response=True):
         result = ''
@@ -127,7 +136,7 @@ class Hokuyo(object):
                 line = 0
                 while line < lines:
                     char = self.__port.read_byte()
-                    if not char is None:
+                    if char is not None:
                         char = chr(char)
                         result += char
                         if char == '\n':
@@ -185,7 +194,7 @@ class Hokuyo(object):
 
         count = ((stop_step - start_step) * Hokuyo.CHARS_PER_VALUE * Hokuyo.CHARS_PER_LINE)
         count /= (Hokuyo.CHARS_PER_BLOCK * cluster_count)
-        count += 1.0 + 4.0  # paoolo(FIXME): why +4.0?
+        count += 5.0  # magic number
         count = int(count)
 
         self.__port_lock.acquire()
@@ -208,7 +217,7 @@ class Hokuyo(object):
 
         return distances
 
-    def get_single_scan(self, start_step=START_STEP, stop_step=STOP_STEP, cluster_count=1):
+    def __get_single_scan(self, start_step=START_STEP, stop_step=STOP_STEP, cluster_count=1):
         self.__port_lock.acquire()
         try:
             cmd = 'GD%04d%04d%02d\n' % (start_step, stop_step, cluster_count)
@@ -267,42 +276,42 @@ class Hokuyo(object):
         finally:
             self.__port_lock.release()
 
-    def enable_scanning(self, scanning_allowed):
-        self.__scanning_allowed = scanning_allowed
+    def enable_scanning(self, flag):
+        self.__scanning_enabled = flag
+
+    def get_scan(self):
+        timestamp = time.time()
+        if not (timestamp - self.__last_get_scan < MAX_MULTI_SCAN_IDLE_TIMEOUT or self.__scanning_enabled):
+            scan = self.__get_single_scan()
+            self.__set_scan(scan)
+        scan = self.__scan
+        self.__last_get_scan = timestamp
+        return scan
+
+    def scanning_loop(self):
+        while self.__is_active:
+            if time.time() - self.__last_get_scan < MAX_MULTI_SCAN_IDLE_TIMEOUT or self.__scanning_enabled:
+                self.__multi_scanning_loop()
+            time.sleep(0.1)
+
+    def __multi_scanning_loop(self):
+        self.__port_lock.acquire()
+        try:
+            for scan in self.__get_multiple_scans():
+                self.__set_scan(scan)
+                if not (time.time() - self.__last_get_scan < MAX_MULTI_SCAN_IDLE_TIMEOUT or self.__scanning_enabled) \
+                        or not self.__is_active:
+                    break
+        finally:
+            self.laser_off()
+            self.laser_on()
+            self.__port_lock.release()
 
     def __set_scan(self, scan):
         if scan is not None:
             timestamp = int(time.time() * 1000.0)
             angles, distances = Hokuyo.__parse_scan(scan)
-
-            self.__scan_lock.acquire()
-            try:
-                self.__angles, self.__distances, self.__timestamp = angles, distances, timestamp
-            finally:
-                self.__scan_lock.release()
-
-    def get_scan(self):
-        self.__scan_lock.acquire()
-        try:
-            if not self.__scanning_allowed:
-                scan = self.get_single_scan()
-                self.__set_scan(scan)
-            return self.__angles, self.__distances, self.__timestamp
-        finally:
-            self.__scan_lock.release()
-
-    def scanning_loop(self):
-        while self.__is_active:
-            if self.__scanning_allowed:
-                self.__port_lock.acquire()
-                for scan in self.__get_multiple_scans():
-                    self.__set_scan(scan)
-                    if not self.__scanning_allowed or not self.__is_active:
-                        self.laser_off()
-                        self.laser_on()
-                        self.__port_lock.release()
-                        break
-            time.sleep(0.1)
+            self.__scan = (angles, distances, timestamp)
 
     @staticmethod
     def __parse_scan(scan):
