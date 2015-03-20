@@ -4,7 +4,6 @@ import sys
 import time
 
 import os
-
 from ambercommon.common import runtime
 
 from amberdriver.tools import config
@@ -279,7 +278,7 @@ class Hokuyo(object):
     def enable_scanning(self, flag):
         self.__scanning_enabled = flag
 
-    def get_scan(self):
+    def get_single_scan(self):
         timestamp = time.time()
         if not (timestamp - self.__last_get_scan < MAX_MULTI_SCAN_IDLE_TIMEOUT or self.__scanning_enabled):
             scan = self.__get_single_scan()
@@ -287,6 +286,9 @@ class Hokuyo(object):
         scan = self.__scan
         self.__last_get_scan = timestamp
         return scan
+
+    def get_scan(self):
+        return self.__scan
 
     def scanning_loop(self):
         while self.__is_active:
