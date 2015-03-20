@@ -2,7 +2,6 @@ from functools import wraps
 import logging
 import threading
 import logging.config
-import time
 import abc
 
 import os
@@ -24,9 +23,6 @@ class MessageHandler(object):
 
         self.__subscribers = []
         self.__subscribers_lock = threading.Lock()
-
-        self.__subscription_thread = threading.Thread(target=self.subscription_loop, name="subscription-thread")
-        self.__subscription_thread.start()
 
         self.__logger = logging.getLogger(LOGGER_NAME)
 
@@ -58,24 +54,21 @@ class MessageHandler(object):
     def fill_subscription_response(self, response_message):
         pass
 
-    def subscription_loop(self):
-        while self.is_alive():
-            subscribers = self.__get_subscribers_copy()
-            if len(subscribers) > 0:
-                response_header = drivermsg_pb2.DriverHdr()
-                response_message = drivermsg_pb2.DriverMsg()
+    def send_subscribers_message(self):
+        subscribers = self.__get_subscribers()
+        if len(subscribers) > 0:
+            response_header = drivermsg_pb2.DriverHdr()
+            response_message = drivermsg_pb2.DriverMsg()
 
-                response_message.type = drivermsg_pb2.DriverMsg.DATA
-                response_message.ackNum = 0
+            response_message.type = drivermsg_pb2.DriverMsg.DATA
+            response_message.ackNum = 0
 
-                response_header.clientIDs.extend(subscribers)
-                response_message = self.fill_subscription_response(response_message)
+            response_header.clientIDs.extend(subscribers)
+            response_message = self.fill_subscription_response(response_message)
 
-                self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
-            else:
-                time.sleep(0.1)
+            self.get_pipes().write_header_and_message_to_pipe(response_header, response_message)
 
-    def __get_subscribers_copy(self):
+    def __get_subscribers(self):
         self.__subscribers_lock.acquire()
         try:
             return list(self.__subscribers)
@@ -95,6 +88,13 @@ class MessageHandler(object):
             self.__subscribers.remove(client_id)
         except ValueError:
             self.__logger.warning('Client %d does not registered as subscriber', client_id)
+        finally:
+            self.__subscribers_lock.release()
+
+    def is_any_subscriber(self):
+        self.__subscribers_lock.acquire()
+        try:
+            return len(self.__subscribers) > 0
         finally:
             self.__subscribers_lock.release()
 
