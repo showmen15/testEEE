@@ -5,7 +5,6 @@ import threading
 import traceback
 
 import os
-from amberclient.collision_avoidance.collision_avoidance_proxy import CollisionAvoidanceProxy
 from amberclient.common.amber_client import AmberClient
 from amberclient.location.location import LocationProxy
 from amberclient.roboclaw.roboclaw import RoboclawProxy
@@ -24,7 +23,6 @@ logging.config.fileConfig('%s/drive_to_point.ini' % pwd)
 config.add_config_ini('%s/drive_to_point.ini' % pwd)
 
 LOGGER_NAME = 'DriveToPointController'
-USE_COLLISION_AVOIDANCE = config.DRIVE_TO_POINT_USE_COLLISION_AVOIDANCE == 'True'
 
 
 class DriveToPointController(MessageHandler):
@@ -157,10 +155,7 @@ if __name__ == '__main__':
         client_for_driver = AmberClient('127.0.0.1', name='driver')
 
         location_proxy = LocationProxy(client_for_location, 0)
-        if USE_COLLISION_AVOIDANCE:
-            driver_proxy = CollisionAvoidanceProxy(client_for_driver, 0)
-        else:
-            driver_proxy = RoboclawProxy(client_for_driver, 0)
+        driver_proxy = RoboclawProxy(client_for_driver, 0)
 
         drive_to_point = DriveToPoint(driver_proxy, location_proxy)
 
