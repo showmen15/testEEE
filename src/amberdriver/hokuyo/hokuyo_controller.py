@@ -30,7 +30,7 @@ TIMEOUT = 0.3
 
 class HokuyoController(MessageHandler):
     def __init__(self, pipe_in, pipe_out, driver):
-        super(HokuyoController, self).__init__(pipe_in, pipe_out)
+        MessageHandler.__init__(self, pipe_in, pipe_out)
         self.__hokuyo = driver
         self.__logger = logging.getLogger(LOGGER_NAME)
 
@@ -106,11 +106,12 @@ if __name__ == '__main__':
         scanning_thread.start()
 
         controller = HokuyoController(sys.stdin, sys.stdout, hokuyo)
-        controller()
+        hokuyo.set_controller(controller)
+        controller.run()
 
     except BaseException as e:
         sys.stderr.write('Run without Hokuyo.\n')
         traceback.print_exc()
 
         controller = NullController(sys.stdin, sys.stdout)
-        controller()
+        controller.run()

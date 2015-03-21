@@ -66,7 +66,12 @@ class Hokuyo(object):
         self.__is_active = True
         self.__scanning_enabled = False
 
+        self.__controller = None
+
         runtime.add_shutdown_hook(self.terminate)
+
+    def set_controller(self, controller):
+        self.__controller = controller
 
     def __offset(self):
         count = 2
@@ -301,6 +306,7 @@ class Hokuyo(object):
         try:
             for scan in self.__get_multiple_scans():
                 self.__set_scan(scan)
+                self.__controller.send_subscribers_message()
                 if not (time.time() - self.__last_get_scan < MAX_MULTI_SCAN_IDLE_TIMEOUT or self.__scanning_enabled) \
                         or not self.__is_active:
                     break

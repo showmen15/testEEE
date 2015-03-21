@@ -19,8 +19,9 @@ setup(
         'amberdriver.dummy',
         'amberdriver.hokuyo',
         'amberdriver.drive_to_point',
-        'amberdriver.collision_avoidance',
+        'amberdriver.drive_support',
         'amberdriver.null',
+        'amberdriver.roboclaw',
         'amberdriver.tools',
         'amberdriver.tests'
     ],
@@ -30,8 +31,9 @@ setup(
         'amberdriver.dummy': 'src/amberdriver/dummy',
         'amberdriver.hokuyo': 'src/amberdriver/hokuyo',
         'amberdriver.drive_to_point': 'src/amberdriver/drive_to_point',
-        'amberdriver.collision_avoidance': 'src/amberdriver/collision_avoidance',
+        'amberdriver.drive_support': 'src/amberdriver/drive_support',
         'amberdriver.null': 'src/amberdriver/null',
+        'amberdriver.roboclaw': 'src/amberdriver/roboclaw',
         'amberdriver.tools': 'src/amberdriver/tools',
         'amberdriver.tests': 'src/amberdriver/tests'
     },
@@ -40,7 +42,8 @@ setup(
         'src/amberdriver/dummy/dummy.ini',
         'src/amberdriver/hokuyo/hokuyo.ini',
         'src/amberdriver/drive_to_point/drive_to_point.ini',
-        'src/amberdriver/collision_avoidance/collision_avoidance.ini',
+        'src/amberdriver/drive_support/drive_support.ini',
+        'src/amberdriver/roboclaw/roboclaw.ini',
         'src/amberdriver/tools/main.ini'
     ]},
     data_files=[
@@ -49,7 +52,8 @@ setup(
             'src/amberdriver/dummy/dummy.ini',
             'src/amberdriver/hokuyo/hokuyo.ini',
             'src/amberdriver/drive_to_point/drive_to_point.ini',
-            'src/amberdriver/collision_avoidance/collision_avoidance.ini',
+            'src/amberdriver/drive_support/drive_support.ini',
+            'src/amberdriver/roboclaw/roboclaw.ini',
             'src/amberdriver/tools/main.ini'
         ]),
     ],
@@ -67,7 +71,8 @@ setup(
         'dummy',
         'hokuyo',
         'drive to point',
-        'collision avoidance',
+        'drive support',
+        'roboclaw',
         'panda'
     ],
     classifiers=[
