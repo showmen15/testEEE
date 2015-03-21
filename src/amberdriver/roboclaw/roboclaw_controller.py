@@ -54,7 +54,7 @@ class RoboclawController(MessageHandler):
     def __handle_current_speed_request(self, received_header, received_message, response_header, response_message):
         self.__logger.debug('Get current speed')
 
-        (front_left, front_right, rear_left, rear_right), _ = self.__driver.get_measured_speeds()
+        front_left, front_right, rear_left, rear_right = self.__driver.get_measured_speeds()
 
         current_speed = response_message.Extensions[roboclaw_pb2.currentSpeed]
         current_speed.frontLeftSpeed = int(front_left[0])

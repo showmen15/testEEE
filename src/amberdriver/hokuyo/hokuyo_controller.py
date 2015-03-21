@@ -106,6 +106,7 @@ if __name__ == '__main__':
         scanning_thread.start()
 
         controller = HokuyoController(sys.stdin, sys.stdout, hokuyo)
+        hokuyo.set_controller(controller)
         controller.run()
 
     except BaseException as e:
