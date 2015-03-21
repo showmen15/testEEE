@@ -124,8 +124,8 @@ class DriveSupport(object):
             is_any_non_zero = reduce(lambda acc, speed: acc or speed < 0 or speed > 0, speeds_values, False)
 
             if is_any_non_zero or current_speeds_timestamp > last_speeds_timestamp:
-                speeds = DriveSupport.__drive_support(speeds, self.__scan, self.__sensor_data)
-                (front_left, front_right, rear_left, rear_right) = speeds
+                speeds_values = DriveSupport.__drive_support(speeds, self.__scan, self.__sensor_data)
+                (front_left, front_right, rear_left, rear_right) = speeds_values
 
                 self.__roboclaw_lock.acquire()
                 try:
@@ -145,21 +145,17 @@ class DriveSupport(object):
     @staticmethod
     def __drive_support(speeds, scan, sensor_data):
         current_speeds_timestamp = speeds.get_timestamp()
-        speeds = speeds.get_speeds()
+        speeds_values = speeds.get_speeds()
 
         current_scan_timestamp = scan.get_timestamp()
         scan = scan.get_scan()
 
-        (front_left, front_right, rear_left, rear_right) = speeds
+        (front_left, front_right, rear_left, rear_right) = speeds_values
 
         left = sum([front_left, rear_left]) / 2.0
         right = sum([front_right, rear_right]) / 2.0
 
-        left, right = drive_support_logic.rodeo_swap(left, right, scan)
-        left, right = drive_support_logic.limit_due_to_reverse_direction(left, right)
         left, right = drive_support_logic.limit_due_to_distance(left, right, scan)
-        left, right = drive_support_logic.low_pass_filter(left, right)
-        left, right = drive_support_logic.limit_to_max_speed(left, right)
 
         current_timestamp = time.time()
         trust_level = drive_support_logic.scan_trust(current_scan_timestamp, current_timestamp) * \

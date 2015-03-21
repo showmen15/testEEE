@@ -82,12 +82,6 @@ def get_max_distance(scan, current_angle, scanner_dist_offset, angle_range):
     return max_distance, max_distance_angle
 
 
-def analyze_scan(scan):
-    points = convert_angles_to_radians(scan)
-    for angle, distance in points:
-        x, y = distance * math.cos(angle), distance * math.sin(angle)
-
-
 def simple_importance_angle_level(angle):
     if math.fabs(angle) < math.pi / 2.0:
         return 1.0 - 2.0 * math.fabs(angle) / math.pi
@@ -166,7 +160,8 @@ def find_locals_min_max(scan, interval=50, min_distance=100.0, max_distance=5000
 
 def limit_due_to_distance(left, right, scan):
     if left > 0 or right > 0:
-        current_angle = get_angle(left, right, ROBO_WIDTH)
+        current_angle = get_angle(left, right,
+                                  ROBO_WIDTH)
         current_speed = get_speed(left, right)
 
         if scan is not None:
@@ -174,14 +169,14 @@ def limit_due_to_distance(left, right, scan):
                                                SCANNER_DIST_OFFSET, ANGLE_RANGE)
 
             if min_distance is not None:
-                soft_limit = get_soft_limit(current_speed, MAX_SPEED,
-                                            SOFT_LIMIT * 1.3, HARD_LIMIT * 1.3, DISTANCE_ALPHA)
+                soft_limit = get_soft_limit(current_speed,
+                                            MAX_SPEED, SOFT_LIMIT * 1.3, HARD_LIMIT * 1.3, DISTANCE_ALPHA)
 
                 if HARD_LIMIT * 1.3 < min_distance < soft_limit:
-                    max_speed = get_max_speed(min_distance, soft_limit, HARD_LIMIT * 1.3, MAX_SPEED)
+                    max_speed = get_max_speed(min_distance, soft_limit,
+                                              HARD_LIMIT * 1.3, MAX_SPEED)
                     if current_speed > max_speed:
-                        left, right = __calculate_new_left_right(left, right,
-                                                                 max_speed, current_speed)
+                        left, right = __calculate_new_left_right(left, right, max_speed, current_speed)
 
                 elif min_distance <= HARD_LIMIT * 1.3:
                     left, right = 0, 0
@@ -243,8 +238,8 @@ def rodeo_swap(left, right, scan):
                                                         SCANNER_DIST_OFFSET, ANGLE_RANGE)
 
     if min_distance is not None:
-        soft_limit = get_soft_limit(current_speed, MAX_SPEED,
-                                    SOFT_LIMIT, HARD_LIMIT, RODEO_SWAP_ALPHA)
+        soft_limit = get_soft_limit(current_speed,
+                                    MAX_SPEED, SOFT_LIMIT, HARD_LIMIT, RODEO_SWAP_ALPHA)
 
         if min_distance < soft_limit:
             if min_distance_angle < current_angle:
