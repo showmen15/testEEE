@@ -15,14 +15,15 @@ __author__ = 'paoolo'
 
 LEN_SIZE = 2
 
-LOGGER_NAME = 'AmberPipes'
 pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/amber.ini' % pwd)
+
+LOGGER_NAME = 'AmberPipes'
 
 
 class AmberException(Exception):
     def __init__(self, message=None, cause=None):
-        super(AmberException, self).__init__(message + u', caused by ' + repr(cause))
+        Exception.__init__(message + u', caused by ' + repr(cause))
         self.cause = cause
 
 
