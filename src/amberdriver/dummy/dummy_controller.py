@@ -1,12 +1,13 @@
 import logging
 import logging.config
 import sys
+import threading
 import traceback
+import time
 
 import os
 
 from amberdriver.common.message_handler import MessageHandler
-
 from amberdriver.dummy import dummy_pb2
 from amberdriver.dummy.dummy import Dummy
 from amberdriver.null.null import NullController
@@ -142,12 +143,21 @@ class DummyController(MessageHandler):
         return response_message
 
 
+def sending_loop(_controller):
+    while _controller.is_alive():
+        _controller.send_subscribers_message()
+        time.sleep(0.1)
+
+
 if __name__ == '__main__':
     try:
         # Create dummy.
         dummy = Dummy()
         # Create controller and run it.
         controller = DummyController(sys.stdin, sys.stdout, dummy)
+        # Create and start sending thread
+        sending_thread = threading.Thread(target=sending_loop, args=(controller,))
+        sending_thread.start()
         # It's running in infinite loop.
         controller()
 

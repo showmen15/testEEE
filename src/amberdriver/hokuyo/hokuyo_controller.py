@@ -38,35 +38,32 @@ class HokuyoController(MessageHandler):
         if message.HasExtension(hokuyo_pb2.get_single_scan):
             self.__handle_get_single_scan(header, message)
 
-        elif message.HasExtension(hokuyo_pb2.enable_scanning):
-            self.__handle_enable_scanning(header, message)
-
         else:
             self.__logger.warning('No recognizable request in message')
 
     @MessageHandler.handle_and_response
     def __handle_get_single_scan(self, _received_header, _received_message, response_header, response_message):
         self.__logger.debug('Get single scan')
-        angles, distances, timestamp = self.__hokuyo.get_scan()
+        angles, distances, timestamp = self.__hokuyo.get_single_scan()
         response_message = HokuyoController.__fill_scan(response_message, angles, distances, timestamp)
         return response_header, response_message
-
-    def __handle_enable_scanning(self, _header, message):
-        _enable_scanning = message.Extensions[hokuyo_pb2.enable_scanning]
-        self.__logger.debug('Enable scanning, set to %s', bool(str(_enable_scanning)))
-        self.__hokuyo.enable_scanning(_enable_scanning)
 
     def handle_subscribe_message(self, header, message):
         self.__logger.debug('Subscribe action')
         self.add_subscribers(header.clientIDs)
+        self.__hokuyo.enable_scanning(True)
 
     def handle_unsubscribe_message(self, header, message):
         self.__logger.debug('Unsubscribe action for clients %s', str(header.clientIDs))
         map(self.remove_subscriber, header.clientIDs)
+        if not self.is_any_subscriber():
+            self.__hokuyo.enable_scanning(False)
 
     def handle_client_died_message(self, client_id):
         self.__logger.info('Client %d died', client_id)
         self.remove_subscriber(client_id)
+        if not self.is_any_subscriber():
+            self.__hokuyo.enable_scanning(False)
 
     def fill_subscription_response(self, response_message):
         angles, distances, timestamp = self.__hokuyo.get_scan()
