@@ -8,7 +8,7 @@ import traceback
 import os
 from ambercommon.common import runtime
 
-from amberdriver.tools import config
+from amberdriver.tools import config, bound_sleep_interval
 
 
 __author__ = 'paoolo'
@@ -18,10 +18,6 @@ logging.config.fileConfig('%s/drive_to_point.ini' % pwd)
 config.add_config_ini('%s/drive_to_point.ini' % pwd)
 
 LOGGER_NAME = 'DriveToPoint'
-
-
-def bound_sleep_interval(value, min_value=0.2, max_value=2.0):
-    return value if min_value < value < max_value else max_value if value > max_value else min_value
 
 
 def compute_sleep_interval(current_timestamp, last_timestamp, sleep_interval,

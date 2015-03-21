@@ -7,7 +7,6 @@ import traceback
 from amberclient.common.amber_client import AmberClient
 from amberclient.hokuyo.hokuyo import HokuyoProxy
 from amberclient.ninedof.ninedof import NinedofProxy
-
 import os
 import serial
 
@@ -21,8 +20,8 @@ from amberdriver.tools import serial_port, config
 __author__ = 'paoolo'
 
 pwd = os.path.dirname(os.path.abspath(__file__))
-logging.config.fileConfig('%s/dummy.ini' % pwd)
-config.add_config_ini('%s/dummy.ini' % pwd)
+logging.config.fileConfig('%s/drive_support.ini' % pwd)
+config.add_config_ini('%s/drive_support.ini' % pwd)
 
 LOGGER_NAME = 'DriverSupportController'
 
@@ -58,12 +57,6 @@ if __name__ == '__main__':
         ninedof_proxy = NinedofProxy(client_for_ninedof, 0)
 
         driver_support = DriveSupport(roboclaw_front, roboclaw_rear, hokuyo_proxy, ninedof_proxy)
-
-        measuring_speeds_thread = threading.Thread(target=driver_support.measuring_loop, name='measuring-thread')
-        measuring_speeds_thread.start()
-
-        avoiding_thread = threading.Thread(target=driver_support.avoiding_loop, name='avoiding-thread')
-        avoiding_thread.start()
 
         driving_thread = threading.Thread(target=driver_support.driving_loop, name='driving-thread')
         driving_thread.start()
