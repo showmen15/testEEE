@@ -1,3 +1,3 @@
 # Contributors
 
-* Paweł Suder `pawel@suder.info`
+* Paweł Suder **@paoolo**
