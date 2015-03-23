@@ -60,7 +60,7 @@ class Hokuyo(object):
         self.__port = port
         self.__port_lock = threading.RLock()
 
-        self.__scan = (0, [], [])
+        self.__scan = ([], [], 0)
         self.__last_get_scan = 0.0
 
         self.__is_active = True
