@@ -64,7 +64,7 @@ class Hokuyo(object):
         self.__last_get_scan = 0.0
 
         self.__is_active = True
-        self.__scanning_enabled = False
+        self.__scanning_enabled = True
 
         self.__controller = None
 
@@ -291,7 +291,7 @@ class Hokuyo(object):
 
     def get_single_scan(self):
         timestamp = time.time()
-        if not (timestamp - self.__last_get_scan < MAX_MULTI_SCAN_IDLE_TIMEOUT or self.__scanning_enabled):
+        if not self.__scanning_enabled:
             scan = self.__get_single_scan()
             self.__set_scan(scan)
         scan = self.__scan
@@ -303,7 +303,7 @@ class Hokuyo(object):
 
     def scanning_loop(self):
         while self.__is_active:
-            if time.time() - self.__last_get_scan < MAX_MULTI_SCAN_IDLE_TIMEOUT or self.__scanning_enabled:
+            if self.__scanning_enabled:
                 self.__multi_scanning_loop()
             time.sleep(0.1)
 
@@ -313,8 +313,7 @@ class Hokuyo(object):
             for scan in self.__get_multiple_scans():
                 self.__set_scan(scan)
                 self.__controller.send_subscribers_message()
-                if not (time.time() - self.__last_get_scan < MAX_MULTI_SCAN_IDLE_TIMEOUT or self.__scanning_enabled) \
-                        or not self.__is_active:
+                if not self.__scanning_enabled or not self.__is_active:
                     break
         finally:
             self.reset()
