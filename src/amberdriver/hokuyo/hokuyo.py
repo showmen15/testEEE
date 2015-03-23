@@ -317,7 +317,7 @@ class Hokuyo(object):
                         or not self.__is_active:
                     break
         finally:
-            self.laser_off()
+            self.reset()
             self.laser_on()
             self.__port_lock.release()
 
