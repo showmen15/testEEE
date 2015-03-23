@@ -8,7 +8,7 @@ from amberdriver.tools import config
 __author__ = 'paoolo'
 
 pwd = os.path.dirname(os.path.abspath(__file__))
-config.add_config_ini('%s/collision_avoidance.ini' % pwd)
+config.add_config_ini('%s/drive_support.ini' % pwd)
 
 ROBO_WIDTH = float(config.ROBO_WIDTH)
 
