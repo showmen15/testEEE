@@ -28,14 +28,6 @@ class ScanHandler(Listener):
         self.__driver_support.set_scan(response)
 
 
-class SensorDataHandler(Listener):
-    def __init__(self, driver):
-        self.__driver_support = driver
-
-    def handle(self, response):
-        self.__driver_support.set_sensor_data(response)
-
-
 class Speeds(object):
     def __init__(self, speeds, timestamp):
         self.__speeds, self.__timestamp = speeds, timestamp
@@ -48,8 +40,8 @@ class Speeds(object):
 
 
 class DriveSupport(object):
-    def __init__(self, roboclaw_front, roboclaw_rear, hokuyo_proxy, ninedof_proxy):
-        self.__scan, self.__sensor_data = None, None
+    def __init__(self, roboclaw_front, roboclaw_rear, hokuyo_proxy):
+        self.__scan = None
         self.__speeds = Speeds((0, 0, 0, 0), 0.0)
 
         self.__roboclaw_front, self.__roboclaw_rear = roboclaw_front, roboclaw_rear
@@ -57,12 +49,10 @@ class DriveSupport(object):
 
         self.__is_active = True
 
-        self.__hokuyo_proxy, self.__ninedof_proxy = hokuyo_proxy, ninedof_proxy
+        self.__hokuyo_proxy = hokuyo_proxy
         self.__hokuyo_listener = ScanHandler(self)
-        self.__ninedof_listener = SensorDataHandler(self)
 
         hokuyo_proxy.subscribe(self.__hokuyo_listener)
-        ninedof_proxy.subscribe(self.__ninedof_listener)
 
         self.__logger = logging.getLogger(LOGGER_NAME)
 
@@ -72,7 +62,6 @@ class DriveSupport(object):
         self.__is_active = False
 
         self.__hokuyo_proxy.unsubscribe(self.__hokuyo_listener)
-        self.__ninedof_proxy.unsubscribe(self.__ninedof_listener)
 
         self.__roboclaw_lock.acquire()
         try:
@@ -92,9 +81,6 @@ class DriveSupport(object):
 
     def set_scan(self, scan):
         self.__scan = scan
-
-    def set_sensor_data(self, sensor_data):
-        self.__sensor_data = sensor_data
 
     def set_speeds(self, front_left, front_right, rear_left, rear_right):
         self.__speeds = Speeds((front_left, front_right, rear_left, rear_right), time.time())

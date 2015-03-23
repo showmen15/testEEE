@@ -6,7 +6,6 @@ import traceback
 
 from amberclient.common.amber_client import AmberClient
 from amberclient.hokuyo.hokuyo import HokuyoProxy
-from amberclient.ninedof.ninedof import NinedofProxy
 import os
 import serial
 
@@ -51,12 +50,10 @@ if __name__ == '__main__':
         roboclaw_rear.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
 
         client_for_hokuyo = AmberClient('127.0.0.1', name='hokuyo')
-        client_for_ninedof = AmberClient('127.0.0.1', name='ninedof')
 
         hokuyo_proxy = HokuyoProxy(client_for_hokuyo, 0)
-        ninedof_proxy = NinedofProxy(client_for_ninedof, 0)
 
-        driver_support = DriveSupport(roboclaw_front, roboclaw_rear, hokuyo_proxy, ninedof_proxy)
+        driver_support = DriveSupport(roboclaw_front, roboclaw_rear, hokuyo_proxy)
 
         driving_thread = threading.Thread(target=driver_support.driving_loop, name='driving-thread')
         driving_thread.start()
