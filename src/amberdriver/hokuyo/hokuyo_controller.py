@@ -97,7 +97,7 @@ if __name__ == '__main__':
         sys.stderr.write('SENSOR_STATE:\n%s\n' % hokuyo.get_sensor_state())
         sys.stderr.write('VERSION_INFO:\n%s\n' % hokuyo.get_version_info())
 
-        scanning_thread = threading.Thread(target=hokuyo.scanning_loop, name="scanning-thread")
+        scanning_thread = threading.Thread(target=hokuyo.scanning_loop, name='scanning-thread')
         scanning_thread.start()
 
         controller = HokuyoController(sys.stdin, sys.stdout, hokuyo)

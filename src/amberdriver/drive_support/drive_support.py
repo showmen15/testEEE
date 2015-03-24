@@ -8,7 +8,7 @@ from amberclient.common.listener import Listener
 from ambercommon.common import runtime
 
 from amberdriver.drive_support import drive_support_logic
-from amberdriver.tools import config, bound_sleep_interval
+from amberdriver.tools import config
 
 
 __author__ = 'paoolo'
@@ -76,9 +76,6 @@ class DriveSupport(object):
     def set_speeds(self, front_left, front_right, rear_left, rear_right):
         self.__speeds = Speeds((front_left, front_right, rear_left, rear_right), time.time())
 
-    def __get_speeds(self):
-        return self.__speeds
-
     def get_measured_speeds(self):
         self.__roboclaw_lock.acquire()
         try:
@@ -91,33 +88,18 @@ class DriveSupport(object):
             self.__roboclaw_lock.release()
 
     def driving_loop(self):
-        sleep_interval = 0.2
-        last_speeds_timestamp = 0.0
-
         while self.__is_active:
-            speeds = self.__get_speeds()
-            speeds_values = speeds.get_speeds()
-            current_speeds_timestamp = speeds.get_timestamp()
-            is_any_non_zero = reduce(lambda acc, speed: acc or speed < 0 or speed > 0, speeds_values, False)
+            speeds_values = DriveSupport.__drive_support(self.__speeds, self.__scan)
+            (front_left, front_right, rear_left, rear_right) = speeds_values
 
-            if is_any_non_zero or current_speeds_timestamp > last_speeds_timestamp:
-                speeds_values = DriveSupport.__drive_support(speeds, self.__scan)
-                (front_left, front_right, rear_left, rear_right) = speeds_values
+            self.__roboclaw_lock.acquire()
+            try:
+                self.__roboclaw_front.drive_mixed_with_signed_duty_cycle(front_left, front_right)
+                self.__roboclaw_rear.drive_mixed_with_signed_duty_cycle(rear_left, rear_right)
+            finally:
+                self.__roboclaw_lock.release()
 
-                self.__roboclaw_lock.acquire()
-                try:
-                    self.__roboclaw_front.drive_mixed_with_signed_duty_cycle(front_left, front_right)
-                    self.__roboclaw_rear.drive_mixed_with_signed_duty_cycle(rear_left, rear_right)
-                finally:
-                    self.__roboclaw_lock.release()
-
-                interval = current_speeds_timestamp - last_speeds_timestamp
-                last_speeds_timestamp = current_speeds_timestamp
-                if interval < 2.0:
-                    sleep_interval += 0.5 * (interval - sleep_interval)
-                    sleep_interval = bound_sleep_interval(sleep_interval)
-
-            time.sleep(sleep_interval)
+            time.sleep(0.1)
 
     @staticmethod
     def __drive_support(speeds, scan):
@@ -125,14 +107,14 @@ class DriveSupport(object):
         speeds_values = speeds.get_speeds()
 
         current_scan_timestamp = scan.get_timestamp()
-        scan = scan.get_scan()
+        scan_values = scan.get_scan()
 
         (front_left, front_right, rear_left, rear_right) = speeds_values
 
         left = sum([front_left, rear_left]) / 2.0
         right = sum([front_right, rear_right]) / 2.0
 
-        left, right = drive_support_logic.limit_due_to_distance(left, right, scan)
+        left, right = drive_support_logic.limit_due_to_distance(left, right, scan_values)
 
         current_timestamp = time.time()
         trust_level = drive_support_logic.scan_trust(current_scan_timestamp, current_timestamp) * \
