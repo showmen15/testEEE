@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import sys
+import threading
 import traceback
 
 import serial
@@ -88,21 +89,34 @@ class RoboclawController(MessageHandler):
 class RoboclawDriver(object):
     def __init__(self, front, rear):
         self.__front, self.__rear = front, rear
+        self.__roboclaw_lock = threading.Lock()
 
     def get_measured_speeds(self):
-        front_left = self.__front.read_speed_m1()
-        front_right = self.__front.read_speed_m2()
-        rear_left = self.__rear.read_speed_m1()
-        rear_right = self.__rear.read_speed_m2()
-        return front_left, front_right, rear_left, rear_right
+        self.__roboclaw_lock.acquire()
+        try:
+            front_left = self.__front.read_speed_m1()
+            front_right = self.__front.read_speed_m2()
+            rear_left = self.__rear.read_speed_m1()
+            rear_right = self.__rear.read_speed_m2()
+            return front_left, front_right, rear_left, rear_right
+        finally:
+            self.__roboclaw_lock.release()
 
     def set_speeds(self, front_left, front_right, rear_left, rear_right):
-        self.__front.drive_mixed_with_signed_duty_cycle(front_left, front_right)
-        self.__rear.drive_mixed_with_signed_duty_cycle(rear_left, rear_right)
+        self.__roboclaw_lock.acquire()
+        try:
+            self.__front.drive_mixed_with_signed_duty_cycle(front_left, front_right)
+            self.__rear.drive_mixed_with_signed_duty_cycle(rear_left, rear_right)
+        finally:
+            self.__roboclaw_lock.release()
 
     def stop(self):
-        self.__front.drive_mixed_with_signed_duty_cycle(0, 0)
-        self.__rear.drive_mixed_with_signed_duty_cycle(0, 0)
+        self.__roboclaw_lock.acquire()
+        try:
+            self.__front.drive_mixed_with_signed_duty_cycle(0, 0)
+            self.__rear.drive_mixed_with_signed_duty_cycle(0, 0)
+        finally:
+            self.__roboclaw_lock.release()
 
 
 if __name__ == '__main__':
