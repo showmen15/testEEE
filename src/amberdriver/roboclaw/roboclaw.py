@@ -505,6 +505,9 @@ class Roboclaw(object):
         self.__port.send_command(self.__rc_address, 91)
         mode1 = self.__port.read_byte()
         mode2 = self.__port.read_byte()
+        crc = self.__port.get_checksum() & 0x7F
+        if crc == self.__port.read_byte():
+            return mode1, mode2
         return -1
 
     def set_m1_encoder_mode(self, val):
