@@ -60,16 +60,7 @@ class DriveSupport(object):
 
     def terminate(self):
         self.__is_active = False
-
         self.__hokuyo_proxy.unsubscribe(self.__hokuyo_listener)
-
-        self.__roboclaw_lock.acquire()
-        try:
-            self.stop()
-            self.__roboclaw_front.close()
-            self.__roboclaw_rear.close()
-        finally:
-            self.__roboclaw_lock.release()
 
     def stop(self):
         self.__roboclaw_lock.acquire()
@@ -110,7 +101,7 @@ class DriveSupport(object):
             is_any_non_zero = reduce(lambda acc, speed: acc or speed < 0 or speed > 0, speeds_values, False)
 
             if is_any_non_zero or current_speeds_timestamp > last_speeds_timestamp:
-                speeds_values = DriveSupport.__drive_support(speeds, self.__scan, self.__sensor_data)
+                speeds_values = DriveSupport.__drive_support(speeds, self.__scan)
                 (front_left, front_right, rear_left, rear_right) = speeds_values
 
                 self.__roboclaw_lock.acquire()
@@ -129,7 +120,7 @@ class DriveSupport(object):
             time.sleep(sleep_interval)
 
     @staticmethod
-    def __drive_support(speeds, scan, sensor_data):
+    def __drive_support(speeds, scan):
         current_speeds_timestamp = speeds.get_timestamp()
         speeds_values = speeds.get_speeds()
 
