@@ -3,18 +3,10 @@ import traceback
 import sys
 import time
 
-import os
 from ambercommon.common import runtime
-
-from amberdriver.tools import config
 
 
 __author__ = 'paoolo'
-
-pwd = os.path.dirname(os.path.abspath(__file__))
-config.add_config_ini('%s/hokuyo.ini' % pwd)
-
-MAX_MULTI_SCAN_IDLE_TIMEOUT = float(config.HOKUYO_MAX_MULTI_SCAN_IDLE_TIMEOUT)
 
 
 def chunks(l, n):
@@ -61,11 +53,8 @@ class Hokuyo(object):
         self.__port_lock = threading.RLock()
 
         self.__scan = ([], [], 0)
-        self.__last_get_scan = 0.0
 
         self.__is_active = True
-        self.__scanning_enabled = True
-
         self.__controller = None
 
         runtime.add_shutdown_hook(self.terminate)
@@ -286,26 +275,14 @@ class Hokuyo(object):
         finally:
             self.__port_lock.release()
 
-    def enable_scanning(self, flag):
-        self.__scanning_enabled = flag
-
     def get_single_scan(self):
-        timestamp = time.time()
-        if not self.__scanning_enabled:
-            scan = self.__get_single_scan()
-            self.__set_scan(scan)
-        scan = self.__scan
-        self.__last_get_scan = timestamp
-        return scan
+        return self.__scan
 
     def get_scan(self):
         return self.__scan
 
     def scanning_loop(self):
-        while self.__is_active:
-            if self.__scanning_enabled:
-                self.__multi_scanning_loop()
-            time.sleep(0.1)
+        self.__multi_scanning_loop()
 
     def __multi_scanning_loop(self):
         self.__port_lock.acquire()
@@ -313,7 +290,7 @@ class Hokuyo(object):
             for scan in self.__get_multiple_scans():
                 self.__set_scan(scan)
                 self.__controller.send_subscribers_message()
-                if not self.__scanning_enabled or not self.__is_active:
+                if not not self.__is_active:
                     break
         finally:
             self.reset()
