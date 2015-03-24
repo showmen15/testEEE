@@ -65,8 +65,8 @@ class DriveSupport(object):
     def stop(self):
         self.__roboclaw_lock.acquire()
         try:
-            self.__roboclaw_front.set_mixed_duty(0, 0)
-            self.__roboclaw_rear.set_mixed_duty(0, 0)
+            self.__roboclaw_front.drive_mixed_with_signed_duty_cycle(0, 0)
+            self.__roboclaw_rear.drive_mixed_with_signed_duty_cycle(0, 0)
         finally:
             self.__roboclaw_lock.release()
 
@@ -82,10 +82,10 @@ class DriveSupport(object):
     def get_measured_speeds(self):
         self.__roboclaw_lock.acquire()
         try:
-            front_left = self.__roboclaw_front.read_m1_speed()
-            front_right = self.__roboclaw_front.read_m2_speed()
-            rear_left = self.__roboclaw_rear.read_m1_speed()
-            rear_right = self.__roboclaw_rear.read_m2_speed()
+            front_left = self.__roboclaw_front.read_speed_m1()
+            front_right = self.__roboclaw_front.read_speed_m2()
+            rear_left = self.__roboclaw_rear.read_speed_m1()
+            rear_right = self.__roboclaw_rear.read_speed_m2()
             return front_left, front_right, rear_left, rear_right
         finally:
             self.__roboclaw_lock.release()
@@ -106,8 +106,8 @@ class DriveSupport(object):
 
                 self.__roboclaw_lock.acquire()
                 try:
-                    self.__roboclaw_front.set_mixed_duty(front_left, front_right)
-                    self.__roboclaw_rear.set_mixed_duty(rear_left, rear_right)
+                    self.__roboclaw_front.drive_mixed_with_signed_duty_cycle(front_left, front_right)
+                    self.__roboclaw_rear.drive_mixed_with_signed_duty_cycle(rear_left, rear_right)
                 finally:
                     self.__roboclaw_lock.release()
 

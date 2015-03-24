@@ -90,19 +90,19 @@ class RoboclawDriver(object):
         self.__front, self.__rear = front, rear
 
     def get_measured_speeds(self):
-        front_left = self.__front.read_m1_speed()
-        front_right = self.__front.read_m2_speed()
-        rear_left = self.__rear.read_m1_speed()
-        rear_right = self.__rear.read_m2_speed()
+        front_left = self.__front.read_speed_m1()
+        front_right = self.__front.read_speed_m2()
+        rear_left = self.__rear.read_speed_m1()
+        rear_right = self.__rear.read_speed_m2()
         return front_left, front_right, rear_left, rear_right
 
     def set_speeds(self, front_left, front_right, rear_left, rear_right):
-        self.__front.set_mixed_duty(front_left, front_right)
-        self.__rear.set_mixed_duty(rear_left, rear_right)
+        self.__front.drive_mixed_with_signed_duty_cycle(front_left, front_right)
+        self.__rear.drive_mixed_with_signed_duty_cycle(rear_left, rear_right)
 
     def stop(self):
-        self.__front.set_mixed_duty(0, 0)
-        self.__rear.set_mixed_duty(0, 0)
+        self.__front.drive_mixed_with_signed_duty_cycle(0, 0)
+        self.__rear.drive_mixed_with_signed_duty_cycle(0, 0)
 
 
 if __name__ == '__main__':
@@ -113,10 +113,10 @@ if __name__ == '__main__':
         roboclaw_front = Roboclaw(_serial_port, FRONT_RC_ADDRESS)
         roboclaw_rear = Roboclaw(_serial_port, REAR_RC_ADDRESS)
 
-        roboclaw_front.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_front.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_rear.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_rear.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        roboclaw_front.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        roboclaw_front.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        roboclaw_rear.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        roboclaw_rear.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
 
         roboclaw_driver = RoboclawDriver(roboclaw_front, roboclaw_rear)
         controller = RoboclawController(sys.stdin, sys.stdout, roboclaw_driver)
