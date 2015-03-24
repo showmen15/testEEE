@@ -1,3 +1,5 @@
+from ambercommon.common import runtime
+
 __author__ = 'paoolo'
 
 
@@ -5,6 +7,12 @@ class Roboclaw(object):
     def __init__(self, port, rc_address=128):
         self.__port = port
         self.__rc_address = rc_address
+
+        runtime.add_shutdown_hook(self.terminate)
+
+    def terminate(self):
+        self.set_mixed_duty(0, 0)
+        self.close()
 
     def close(self):
         self.__port.close()

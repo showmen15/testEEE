@@ -3,18 +3,10 @@ import traceback
 import sys
 import time
 
-import os
 from ambercommon.common import runtime
-
-from amberdriver.tools import config
 
 
 __author__ = 'paoolo'
-
-pwd = os.path.dirname(os.path.abspath(__file__))
-config.add_config_ini('%s/hokuyo.ini' % pwd)
-
-MAX_MULTI_SCAN_IDLE_TIMEOUT = float(config.HOKUYO_MAX_MULTI_SCAN_IDLE_TIMEOUT)
 
 
 def chunks(l, n):
@@ -60,12 +52,9 @@ class Hokuyo(object):
         self.__port = port
         self.__port_lock = threading.RLock()
 
-        self.__scan = (0, [], [])
-        self.__last_get_scan = 0.0
+        self.__scan = ([], [], 0)
 
         self.__is_active = True
-        self.__scanning_enabled = False
-
         self.__controller = None
 
         runtime.add_shutdown_hook(self.terminate)
@@ -119,8 +108,9 @@ class Hokuyo(object):
 
                 return result
             except BaseException:
-                sys.stderr.write('RESULT: "%s"' % result)
+                sys.stderr.write('RESULT: "%s"\n' % result)
                 traceback.print_exc()
+                traceback.print_stack()
                 self.__offset()
         finally:
             self.__port_lock.release()
@@ -152,8 +142,9 @@ class Hokuyo(object):
 
                 return result
             except BaseException:
-                sys.stderr.write('RESULT: "%s"' % result)
+                sys.stderr.write('RESULT: "%s"\n' % result)
                 traceback.print_exc()
+                traceback.print_stack()
                 self.__offset()
         finally:
             self.__port_lock.release()
@@ -273,6 +264,10 @@ class Hokuyo(object):
                 scan = self.__get_and_parse_scan(cluster_count, start_step, stop_step)
                 yield scan
 
+        except GeneratorExit:
+            sys.stderr.write('Multi scan interrupted!\n')
+            self.__offset()
+
         except BaseException:
             traceback.print_exc()
             self.__offset()
@@ -280,26 +275,14 @@ class Hokuyo(object):
         finally:
             self.__port_lock.release()
 
-    def enable_scanning(self, flag):
-        self.__scanning_enabled = flag
-
     def get_single_scan(self):
-        timestamp = time.time()
-        if not (timestamp - self.__last_get_scan < MAX_MULTI_SCAN_IDLE_TIMEOUT or self.__scanning_enabled):
-            scan = self.__get_single_scan()
-            self.__set_scan(scan)
-        scan = self.__scan
-        self.__last_get_scan = timestamp
-        return scan
+        return self.__scan
 
     def get_scan(self):
         return self.__scan
 
     def scanning_loop(self):
-        while self.__is_active:
-            if time.time() - self.__last_get_scan < MAX_MULTI_SCAN_IDLE_TIMEOUT or self.__scanning_enabled:
-                self.__multi_scanning_loop()
-            time.sleep(0.1)
+        self.__multi_scanning_loop()
 
     def __multi_scanning_loop(self):
         self.__port_lock.acquire()
@@ -307,11 +290,10 @@ class Hokuyo(object):
             for scan in self.__get_multiple_scans():
                 self.__set_scan(scan)
                 self.__controller.send_subscribers_message()
-                if not (time.time() - self.__last_get_scan < MAX_MULTI_SCAN_IDLE_TIMEOUT or self.__scanning_enabled) \
-                        or not self.__is_active:
+                if not not self.__is_active:
                     break
         finally:
-            self.laser_off()
+            self.reset()
             self.laser_on()
             self.__port_lock.release()
 

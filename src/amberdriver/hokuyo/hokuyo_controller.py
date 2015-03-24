@@ -51,19 +51,14 @@ class HokuyoController(MessageHandler):
     def handle_subscribe_message(self, header, message):
         self.__logger.debug('Subscribe action')
         self.add_subscribers(header.clientIDs)
-        self.__hokuyo.enable_scanning(True)
 
     def handle_unsubscribe_message(self, header, message):
         self.__logger.debug('Unsubscribe action for clients %s', str(header.clientIDs))
         map(self.remove_subscriber, header.clientIDs)
-        if not self.is_any_subscriber():
-            self.__hokuyo.enable_scanning(False)
 
     def handle_client_died_message(self, client_id):
         self.__logger.info('Client %d died', client_id)
         self.remove_subscriber(client_id)
-        if not self.is_any_subscriber():
-            self.__hokuyo.enable_scanning(False)
 
     def fill_subscription_response(self, response_message):
         angles, distances, timestamp = self.__hokuyo.get_scan()
