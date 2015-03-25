@@ -2,6 +2,7 @@ import logging
 import logging.config
 import threading
 import time
+import math
 
 import os
 from amberclient.common.listener import Listener
@@ -37,6 +38,10 @@ class Speeds(object):
 
     def get_timestamp(self):
         return self.__timestamp
+
+
+def to_mmps(val):
+    return int(val * 60.0 * math.pi * 2.0 / 1865.0)
 
 
 class DriveSupport(object):
@@ -79,10 +84,10 @@ class DriveSupport(object):
     def get_measured_speeds(self):
         self.__roboclaw_lock.acquire()
         try:
-            front_left = self.__roboclaw_front.read_speed_m1()
-            front_right = self.__roboclaw_front.read_speed_m2()
-            rear_left = self.__roboclaw_rear.read_speed_m1()
-            rear_right = self.__roboclaw_rear.read_speed_m2()
+            front_left = to_mmps(self.__roboclaw_front.read_speed_m1()[0])
+            front_right = to_mmps(self.__roboclaw_front.read_speed_m2()[0])
+            rear_left = to_mmps(self.__roboclaw_rear.read_speed_m1()[0])
+            rear_right = to_mmps(self.__roboclaw_rear.read_speed_m2()[0])
             return front_left, front_right, rear_left, rear_right
         finally:
             self.__roboclaw_lock.release()
