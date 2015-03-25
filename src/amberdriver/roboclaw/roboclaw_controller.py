@@ -23,16 +23,20 @@ config.add_config_ini('%s/roboclaw.ini' % pwd)
 
 LOGGER_NAME = 'RoboclawController'
 
+SERIAL_PORT = config.ROBOCLAW_SERIAL_PORT
+BAUD_RATE = config.ROBOCLAW_BAUD_RATE
+
+REAR_RC_ADDRESS = int(config.ROBOCLAW_REAR_RC_ADDRESS)
+FRONT_RC_ADDRESS = int(config.ROBOCLAW_FRONT_RC_ADDRESS)
+
 MOTORS_MAX_QPPS = int(config.ROBOCLAW_MAX_QPPS)
 MOTORS_P_CONST = int(config.ROBOCLAW_P)
 MOTORS_I_CONST = int(config.ROBOCLAW_I)
 MOTORS_D_CONST = int(config.ROBOCLAW_D)
 
-REAR_RC_ADDRESS = int(config.ROBOCLAW_REAR_RC_ADDRESS)
-FRONT_RC_ADDRESS = int(config.ROBOCLAW_FRONT_RC_ADDRESS)
+WHEEL_RADIUS = float(config.ROBOCLAW_WHEEL_RADIUS)
+PULSES_PER_REVOLUTION = float(config.ROBOCLAW_PULSES_PER_REVOLUTION)
 
-SERIAL_PORT = config.ROBOCLAW_SERIAL_PORT
-BAUD_RATE = config.ROBOCLAW_BAUD_RATE
 TIMEOUT = 0.3
 
 
@@ -88,7 +92,7 @@ class RoboclawController(MessageHandler):
 
 
 def to_mmps(val):
-    return int(val * 60.0 * math.pi * 2.0 / 1865.0)
+    return int(val * WHEEL_RADIUS * math.pi * 2.0 / PULSES_PER_REVOLUTION)
 
 
 class RoboclawDriver(object):
