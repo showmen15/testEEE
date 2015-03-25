@@ -282,7 +282,8 @@ class Hokuyo(object):
         return self.__scan
 
     def scanning_loop(self):
-        self.__multi_scanning_loop()
+        while self.__is_active:
+            self.__multi_scanning_loop()
 
     def __multi_scanning_loop(self):
         self.__port_lock.acquire()
@@ -290,7 +291,7 @@ class Hokuyo(object):
             for scan in self.__get_multiple_scans():
                 self.__set_scan(scan)
                 self.__controller.send_subscribers_message()
-                if not not self.__is_active:
+                if not self.__is_active:
                     break
         finally:
             self.reset()
