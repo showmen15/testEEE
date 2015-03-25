@@ -69,7 +69,7 @@ class Hokuyo(object):
             result = ''
             flushing = True
             while flushing:
-                char = self.__port.read()
+                char = self.__port.read(1)
                 flushing = (char != '')
                 result += char
             sys.stderr.write('\n===============\nFLUSH SERIAL PORT\n"%s"\n===============\n' % result)
