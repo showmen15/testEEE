@@ -3,6 +3,7 @@ import logging.config
 import sys
 import threading
 import traceback
+import math
 
 import serial
 import os
@@ -86,6 +87,10 @@ class RoboclawController(MessageHandler):
         self.__driver.stop()
 
 
+def to_mmps(val):
+    return int(val * 60.0 * math.pi * 2 / 1865.0)
+
+
 class RoboclawDriver(object):
     def __init__(self, front, rear):
         self.__front, self.__rear = front, rear
@@ -94,10 +99,10 @@ class RoboclawDriver(object):
     def get_measured_speeds(self):
         self.__roboclaw_lock.acquire()
         try:
-            front_left = self.__front.read_speed_m1()
-            front_right = self.__front.read_speed_m2()
-            rear_left = self.__rear.read_speed_m1()
-            rear_right = self.__rear.read_speed_m2()
+            front_left = to_mmps(self.__front.read_speed_m1())
+            front_right = to_mmps(self.__front.read_speed_m2())
+            rear_left = to_mmps(self.__rear.read_speed_m1())
+            rear_right = to_mmps(self.__rear.read_speed_m2())
             return front_left, front_right, rear_left, rear_right
         finally:
             self.__roboclaw_lock.release()
