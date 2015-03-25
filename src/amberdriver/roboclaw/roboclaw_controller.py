@@ -88,7 +88,7 @@ class RoboclawController(MessageHandler):
 
 
 def to_mmps(val):
-    return int(val * 60.0 * math.pi * 2 / 1865.0)
+    return int(val * 60.0 * math.pi * 2.0 / 1865.0)
 
 
 class RoboclawDriver(object):
