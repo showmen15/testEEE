@@ -62,6 +62,20 @@ class Hokuyo(object):
     def set_controller(self, controller):
         self.__controller = controller
 
+    def flush(self):
+        self.__port_lock.acquire()
+        try:
+            self.__port.write('QT\nRS\nQT\n')
+            result = ''
+            flushing = True
+            while flushing:
+                char = self.__port.read()
+                flushing = (char != '')
+                result += char
+            sys.stderr.write('\n===============\nFLUSH SERIAL PORT\n"%s"\n===============\n' % result)
+        finally:
+            self.__port_lock.release()
+
     def __offset(self):
         count = 2
         result = ''
@@ -294,8 +308,7 @@ class Hokuyo(object):
                 if not self.__is_active:
                     break
         finally:
-            self.__offset()
-            self.laser_off()
+            self.flush()
             self.laser_on()
             self.__port_lock.release()
 
