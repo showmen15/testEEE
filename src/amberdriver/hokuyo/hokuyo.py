@@ -52,9 +52,11 @@ class Hokuyo(object):
         self.__port = port
         self.__port_lock = threading.RLock()
 
-        self.__scan = ([], [], 0)
+        self.__timestamp, self.__angles, self.__distances = 0, [], []
+        self.__scan_lock = threading.RLock()
 
         self.__is_active = True
+        self.__scanning_allowed = False
         self.__controller = None
 
         runtime.add_shutdown_hook(self.terminate)
@@ -289,35 +291,42 @@ class Hokuyo(object):
         finally:
             self.__port_lock.release()
 
-    def get_single_scan(self):
-        return self.__scan
-
-    def get_scan(self):
-        return self.__scan
-
-    def scanning_loop(self):
-        while self.__is_active:
-            self.__multi_scanning_loop()
-            time.sleep(0.1)
-
-    def __multi_scanning_loop(self):
-        self.__port_lock.acquire()
-        try:
-            for scan in self.__get_multiple_scans():
-                self.__set_scan(scan)
-                self.__controller.send_subscribers_message()
-                if not self.__is_active:
-                    break
-        finally:
-            self.flush()
-            self.laser_on()
-            self.__port_lock.release()
+    def enable_scanning(self, scanning_allowed):
+        self.__scanning_allowed = scanning_allowed
 
     def __set_scan(self, scan):
         if scan is not None:
             timestamp = int(time.time() * 1000.0)
             angles, distances = Hokuyo.__parse_scan(scan)
-            self.__scan = (angles, distances, timestamp)
+
+            self.__scan_lock.acquire()
+            try:
+                self.__angles, self.__distances, self.__timestamp = angles, distances, timestamp
+            finally:
+                self.__scan_lock.release()
+
+    def get_scan(self):
+        self.__scan_lock.acquire()
+        try:
+            if not self.__scanning_allowed:
+                scan = self.__get_single_scan()
+                self.__set_scan(scan)
+            return self.__angles, self.__distances, self.__timestamp
+        finally:
+            self.__scan_lock.release()
+
+    def scanning_loop(self):
+        while self.__is_active:
+            if self.__scanning_allowed:
+                self.__port_lock.acquire()
+                for scan in self.__get_multiple_scans():
+                    self.__set_scan(scan)
+                    if not self.__scanning_allowed or not self.__is_active:
+                        self.laser_off()
+                        self.laser_on()
+                        self.__port_lock.release()
+                        break
+            time.sleep(0.1)
 
     @staticmethod
     def __parse_scan(scan):

@@ -44,7 +44,7 @@ class HokuyoController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_single_scan(self, _received_header, _received_message, response_header, response_message):
         self.__logger.debug('Get single scan')
-        angles, distances, timestamp = self.__hokuyo.get_single_scan()
+        angles, distances, timestamp = self.__hokuyo.get_scan()
         response_message = HokuyoController.__fill_scan(response_message, angles, distances, timestamp)
         return response_header, response_message
 
