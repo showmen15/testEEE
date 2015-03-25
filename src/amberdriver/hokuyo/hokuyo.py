@@ -298,6 +298,7 @@ class Hokuyo(object):
     def scanning_loop(self):
         while self.__is_active:
             self.__multi_scanning_loop()
+            time.sleep(0.1)
 
     def __multi_scanning_loop(self):
         self.__port_lock.acquire()
