@@ -3,6 +3,7 @@ import logging.config
 import sys
 import threading
 import traceback
+import time
 
 import os
 import serial
@@ -72,6 +73,12 @@ class HokuyoController(MessageHandler):
         return response_message
 
 
+def sending_loop(_controller):
+    while _controller.is_alive():
+        _controller.send_subscribers_message()
+        time.sleep(0.1)
+
+
 if __name__ == '__main__':
     try:
         _serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
@@ -102,6 +109,10 @@ if __name__ == '__main__':
 
         controller = HokuyoController(sys.stdin, sys.stdout, hokuyo)
         hokuyo.set_controller(controller)
+
+        sending_thread = threading.Thread(target=sending_loop, args=(controller,))
+        sending_thread.start()
+
         controller.run()
 
     except BaseException as e:
