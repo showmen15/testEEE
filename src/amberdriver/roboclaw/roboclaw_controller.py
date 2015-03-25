@@ -59,10 +59,10 @@ class RoboclawController(MessageHandler):
         front_left, front_right, rear_left, rear_right = self.__driver.get_measured_speeds()
 
         current_speed = response_message.Extensions[roboclaw_pb2.currentSpeed]
-        current_speed.frontLeftSpeed = int(front_left[0])
-        current_speed.frontRightSpeed = int(front_right[0])
-        current_speed.rearLeftSpeed = int(rear_left[0])
-        current_speed.rearRightSpeed = int(rear_right[0])
+        current_speed.frontLeftSpeed = int(front_left)
+        current_speed.frontRightSpeed = int(front_right)
+        current_speed.rearLeftSpeed = int(rear_left)
+        current_speed.rearRightSpeed = int(rear_right)
 
         return response_header, response_message
 
@@ -99,10 +99,10 @@ class RoboclawDriver(object):
     def get_measured_speeds(self):
         self.__roboclaw_lock.acquire()
         try:
-            front_left = to_mmps(self.__front.read_speed_m1())
-            front_right = to_mmps(self.__front.read_speed_m2())
-            rear_left = to_mmps(self.__rear.read_speed_m1())
-            rear_right = to_mmps(self.__rear.read_speed_m2())
+            front_left = to_mmps(self.__front.read_speed_m1()[0])
+            front_right = to_mmps(self.__front.read_speed_m2()[0])
+            rear_left = to_mmps(self.__rear.read_speed_m1()[0])
+            rear_right = to_mmps(self.__rear.read_speed_m2()[0])
             return front_left, front_right, rear_left, rear_right
         finally:
             self.__roboclaw_lock.release()
