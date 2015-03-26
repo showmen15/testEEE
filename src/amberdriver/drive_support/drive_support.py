@@ -77,7 +77,7 @@ class DriveSupport(object):
             speeds_values = DriveSupport.__drive_support(self.__speeds, self.__scan)
             (front_left, front_right, rear_left, rear_right) = speeds_values
             self.__roboclaw_driver.set_speeds(front_left, front_right, rear_left, rear_right)
-            time.sleep(0.1)
+            time.sleep(0.05)
 
     @staticmethod
     def __drive_support(speeds, scan):
