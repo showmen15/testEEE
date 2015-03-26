@@ -108,10 +108,10 @@ class RoboclawDriver(object):
     def get_measured_speeds(self):
         self.__roboclaw_lock.acquire()
         try:
-            front_left, _ = self.__front.read_speed_m1()
-            front_right, _ = self.__front.read_speed_m2()
-            rear_left, _ = self.__rear.read_speed_m1()
-            rear_right, _ = self.__rear.read_speed_m2()
+            front_right, _ = self.__front.read_speed_m1()
+            front_left, _ = self.__front.read_speed_m2()
+            rear_right, _ = self.__rear.read_speed_m1()
+            rear_left, _ = self.__rear.read_speed_m2()
         finally:
             self.__roboclaw_lock.release()
 
@@ -130,8 +130,8 @@ class RoboclawDriver(object):
 
         self.__roboclaw_lock.acquire()
         try:
-            self.__front.drive_mixed_with_signed_speed(front_left, front_right)
-            self.__rear.drive_mixed_with_signed_speed(rear_left, rear_right)
+            self.__front.drive_mixed_with_signed_speed(front_right, front_left)
+            self.__rear.drive_mixed_with_signed_speed(rear_right, rear_left)
         finally:
             self.__roboclaw_lock.release()
 
