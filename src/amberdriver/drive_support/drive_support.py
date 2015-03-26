@@ -92,18 +92,16 @@ class DriveSupport(object):
 
         (front_left, front_right, rear_left, rear_right) = speeds_values
 
-        left = sum([front_left, rear_left]) / 2.0
-        right = sum([front_right, rear_right]) / 2.0
-
-        left, right = drive_support_logic.limit_due_to_distance(left, right, scan_points)
+        front_left, front_left = drive_support_logic.limit_due_to_distance(front_left, front_left, scan_points)
+        rear_left, rear_left = drive_support_logic.limit_due_to_distance(rear_left, rear_left, scan_points)
 
         current_timestamp = time.time()
         trust_level = drive_support_logic.scan_trust(current_scan_timestamp, current_timestamp) * \
                       drive_support_logic.command_trust(current_speeds_timestamp, current_timestamp)
 
-        left *= trust_level
-        right *= trust_level
+        front_left *= trust_level
+        rear_left *= trust_level
+        front_right *= trust_level
+        rear_right *= trust_level
 
-        left, right = int(left), int(right)
-
-        return left, right, left, right
+        return int(front_left), int(front_right), int(rear_left), int(rear_right)
