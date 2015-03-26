@@ -132,8 +132,8 @@ class RoboclawDriver(object):
     def stop(self):
         self.__roboclaw_lock.acquire()
         try:
-            self.__front.drive_mixed_with_signed_duty_cycle(0, 0)
-            self.__rear.drive_mixed_with_signed_duty_cycle(0, 0)
+            self.__front.drive_mixed_with_signed_speed(0, 0)
+            self.__rear.drive_mixed_with_signed_speed(0, 0)
         finally:
             self.__roboclaw_lock.release()
 
