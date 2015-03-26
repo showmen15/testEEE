@@ -92,11 +92,12 @@ class RoboclawController(MessageHandler):
 
 
 def to_mmps(val):
-    return int((val * WHEEL_RADIUS * math.pi * 2.0) / PULSES_PER_REVOLUTION)
+    return int(val * WHEEL_RADIUS * math.pi * 2.0 / PULSES_PER_REVOLUTION)
 
 
 def to_qpps(val):
-    return int((val * PULSES_PER_REVOLUTION) / (WHEEL_RADIUS * math.pi * 2.0))
+    rps = val / (WHEEL_RADIUS * math.pi * 2.0)
+    return int(rps * PULSES_PER_REVOLUTION)
 
 
 class RoboclawDriver(object):
