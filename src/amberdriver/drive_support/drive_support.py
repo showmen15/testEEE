@@ -93,6 +93,11 @@ class DriveSupport(object):
             speeds_values = DriveSupport.__drive_support(self.__speeds, self.__scan)
             (front_left, front_right, rear_left, rear_right) = speeds_values
 
+            front_left = roboclaw_controller.to_qpps(front_left)
+            front_right = roboclaw_controller.to_qpps(front_right)
+            rear_left = roboclaw_controller.to_qpps(rear_left)
+            rear_right = roboclaw_controller.to_qpps(rear_right)
+
             self.__roboclaw_lock.acquire()
             try:
                 self.__roboclaw_front.drive_mixed_with_signed_duty_cycle(front_left, front_right)
