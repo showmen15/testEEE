@@ -124,8 +124,8 @@ class RoboclawDriver(object):
 
         self.__roboclaw_lock.acquire()
         try:
-            self.__front.drive_mixed_with_signed_duty_cycle(front_left, front_right)
-            self.__rear.drive_mixed_with_signed_duty_cycle(rear_left, rear_right)
+            self.__front.drive_mixed_with_signed_speed(front_left, front_right)
+            self.__rear.drive_mixed_with_signed_speed(rear_left, rear_right)
         finally:
             self.__roboclaw_lock.release()
 
