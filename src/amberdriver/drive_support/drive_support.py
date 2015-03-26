@@ -1,6 +1,5 @@
 import logging
 import logging.config
-import threading
 import time
 
 import os
@@ -8,7 +7,6 @@ from amberclient.common.listener import Listener
 from ambercommon.common import runtime
 
 from amberdriver.drive_support import drive_support_logic
-from amberdriver.roboclaw import roboclaw_controller
 from amberdriver.tools import config
 
 
@@ -41,12 +39,11 @@ class Speeds(object):
 
 
 class DriveSupport(object):
-    def __init__(self, roboclaw_front, roboclaw_rear, hokuyo_proxy):
+    def __init__(self, roboclaw_driver, hokuyo_proxy):
         self.__scan = None
         self.__speeds = Speeds((0, 0, 0, 0), 0.0)
 
-        self.__roboclaw_front, self.__roboclaw_rear = roboclaw_front, roboclaw_rear
-        self.__roboclaw_lock = threading.RLock()
+        self.__roboclaw_driver = roboclaw_driver
 
         self.__is_active = True
 
@@ -64,12 +61,7 @@ class DriveSupport(object):
         self.__hokuyo_proxy.unsubscribe(self.__hokuyo_listener)
 
     def stop(self):
-        self.__roboclaw_lock.acquire()
-        try:
-            self.__roboclaw_front.drive_mixed_with_signed_speed(0, 0)
-            self.__roboclaw_rear.drive_mixed_with_signed_speed(0, 0)
-        finally:
-            self.__roboclaw_lock.release()
+        self.__roboclaw_driver.stop()
 
     def set_scan(self, scan):
         self.__scan = scan
@@ -78,33 +70,13 @@ class DriveSupport(object):
         self.__speeds = Speeds((front_left, front_right, rear_left, rear_right), time.time())
 
     def get_measured_speeds(self):
-        self.__roboclaw_lock.acquire()
-        try:
-            front_left = roboclaw_controller.to_mmps(self.__roboclaw_front.read_speed_m1()[0])
-            front_right = roboclaw_controller.to_mmps(self.__roboclaw_front.read_speed_m2()[0])
-            rear_left = roboclaw_controller.to_mmps(self.__roboclaw_rear.read_speed_m1()[0])
-            rear_right = roboclaw_controller.to_mmps(self.__roboclaw_rear.read_speed_m2()[0])
-            return front_left, front_right, rear_left, rear_right
-        finally:
-            self.__roboclaw_lock.release()
+        return self.__roboclaw_driver.get_measured_speeds()
 
     def driving_loop(self):
         while self.__is_active:
             speeds_values = DriveSupport.__drive_support(self.__speeds, self.__scan)
             (front_left, front_right, rear_left, rear_right) = speeds_values
-
-            front_left = roboclaw_controller.to_qpps(front_left)
-            front_right = roboclaw_controller.to_qpps(front_right)
-            rear_left = roboclaw_controller.to_qpps(rear_left)
-            rear_right = roboclaw_controller.to_qpps(rear_right)
-
-            self.__roboclaw_lock.acquire()
-            try:
-                self.__roboclaw_front.drive_mixed_with_signed_speed(front_left, front_right)
-                self.__roboclaw_rear.drive_mixed_with_signed_speed(rear_left, rear_right)
-            finally:
-                self.__roboclaw_lock.release()
-
+            self.__roboclaw_driver.set_speeds(front_left, front_right, rear_left, rear_right)
             time.sleep(0.1)
 
     @staticmethod
