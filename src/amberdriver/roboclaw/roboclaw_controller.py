@@ -92,7 +92,11 @@ class RoboclawController(MessageHandler):
 
 
 def to_mmps(val):
-    return int(val * WHEEL_RADIUS * math.pi * 2.0 / PULSES_PER_REVOLUTION)
+    return int((val * WHEEL_RADIUS * math.pi * 2.0) / PULSES_PER_REVOLUTION)
+
+
+def to_qpps(val):
+    return int((val * PULSES_PER_REVOLUTION) / (WHEEL_RADIUS * math.pi * 2.0))
 
 
 class RoboclawDriver(object):
@@ -112,6 +116,11 @@ class RoboclawDriver(object):
             self.__roboclaw_lock.release()
 
     def set_speeds(self, front_left, front_right, rear_left, rear_right):
+        front_left = to_qpps(front_left)
+        front_right = to_qpps(front_right)
+        rear_left = to_qpps(rear_left)
+        rear_right = to_qpps(rear_right)
+
         self.__roboclaw_lock.acquire()
         try:
             self.__front.drive_mixed_with_signed_duty_cycle(front_left, front_right)
