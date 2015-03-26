@@ -29,10 +29,10 @@ BAUD_RATE = config.ROBOCLAW_BAUD_RATE
 REAR_RC_ADDRESS = int(config.ROBOCLAW_REAR_RC_ADDRESS)
 FRONT_RC_ADDRESS = int(config.ROBOCLAW_FRONT_RC_ADDRESS)
 
-MOTORS_MAX_QPPS = int(config.ROBOCLAW_MAX_QPPS)
-MOTORS_P_CONST = int(config.ROBOCLAW_P)
-MOTORS_I_CONST = int(config.ROBOCLAW_I)
-MOTORS_D_CONST = int(config.ROBOCLAW_D)
+MOTORS_MAX_QPPS = int(config.ROBOCLAW_MOTORS_MAX_QPPS)
+MOTORS_P_CONST = int(config.ROBOCLAW_P_CONST)
+MOTORS_I_CONST = int(config.ROBOCLAW_I_CONST)
+MOTORS_D_CONST = int(config.ROBOCLAW_D_CONST)
 
 WHEEL_RADIUS = float(config.ROBOCLAW_WHEEL_RADIUS)
 PULSES_PER_REVOLUTION = float(config.ROBOCLAW_PULSES_PER_REVOLUTION)
@@ -108,13 +108,19 @@ class RoboclawDriver(object):
     def get_measured_speeds(self):
         self.__roboclaw_lock.acquire()
         try:
-            front_left = to_mmps(self.__front.read_speed_m1()[0])
-            front_right = to_mmps(self.__front.read_speed_m2()[0])
-            rear_left = to_mmps(self.__rear.read_speed_m1()[0])
-            rear_right = to_mmps(self.__rear.read_speed_m2()[0])
-            return front_left, front_right, rear_left, rear_right
+            front_left, _ = self.__front.read_speed_m1()
+            front_right, _ = self.__front.read_speed_m2()
+            rear_left, _ = self.__rear.read_speed_m1()
+            rear_right, _ = self.__rear.read_speed_m2()
         finally:
             self.__roboclaw_lock.release()
+
+        front_left = to_mmps(front_left)
+        front_right = to_mmps(front_right)
+        rear_left = to_mmps(rear_left)
+        rear_right = to_mmps(rear_right)
+
+        return front_left, front_right, rear_left, rear_right
 
     def set_speeds(self, front_left, front_right, rear_left, rear_right):
         front_left = to_qpps(front_left)
@@ -150,6 +156,25 @@ if __name__ == '__main__':
         roboclaw_front.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
         roboclaw_rear.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
         roboclaw_rear.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+
+        roboclaw_front.set_m1_encoder_mode(0)
+        roboclaw_front.set_m2_encoder_mode(0)
+        roboclaw_rear.set_m1_encoder_mode(0)
+        roboclaw_rear.set_m2_encoder_mode(0)
+
+        sys.stderr.write('FIRMWARE VERSION, FRONT:\n%s\n' % str(roboclaw_front.read_firmware_version()))
+        sys.stderr.write('FIRMWARE VERSION, REAR:\n%s\n' % str(roboclaw_rear.read_firmware_version()))
+
+        sys.stderr.write('BUFFER LENGTH, FRONT:\n%s\n' % str(roboclaw_front.read_buffer_length()))
+        sys.stderr.write('BUFFER LENGTH, REAR:\n%s\n' % str(roboclaw_rear.read_buffer_length()))
+
+        sys.stderr.write('PIDQ SETTINGS, FRONT, M1:\n%s\n' % str(roboclaw_front.read_m1_pidq_settings()))
+        sys.stderr.write('PIDQ SETTINGS, FRONT, M2:\n%s\n' % str(roboclaw_front.read_m2_pidq_settings()))
+        sys.stderr.write('PIDQ SETTINGS, REAR, M1:\n%s\n' % str(roboclaw_rear.read_m1_pidq_settings()))
+        sys.stderr.write('PIDQ SETTINGS, REAR, M2:\n%s\n' % str(roboclaw_rear.read_m2_pidq_settings()))
+
+        sys.stderr.write('ENCODER MODE, FRONT:\n%s\n' % str(roboclaw_front.read_encoder_mode()))
+        sys.stderr.write('ENCODER MODE, REAR:\n%s\n' % str(roboclaw_rear.read_encoder_mode()))
 
         roboclaw_driver = RoboclawDriver(roboclaw_front, roboclaw_rear)
         controller = RoboclawController(sys.stdin, sys.stdout, roboclaw_driver)
