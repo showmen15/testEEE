@@ -4,6 +4,7 @@ import sys
 import threading
 import traceback
 
+from amberclient.hokuyo.hokuyo import HokuyoProxy
 import os
 from amberclient.common.amber_client import AmberClient
 from amberclient.location.location import LocationProxy
@@ -151,13 +152,15 @@ class DriveToPointController(MessageHandler):
 
 if __name__ == '__main__':
     try:
+        client_for_hokuyo = AmberClient('127.0.0.1', name='hokuyo')
         client_for_location = AmberClient('127.0.0.1', name='location')
         client_for_driver = AmberClient('127.0.0.1', name='driver')
 
+        hokuyo_proxy = HokuyoProxy(client_for_hokuyo, 0)
         location_proxy = LocationProxy(client_for_location, 0)
         driver_proxy = RoboclawProxy(client_for_driver, 0)
 
-        drive_to_point = DriveToPoint(driver_proxy, location_proxy)
+        drive_to_point = DriveToPoint(driver_proxy, location_proxy, hokuyo_proxy)
 
         driving_thread = threading.Thread(target=drive_to_point.driving_loop, name='driving-thread')
         driving_thread.start()

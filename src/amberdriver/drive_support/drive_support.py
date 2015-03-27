@@ -95,8 +95,8 @@ class DriveSupport(object):
 
         (front_left, front_right, rear_left, rear_right) = speeds_values
 
-        front_left, front_left = drive_support_logic.limit_due_to_distance(front_left, front_left, scan_points)
-        rear_left, rear_left = drive_support_logic.limit_due_to_distance(rear_left, rear_left, scan_points)
+        front_left, front_right = drive_support_logic.limit_due_to_distance(front_left, front_right, scan_points)
+        rear_left, rear_right = drive_support_logic.limit_due_to_distance(rear_left, rear_right, scan_points)
 
         current_timestamp = time.time()
         trust_level = drive_support_logic.scan_trust(current_scan_timestamp, current_timestamp) * \

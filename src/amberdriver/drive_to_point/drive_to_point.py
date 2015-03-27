@@ -7,6 +7,9 @@ import traceback
 
 import os
 from ambercommon.common import runtime
+from amberclient.common.listener import Listener
+
+from amberdriver.drive_support import drive_support_logic
 
 from amberdriver.tools import config, bound_sleep_interval
 
@@ -33,14 +36,27 @@ def compute_sleep_interval(current_timestamp, last_timestamp, sleep_interval,
     return sleep_interval
 
 
+class ScanHandler(Listener):
+    def __init__(self, driver):
+        self.__driver_support = driver
+
+    def handle(self, response):
+        self.__driver_support.set_scan(response)
+
+
 class DriveToPoint(object):
     MAX_SPEED = 300
     DRIVING_ALPHA = 3.0  # cut at 60st
     TIMESTAMP_FIELD = 4
 
-    def __init__(self, driver_proxy, location_proxy):
+    def __init__(self, driver_proxy, location_proxy, hokuyo_proxy):
         self.__driver_proxy = driver_proxy
         self.__location_proxy = location_proxy
+        self.__hokuyo_proxy = hokuyo_proxy
+
+        self.__hokuyo_listener = ScanHandler(self)
+        hokuyo_proxy.subscribe(self.__hokuyo_listener)
+        self.__scan = None
 
         self.__next_targets, self.__visited_targets = [], []
         self.__current_location, self.__next_targets_timestamp = None, 0.0
@@ -53,6 +69,9 @@ class DriveToPoint(object):
         self.__logger = logging.getLogger(LOGGER_NAME)
 
         runtime.add_shutdown_hook(self.stop)
+
+    def set_scan(self, scan):
+        self.__scan = scan
 
     def stop(self):
         self.__is_active = False
@@ -149,6 +168,7 @@ class DriveToPoint(object):
         while not DriveToPoint.target_reached(location, target) and self.__driving_allowed and self.__is_active \
                 and not self.__next_targets_timestamp > next_targets_timestamp:
             left, right = DriveToPoint.compute_speed(location, target)
+            left, right = drive_support_logic.limit_due_to_distance(left, right, self.__scan.get_points())
             left, right = self.__low_pass(left, right)
             left, right = int(left), int(right)
             self.__driver_proxy.send_motors_command(left, right, left, right)
