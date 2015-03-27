@@ -231,7 +231,9 @@ class DriveToPointTestCase(unittest.TestCase):
     def setUp(self):
         self.mocked_roboclaw_proxy = mock.Mock()
         self.mocked_location_proxy = mock.Mock()
-        self.drive_to_point = DriveToPoint(self.mocked_roboclaw_proxy, self.mocked_location_proxy)
+        self.mocked_hokuyo_proxy = mock.Mock()
+        self.drive_to_point = DriveToPoint(self.mocked_roboclaw_proxy, self.mocked_location_proxy,
+                                           self.mocked_hokuyo_proxy)
 
 
 class TargetAndLocationTestCase(DriveToPointTestCase):
