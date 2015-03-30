@@ -267,18 +267,24 @@ class Hokuyo(object):
             result += self.__port.read(Hokuyo.SHORT_COMMAND_LEN)
             assert result[-2:] == '\n\n'
 
-            index = 0
+            index = number_of_scans
             while number_of_scans == 0 or index > 0:
                 index -= 1
 
-                result = self.__port.read(Hokuyo.MD_COMMAND_REPLY_LEN)
-                assert result[:13] == cmd[:13]
+                try:
+                    result = self.__port.read(Hokuyo.MD_COMMAND_REPLY_LEN)
+                    assert result[:13] == cmd[:13]
 
-                result = self.__port.read(6)
-                assert result[-1] == '\n'
+                    result = self.__port.read(6)
+                    assert result[-1] == '\n'
 
-                scan = self.__get_and_parse_scan(cluster_count, start_step, stop_step)
-                yield scan
+                    scan = self.__get_and_parse_scan(cluster_count, start_step, stop_step)
+                    yield scan
+
+                except AssertionError:
+                    sys.stderr.write('Assert error!\n')
+                    traceback.print_exc()
+                    self.__offset()
 
         except GeneratorExit:
             sys.stderr.write('Multi scan interrupted!\n')
@@ -322,7 +328,7 @@ class Hokuyo(object):
                 for scan in self.__get_multiple_scans():
                     self.__set_scan(scan)
                     if not self.__scanning_allowed or not self.__is_active:
-                        self.laser_off()
+                        self.flush()
                         self.laser_on()
                         self.__port_lock.release()
                         break
