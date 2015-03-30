@@ -22,6 +22,7 @@ logging.config.fileConfig('%s/hokuyo.ini' % pwd)
 config.add_config_ini('%s/hokuyo.ini' % pwd)
 
 LOGGER_NAME = 'HokuyoController'
+ENABLE_MULTI_SCANNING = config.HOKUYO_ENABLE_MULTI_SCANNING == 'True'
 HIGH_SENSITIVE = config.HOKUYO_HIGH_SENSITIVE_ENABLE == 'True'
 SPEED_MOTOR = int(config.HOKUYO_SPEED_MOTOR)
 SERIAL_PORT = config.HOKUYO_SERIAL_PORT
@@ -104,6 +105,7 @@ if __name__ == '__main__':
         sys.stderr.write('SENSOR_STATE:\n%s\n' % hokuyo.get_sensor_state())
         sys.stderr.write('VERSION_INFO:\n%s\n' % hokuyo.get_version_info())
 
+        hokuyo.enable_scanning(ENABLE_MULTI_SCANNING)
         scanning_thread = threading.Thread(target=hokuyo.scanning_loop, name='scanning-thread')
         scanning_thread.start()
 
