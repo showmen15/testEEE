@@ -173,8 +173,6 @@ class Hokuyo(object):
             self.__port_lock.release()
 
     def terminate(self):
-        self.reset()
-
         self.__scanning_allowed = False
         self.__is_active = False
         self.__port_lock.acquire()
