@@ -76,10 +76,8 @@ class DriveSupport(object):
         last_speeds = (0, 0, 0, 0)
         while self.__is_active:
             current_speeds = DriveSupport.__drive_support(self.__speeds, self.__scan)
-            if reduce(lambda result, speeds: abs(speeds[0] - speeds[1]) > 10 or result,
-                      zip(current_speeds, last_speeds), False):
-                (front_left, front_right, rear_left, rear_right) = current_speeds
-                self.__roboclaw_driver.set_speeds(front_left, front_right, rear_left, rear_right)
+            (front_left, front_right, rear_left, rear_right) = current_speeds
+            self.__roboclaw_driver.set_speeds(front_left, front_right, rear_left, rear_right)
             time.sleep(0.05)
 
     @staticmethod
