@@ -205,7 +205,7 @@ class AmberPipes(object):
         :return: nothing
         """
         self.__pipe_out.write(binary_string)
-        self.__pipe_out.flush()
+        self.__pipe_out.__flush()
 
     def terminate(self):
         self.__is_alive = False

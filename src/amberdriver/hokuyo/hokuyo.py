@@ -55,6 +55,9 @@ class Hokuyo(object):
         self.__timestamp, self.__angles, self.__distances = 0, [], []
         self.__scan_lock = threading.RLock()
 
+        self.__motor_speed = 0
+        self.__high_sensitive = False
+
         self.__is_active = True
         self.__scanning_allowed = False
         self.__controller = None
@@ -64,7 +67,7 @@ class Hokuyo(object):
     def set_controller(self, controller):
         self.__controller = controller
 
-    def flush(self):
+    def __flush(self):
         self.__port_lock.acquire()
         try:
             self.__port.write('QT\nRS\nQT\n')
@@ -77,6 +80,10 @@ class Hokuyo(object):
             sys.stderr.write('\n===============\nFLUSH SERIAL PORT\n"%s"\n===============\n' % result)
         finally:
             self.__port_lock.release()
+
+    def __set_up(self):
+        self.set_motor_speed(self.__motor_speed)
+        self.set_high_sensitive(self.__high_sensitive)
 
     def __offset(self):
         count = 2
@@ -185,10 +192,12 @@ class Hokuyo(object):
         return self.__short_command(Hokuyo.RESET)
 
     def set_motor_speed(self, motor_speed=99):
+        self.__motor_speed = motor_speed
         return self.__short_command('CR' + '%02d' % motor_speed + '\n', check_response=False)
 
-    def set_high_sensitive(self, enable=True):
-        return self.__short_command('HS' + ('1\n' if enable else '0\n'), check_response=False)
+    def set_high_sensitive(self, high_sensitive=True):
+        self.__high_sensitive = high_sensitive
+        return self.__short_command('HS' + ('1\n' if high_sensitive else '0\n'), check_response=False)
 
     def get_version_info(self):
         return self.__long_command(Hokuyo.VERSION_INFO, Hokuyo.VERSION_INFO_LINES)
@@ -328,7 +337,8 @@ class Hokuyo(object):
                 for scan in self.__get_multiple_scans():
                     self.__set_scan(scan)
                     if not self.__scanning_allowed or not self.__is_active:
-                        self.flush()
+                        self.__flush()
+                        self.__set_up()
                         self.laser_on()
                         self.__port_lock.release()
                         break
