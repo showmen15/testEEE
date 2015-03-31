@@ -52,8 +52,7 @@ class Hokuyo(object):
         self.__port = port
         self.__port_lock = threading.RLock()
 
-        self.__timestamp, self.__angles, self.__distances = 0, [], []
-        self.__scan_lock = threading.RLock()
+        self.__scan = ([], [], 0)
 
         self.__motor_speed = 0
         self.__high_sensitive = False
@@ -312,22 +311,13 @@ class Hokuyo(object):
         if scan is not None:
             timestamp = int(time.time() * 1000.0)
             angles, distances = Hokuyo.__parse_scan(scan)
-
-            self.__scan_lock.acquire()
-            try:
-                self.__angles, self.__distances, self.__timestamp = angles, distances, timestamp
-            finally:
-                self.__scan_lock.release()
+            self.__scan = (angles, distances, timestamp)
 
     def get_scan(self):
-        self.__scan_lock.acquire()
-        try:
-            if not self.__scanning_allowed:
-                scan = self.__get_single_scan()
-                self.__set_scan(scan)
-            return self.__angles, self.__distances, self.__timestamp
-        finally:
-            self.__scan_lock.release()
+        if not self.__scanning_allowed:
+            scan = self.__get_single_scan()
+            self.__set_scan(scan)
+        return self.__scan
 
     def scanning_loop(self):
         while self.__is_active:
