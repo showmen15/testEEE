@@ -1,7 +1,9 @@
 import logging
 import logging.config
 import sys
+import threading
 import traceback
+import math
 
 import serial
 import os
@@ -21,16 +23,20 @@ config.add_config_ini('%s/roboclaw.ini' % pwd)
 
 LOGGER_NAME = 'RoboclawController'
 
-MOTORS_MAX_QPPS = int(config.ROBOCLAW_MAX_QPPS)
-MOTORS_P_CONST = int(config.ROBOCLAW_P)
-MOTORS_I_CONST = int(config.ROBOCLAW_I)
-MOTORS_D_CONST = int(config.ROBOCLAW_D)
+SERIAL_PORT = config.ROBOCLAW_SERIAL_PORT
+BAUD_RATE = config.ROBOCLAW_BAUD_RATE
 
 REAR_RC_ADDRESS = int(config.ROBOCLAW_REAR_RC_ADDRESS)
 FRONT_RC_ADDRESS = int(config.ROBOCLAW_FRONT_RC_ADDRESS)
 
-SERIAL_PORT = config.ROBOCLAW_SERIAL_PORT
-BAUD_RATE = config.ROBOCLAW_BAUD_RATE
+MOTORS_MAX_QPPS = int(config.ROBOCLAW_MOTORS_MAX_QPPS)
+MOTORS_P_CONST = int(config.ROBOCLAW_P_CONST)
+MOTORS_I_CONST = int(config.ROBOCLAW_I_CONST)
+MOTORS_D_CONST = int(config.ROBOCLAW_D_CONST)
+
+WHEEL_RADIUS = float(config.ROBOCLAW_WHEEL_RADIUS)
+PULSES_PER_REVOLUTION = float(config.ROBOCLAW_PULSES_PER_REVOLUTION)
+
 TIMEOUT = 0.3
 
 
@@ -57,10 +63,10 @@ class RoboclawController(MessageHandler):
         front_left, front_right, rear_left, rear_right = self.__driver.get_measured_speeds()
 
         current_speed = response_message.Extensions[roboclaw_pb2.currentSpeed]
-        current_speed.frontLeftSpeed = int(front_left[0])
-        current_speed.frontRightSpeed = int(front_right[0])
-        current_speed.rearLeftSpeed = int(rear_left[0])
-        current_speed.rearRightSpeed = int(rear_right[0])
+        current_speed.frontLeftSpeed = int(front_left)
+        current_speed.frontRightSpeed = int(front_right)
+        current_speed.rearLeftSpeed = int(rear_left)
+        current_speed.rearRightSpeed = int(rear_right)
 
         return response_header, response_message
 
@@ -85,24 +91,57 @@ class RoboclawController(MessageHandler):
         self.__driver.stop()
 
 
+def to_mmps(val):
+    return int(val * WHEEL_RADIUS * math.pi * 2.0 / PULSES_PER_REVOLUTION)
+
+
+def to_qpps(val):
+    rps = val / (WHEEL_RADIUS * math.pi * 2.0)
+    return int(rps * PULSES_PER_REVOLUTION)
+
+
 class RoboclawDriver(object):
     def __init__(self, front, rear):
         self.__front, self.__rear = front, rear
+        self.__roboclaw_lock = threading.Lock()
 
     def get_measured_speeds(self):
-        front_left = self.__front.read_m1_speed()
-        front_right = self.__front.read_m2_speed()
-        rear_left = self.__rear.read_m1_speed()
-        rear_right = self.__rear.read_m2_speed()
+        self.__roboclaw_lock.acquire()
+        try:
+            front_right, _ = self.__front.read_speed_m1()
+            front_left, _ = self.__front.read_speed_m2()
+            rear_right, _ = self.__rear.read_speed_m1()
+            rear_left, _ = self.__rear.read_speed_m2()
+        finally:
+            self.__roboclaw_lock.release()
+
+        front_left = to_mmps(front_left)
+        front_right = to_mmps(front_right)
+        rear_left = to_mmps(rear_left)
+        rear_right = to_mmps(rear_right)
+
         return front_left, front_right, rear_left, rear_right
 
     def set_speeds(self, front_left, front_right, rear_left, rear_right):
-        self.__front.set_mixed_duty(front_left, front_right)
-        self.__rear.set_mixed_duty(rear_left, rear_right)
+        front_left = to_qpps(front_left)
+        front_right = to_qpps(front_right)
+        rear_left = to_qpps(rear_left)
+        rear_right = to_qpps(rear_right)
+
+        self.__roboclaw_lock.acquire()
+        try:
+            self.__front.drive_mixed_with_signed_speed(front_right, front_left)
+            self.__rear.drive_mixed_with_signed_speed(rear_right, rear_left)
+        finally:
+            self.__roboclaw_lock.release()
 
     def stop(self):
-        self.__front.set_mixed_duty(0, 0)
-        self.__rear.set_mixed_duty(0, 0)
+        self.__roboclaw_lock.acquire()
+        try:
+            self.__front.drive_mixed_with_signed_speed(0, 0)
+            self.__rear.drive_mixed_with_signed_speed(0, 0)
+        finally:
+            self.__roboclaw_lock.release()
 
 
 if __name__ == '__main__':
@@ -113,10 +152,29 @@ if __name__ == '__main__':
         roboclaw_front = Roboclaw(_serial_port, FRONT_RC_ADDRESS)
         roboclaw_rear = Roboclaw(_serial_port, REAR_RC_ADDRESS)
 
-        roboclaw_front.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_front.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_rear.set_m1_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_rear.set_m2_pidq(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        roboclaw_front.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        roboclaw_front.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        roboclaw_rear.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        roboclaw_rear.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+
+        roboclaw_front.set_m1_encoder_mode(0)
+        roboclaw_front.set_m2_encoder_mode(0)
+        roboclaw_rear.set_m1_encoder_mode(0)
+        roboclaw_rear.set_m2_encoder_mode(0)
+
+        sys.stderr.write('FIRMWARE VERSION, FRONT:\n%s\n' % str(roboclaw_front.read_firmware_version()))
+        sys.stderr.write('FIRMWARE VERSION, REAR:\n%s\n' % str(roboclaw_rear.read_firmware_version()))
+
+        sys.stderr.write('BUFFER LENGTH, FRONT:\n%s\n' % str(roboclaw_front.read_buffer_length()))
+        sys.stderr.write('BUFFER LENGTH, REAR:\n%s\n' % str(roboclaw_rear.read_buffer_length()))
+
+        sys.stderr.write('PIDQ SETTINGS, FRONT, M1:\n%s\n' % str(roboclaw_front.read_m1_pidq_settings()))
+        sys.stderr.write('PIDQ SETTINGS, FRONT, M2:\n%s\n' % str(roboclaw_front.read_m2_pidq_settings()))
+        sys.stderr.write('PIDQ SETTINGS, REAR, M1:\n%s\n' % str(roboclaw_rear.read_m1_pidq_settings()))
+        sys.stderr.write('PIDQ SETTINGS, REAR, M2:\n%s\n' % str(roboclaw_rear.read_m2_pidq_settings()))
+
+        sys.stderr.write('ENCODER MODE, FRONT:\n%s\n' % str(roboclaw_front.read_encoder_mode()))
+        sys.stderr.write('ENCODER MODE, REAR:\n%s\n' % str(roboclaw_rear.read_encoder_mode()))
 
         roboclaw_driver = RoboclawDriver(roboclaw_front, roboclaw_rear)
         controller = RoboclawController(sys.stdin, sys.stdout, roboclaw_driver)

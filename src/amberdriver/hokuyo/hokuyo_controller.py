@@ -3,6 +3,7 @@ import logging.config
 import sys
 import threading
 import traceback
+import time
 
 import os
 import serial
@@ -21,6 +22,7 @@ logging.config.fileConfig('%s/hokuyo.ini' % pwd)
 config.add_config_ini('%s/hokuyo.ini' % pwd)
 
 LOGGER_NAME = 'HokuyoController'
+ENABLE_MULTI_SCANNING = config.HOKUYO_ENABLE_MULTI_SCANNING == 'True'
 HIGH_SENSITIVE = config.HOKUYO_HIGH_SENSITIVE_ENABLE == 'True'
 SPEED_MOTOR = int(config.HOKUYO_SPEED_MOTOR)
 SERIAL_PORT = config.HOKUYO_SERIAL_PORT
@@ -44,7 +46,7 @@ class HokuyoController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_single_scan(self, _received_header, _received_message, response_header, response_message):
         self.__logger.debug('Get single scan')
-        angles, distances, timestamp = self.__hokuyo.get_single_scan()
+        angles, distances, timestamp = self.__hokuyo.get_scan()
         response_message = HokuyoController.__fill_scan(response_message, angles, distances, timestamp)
         return response_header, response_message
 
@@ -72,6 +74,12 @@ class HokuyoController(MessageHandler):
         return response_message
 
 
+def sending_loop(_controller):
+    while _controller.is_alive():
+        _controller.send_subscribers_message()
+        time.sleep(0.1)
+
+
 if __name__ == '__main__':
     try:
         _serial = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=TIMEOUT)
@@ -97,11 +105,16 @@ if __name__ == '__main__':
         sys.stderr.write('SENSOR_STATE:\n%s\n' % hokuyo.get_sensor_state())
         sys.stderr.write('VERSION_INFO:\n%s\n' % hokuyo.get_version_info())
 
-        scanning_thread = threading.Thread(target=hokuyo.scanning_loop, name="scanning-thread")
+        hokuyo.enable_scanning(ENABLE_MULTI_SCANNING)
+        scanning_thread = threading.Thread(target=hokuyo.scanning_loop, name='scanning-thread')
         scanning_thread.start()
 
         controller = HokuyoController(sys.stdin, sys.stdout, hokuyo)
         hokuyo.set_controller(controller)
+
+        sending_thread = threading.Thread(target=sending_loop, args=(controller,))
+        sending_thread.start()
+
         controller.run()
 
     except BaseException as e:

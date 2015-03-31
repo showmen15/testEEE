@@ -53,7 +53,7 @@ class AmberPipes(object):
             while self.__is_alive:
                 header, message = self.__read_header_and_message_from_pipe()
                 self.__handle_header_and_message(header, message)
-        except struct.error:
+        except BaseException:
             self.__logger.warning('amber_pipes: stop due to error on pipe with mediator')
             self.__is_alive = False
             os.kill(os.getpid(), signal.SIGTERM)

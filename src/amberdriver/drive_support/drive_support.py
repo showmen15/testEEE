@@ -1,14 +1,14 @@
 import logging
 import logging.config
-import threading
 import time
 
 import os
 from amberclient.common.listener import Listener
+
 from ambercommon.common import runtime
 
 from amberdriver.drive_support import drive_support_logic
-from amberdriver.tools import config, bound_sleep_interval
+from amberdriver.tools import config
 
 
 __author__ = 'paoolo'
@@ -40,12 +40,11 @@ class Speeds(object):
 
 
 class DriveSupport(object):
-    def __init__(self, roboclaw_front, roboclaw_rear, hokuyo_proxy):
+    def __init__(self, roboclaw_driver, hokuyo_proxy):
         self.__scan = None
         self.__speeds = Speeds((0, 0, 0, 0), 0.0)
 
-        self.__roboclaw_front, self.__roboclaw_rear = roboclaw_front, roboclaw_rear
-        self.__roboclaw_lock = threading.RLock()
+        self.__roboclaw_driver = roboclaw_driver
 
         self.__is_active = True
 
@@ -63,12 +62,7 @@ class DriveSupport(object):
         self.__hokuyo_proxy.unsubscribe(self.__hokuyo_listener)
 
     def stop(self):
-        self.__roboclaw_lock.acquire()
-        try:
-            self.__roboclaw_front.set_mixed_duty(0, 0)
-            self.__roboclaw_rear.set_mixed_duty(0, 0)
-        finally:
-            self.__roboclaw_lock.release()
+        self.__roboclaw_driver.stop()
 
     def set_scan(self, scan):
         self.__scan = scan
@@ -76,71 +70,39 @@ class DriveSupport(object):
     def set_speeds(self, front_left, front_right, rear_left, rear_right):
         self.__speeds = Speeds((front_left, front_right, rear_left, rear_right), time.time())
 
-    def __get_speeds(self):
-        return self.__speeds
-
     def get_measured_speeds(self):
-        self.__roboclaw_lock.acquire()
-        try:
-            front_left = self.__roboclaw_front.read_m1_speed()
-            front_right = self.__roboclaw_front.read_m2_speed()
-            rear_left = self.__roboclaw_rear.read_m1_speed()
-            rear_right = self.__roboclaw_rear.read_m2_speed()
-            return front_left, front_right, rear_left, rear_right
-        finally:
-            self.__roboclaw_lock.release()
+        return self.__roboclaw_driver.get_measured_speeds()
 
     def driving_loop(self):
-        sleep_interval = 0.2
-        last_speeds_timestamp = 0.0
-
         while self.__is_active:
-            speeds = self.__get_speeds()
-            speeds_values = speeds.get_speeds()
-            current_speeds_timestamp = speeds.get_timestamp()
-            is_any_non_zero = reduce(lambda acc, speed: acc or speed < 0 or speed > 0, speeds_values, False)
-
-            if is_any_non_zero or current_speeds_timestamp > last_speeds_timestamp:
-                speeds_values = DriveSupport.__drive_support(speeds, self.__scan)
-                (front_left, front_right, rear_left, rear_right) = speeds_values
-
-                self.__roboclaw_lock.acquire()
-                try:
-                    self.__roboclaw_front.set_mixed_duty(front_left, front_right)
-                    self.__roboclaw_rear.set_mixed_duty(rear_left, rear_right)
-                finally:
-                    self.__roboclaw_lock.release()
-
-                interval = current_speeds_timestamp - last_speeds_timestamp
-                last_speeds_timestamp = current_speeds_timestamp
-                if interval < 2.0:
-                    sleep_interval += 0.5 * (interval - sleep_interval)
-                    sleep_interval = bound_sleep_interval(sleep_interval)
-
-            time.sleep(sleep_interval)
+            current_speeds = DriveSupport.__drive_support(self.__speeds, self.__scan)
+            (front_left, front_right, rear_left, rear_right) = current_speeds
+            self.__roboclaw_driver.set_speeds(front_left, front_right, rear_left, rear_right)
+            time.sleep(0.05)
 
     @staticmethod
     def __drive_support(speeds, scan):
+        if scan is None:
+            return 0, 0, 0, 0
+
         current_speeds_timestamp = speeds.get_timestamp()
         speeds_values = speeds.get_speeds()
 
         current_scan_timestamp = scan.get_timestamp()
-        scan = scan.get_scan()
+        scan_points = scan.get_points()
 
         (front_left, front_right, rear_left, rear_right) = speeds_values
 
-        left = sum([front_left, rear_left]) / 2.0
-        right = sum([front_right, rear_right]) / 2.0
-
-        left, right = drive_support_logic.limit_due_to_distance(left, right, scan)
+        front_left, front_right = drive_support_logic.limit_due_to_distance(front_left, front_right, scan_points)
+        rear_left, rear_right = drive_support_logic.limit_due_to_distance(rear_left, rear_right, scan_points)
 
         current_timestamp = time.time()
         trust_level = drive_support_logic.scan_trust(current_scan_timestamp, current_timestamp) * \
                       drive_support_logic.command_trust(current_speeds_timestamp, current_timestamp)
 
-        left *= trust_level
-        right *= trust_level
+        front_left *= trust_level
+        rear_left *= trust_level
+        front_right *= trust_level
+        rear_right *= trust_level
 
-        left, right = int(left), int(right)
-
-        return left, right, left, right
+        return int(front_left), int(front_right), int(rear_left), int(rear_right)

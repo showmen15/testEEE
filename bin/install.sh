@@ -7,7 +7,12 @@ command -v virtualenv >/dev/null 2>&1 || { echo >&2 "I require \`virtualenv\` bu
 
 if [ ! -d ${__dir}/__envi ]
 then
-    virtualenv ${__dir}/__envi
+    if [ -x "$(command -v pypy)" ]
+    then
+        virtualenv -p pypy ${__dir}/__envi
+    else
+        virtualenv ${__dir}/__envi
+    fi
 fi
 
 . ${__dir}/__envi/bin/activate
