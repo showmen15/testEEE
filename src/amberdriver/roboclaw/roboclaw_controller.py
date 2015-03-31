@@ -130,10 +130,10 @@ class RoboclawDriver(object):
 
         self.__roboclaw_lock.acquire()
         try:
-            self.__front.drive_m1_with_signed_speed_accel(front_right * 2, front_right)
-            self.__front.drive_m2_with_signed_speed_accel(front_left * 2, front_left)
-            self.__rear.drive_m1_with_signed_speed_accel(rear_right * 2, rear_right)
-            self.__rear.drive_m2_with_signed_speed_accel(rear_left * 2, rear_left)
+            self.__front.drive_m1_with_signed_speed(front_right)
+            self.__front.drive_m2_with_signed_speed(front_left)
+            self.__rear.drive_m1_with_signed_speed(rear_right)
+            self.__rear.drive_m2_with_signed_speed(rear_left)
         finally:
             self.__roboclaw_lock.release()
 
