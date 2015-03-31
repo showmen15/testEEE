@@ -1,7 +1,6 @@
 import logging
 import logging.config
 import sys
-import threading
 import traceback
 
 from amberclient.common.amber_client import AmberClient
@@ -73,9 +72,6 @@ if __name__ == '__main__':
 
         roboclaw_driver = RoboclawDriver(roboclaw_front, roboclaw_rear)
         driver_support = DriveSupport(roboclaw_driver, hokuyo_proxy)
-
-        driving_thread = threading.Thread(target=driver_support.driving_loop, name='driving-thread')
-        driving_thread.start()
 
         controller = RoboclawController(sys.stdin, sys.stdout, driver_support)
         controller.run()
