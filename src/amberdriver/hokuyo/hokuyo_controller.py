@@ -3,6 +3,7 @@ import logging.config
 import sys
 import threading
 import traceback
+import time
 
 import os
 import serial
@@ -21,6 +22,7 @@ logging.config.fileConfig('%s/hokuyo.ini' % pwd)
 config.add_config_ini('%s/hokuyo.ini' % pwd)
 
 LOGGER_NAME = 'HokuyoController'
+ENABLE_MULTI_SCANNING = config.HOKUYO_ENABLE_MULTI_SCANNING == 'True'
 HIGH_SENSITIVE = config.HOKUYO_HIGH_SENSITIVE_ENABLE == 'True'
 SPEED_MOTOR = int(config.HOKUYO_SPEED_MOTOR)
 SERIAL_PORT = config.HOKUYO_SERIAL_PORT
@@ -30,7 +32,7 @@ TIMEOUT = 0.3
 
 class HokuyoController(MessageHandler):
     def __init__(self, pipe_in, pipe_out, driver):
-        super(HokuyoController, self).__init__(pipe_in, pipe_out)
+        MessageHandler.__init__(self, pipe_in, pipe_out)
         self.__hokuyo = driver
         self.__logger = logging.getLogger(LOGGER_NAME)
 
@@ -44,26 +46,21 @@ class HokuyoController(MessageHandler):
     @MessageHandler.handle_and_response
     def __handle_get_single_scan(self, _received_header, _received_message, response_header, response_message):
         self.__logger.debug('Get single scan')
-        angles, distances, timestamp = self.__hokuyo.get_single_scan()
+        angles, distances, timestamp = self.__hokuyo.get_scan()
         response_message = HokuyoController.__fill_scan(response_message, angles, distances, timestamp)
         return response_header, response_message
 
     def handle_subscribe_message(self, header, message):
         self.__logger.debug('Subscribe action')
         self.add_subscribers(header.clientIDs)
-        self.__hokuyo.enable_scanning(True)
 
     def handle_unsubscribe_message(self, header, message):
         self.__logger.debug('Unsubscribe action for clients %s', str(header.clientIDs))
         map(self.remove_subscriber, header.clientIDs)
-        if not self.is_any_subscriber():
-            self.__hokuyo.enable_scanning(False)
 
     def handle_client_died_message(self, client_id):
         self.__logger.info('Client %d died', client_id)
         self.remove_subscriber(client_id)
-        if not self.is_any_subscriber():
-            self.__hokuyo.enable_scanning(False)
 
     def fill_subscription_response(self, response_message):
         angles, distances, timestamp = self.__hokuyo.get_scan()
@@ -75,6 +72,12 @@ class HokuyoController(MessageHandler):
         response_message.Extensions[hokuyo_pb2.scan].distances.extend(distances)
         response_message.Extensions[hokuyo_pb2.timestamp] = timestamp
         return response_message
+
+
+def sending_loop(_controller):
+    while _controller.is_alive():
+        _controller.send_subscribers_message()
+        time.sleep(0.1)
 
 
 if __name__ == '__main__':
@@ -102,15 +105,21 @@ if __name__ == '__main__':
         sys.stderr.write('SENSOR_STATE:\n%s\n' % hokuyo.get_sensor_state())
         sys.stderr.write('VERSION_INFO:\n%s\n' % hokuyo.get_version_info())
 
-        scanning_thread = threading.Thread(target=hokuyo.scanning_loop, name="scanning-thread")
+        hokuyo.enable_scanning(ENABLE_MULTI_SCANNING)
+        scanning_thread = threading.Thread(target=hokuyo.scanning_loop, name='scanning-thread')
         scanning_thread.start()
 
         controller = HokuyoController(sys.stdin, sys.stdout, hokuyo)
-        controller()
+        hokuyo.set_controller(controller)
+
+        sending_thread = threading.Thread(target=sending_loop, args=(controller,))
+        sending_thread.start()
+
+        controller.run()
 
     except BaseException as e:
         sys.stderr.write('Run without Hokuyo.\n')
         traceback.print_exc()
 
         controller = NullController(sys.stdin, sys.stdout)
-        controller()
+        controller.run()

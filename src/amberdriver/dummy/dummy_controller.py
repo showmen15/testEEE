@@ -30,7 +30,7 @@ class DummyController(MessageHandler):
     """
 
     def __init__(self, pipe_in, pipe_out, driver):
-        super(DummyController, self).__init__(pipe_in, pipe_out)
+        MessageHandler.__init__(self, pipe_in, pipe_out)
         self.__dummy = driver
         self.__value = 0
         self.__logger = logging.getLogger(LOGGER_NAME)
@@ -66,7 +66,7 @@ class DummyController(MessageHandler):
         :return:
         """
         value = message.Extensions[dummy_pb2.enable]
-        self.__logger.debug('Set enable to %s' % value)
+        self.__logger.debug('Set enable to %s', value)
         self.__dummy.enable = value
 
     def __handle_set_message(self, header, message):
@@ -78,7 +78,7 @@ class DummyController(MessageHandler):
         :return:
         """
         value = message.Extensions[dummy_pb2.message]
-        self.__logger.debug('Set message to %s' % value)
+        self.__logger.debug('Set message to %s', value)
         self.__dummy.message = value
 
     @MessageHandler.handle_and_response
@@ -159,11 +159,11 @@ if __name__ == '__main__':
         sending_thread = threading.Thread(target=sending_loop, args=(controller,))
         sending_thread.start()
         # It's running in infinite loop.
-        controller()
+        controller.run()
 
     except BaseException as e:
         sys.stderr.write('Run without Dummy.\n')
         traceback.print_exc()
 
         controller = NullController(sys.stdin, sys.stdout)
-        controller()
+        controller.run()

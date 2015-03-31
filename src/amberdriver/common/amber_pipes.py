@@ -6,7 +6,6 @@ import traceback
 import signal
 
 from ambercommon.common import runtime
-
 import os
 
 from amberdriver.common import drivermsg_pb2
@@ -16,14 +15,15 @@ __author__ = 'paoolo'
 
 LEN_SIZE = 2
 
-LOGGER_NAME = 'AmberPipes'
 pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/amber.ini' % pwd)
+
+LOGGER_NAME = 'AmberPipes'
 
 
 class AmberException(Exception):
     def __init__(self, message=None, cause=None):
-        super(AmberException, self).__init__(message + u', caused by ' + repr(cause))
+        Exception.__init__(message + u', caused by ' + repr(cause))
         self.cause = cause
 
 
@@ -39,6 +39,9 @@ class AmberPipes(object):
         runtime.add_shutdown_hook(self.terminate)
 
     def __call__(self, *args, **kwargs):
+        self.run()
+
+    def run(self):
         self.__logger.info('Pipes thread started.')
         self.__amber_pipes_loop()
 
@@ -50,7 +53,7 @@ class AmberPipes(object):
             while self.__is_alive:
                 header, message = self.__read_header_and_message_from_pipe()
                 self.__handle_header_and_message(header, message)
-        except struct.error:
+        except BaseException:
             self.__logger.warning('amber_pipes: stop due to error on pipe with mediator')
             self.__is_alive = False
             os.kill(os.getpid(), signal.SIGTERM)
