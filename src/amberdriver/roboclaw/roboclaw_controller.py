@@ -141,8 +141,8 @@ class RoboclawDriver(object):
 
         runtime.add_shutdown_hook(self.terminate)
 
-        self.__led1_gpio.write('1')
-        self.__led2_gpio.write('0')
+        self.__led1_gpio.write('0')
+        self.__led2_gpio.write('1')
 
     def set_controller(self, _):
         pass
@@ -177,7 +177,7 @@ class RoboclawDriver(object):
         if self.__roboclaw_disabled:
             return
 
-        self.__led1_gpio.write('1')
+        self.__led1_gpio.write('0')
 
         front_left = to_qpps(front_left)
         front_right = to_qpps(front_right)
@@ -195,7 +195,7 @@ class RoboclawDriver(object):
         finally:
             self.__roboclaw_lock.release()
 
-        self.__led1_gpio.write('0')
+        self.__led1_gpio.write('1')
 
     def stop(self):
         self.__roboclaw_lock.acquire()
@@ -206,9 +206,9 @@ class RoboclawDriver(object):
             self.__roboclaw_lock.release()
 
     def __reset(self):
-        self.__reset_gpio.write('0')
-        time.sleep(0.5)
         self.__reset_gpio.write('1')
+        time.sleep(0.5)
+        self.__reset_gpio.write('0')
 
     def setup(self):
         self.__front.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
@@ -300,7 +300,7 @@ class RoboclawDriver(object):
                     if front_error_status in [0x01, 0x02] or rear_error_status in [0x01, 0x02]:
                         self.__reset_and_wait()
                     elif front_error_status == 0x20 or rear_error_status == 0x20:
-                        self.__led2_gpio.write('1')
+                        self.__led2_gpio.write('0')
                         self.__battery_low = True
                         return
 
