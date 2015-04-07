@@ -155,6 +155,8 @@ class RoboclawDriver(object):
         rear_left = to_qpps(rear_left)
         rear_right = to_qpps(rear_right)
 
+        self.__reset_timeouts()
+
         self.__roboclaw_lock.acquire()
         try:
             self.__front.drive_m1_with_signed_speed(front_right)
@@ -195,7 +197,7 @@ class RoboclawDriver(object):
             self.__reset()
             time.sleep(RESET_DELAY / 1000.0)
             self.setup()
-            self.__roboclaw_disabled = True
+            self.__roboclaw_disabled = False
 
     def timeout_monitor_loop(self):
         self.__reset_timeouts()
