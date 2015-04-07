@@ -125,14 +125,21 @@ class RoboclawDriver(object):
         self.__timeout_lock = threading.Lock()
         self.__motors_stop_timer_enabled, self.__battery_low = False, False
         self.__reset_time, self.__motors_stop_time = 0.0, 0.0
-        self.__logger = logging.getLogger(LOGGER_NAME)
+
         self.__reset_gpio = open(RESET_GPIO_PATH, mode='w')
+
         self.__overheated = False
+        self.__roboclaw_disabled = False
+
+        self.__logger = logging.getLogger(LOGGER_NAME)
 
     def set_controller(self, controller):
         self.__controller = controller
 
     def get_measured_speeds(self):
+        if self.__roboclaw_disabled:
+            return 0, 0, 0, 0
+
         self.__roboclaw_lock.acquire()
         try:
             front_right, _ = self.__front.read_speed_m1()
@@ -150,6 +157,9 @@ class RoboclawDriver(object):
         return front_left, front_right, rear_left, rear_right
 
     def set_speeds(self, front_left, front_right, rear_left, rear_right):
+        if self.__roboclaw_disabled:
+            return
+
         front_left = to_qpps(front_left)
         front_right = to_qpps(front_right)
         rear_left = to_qpps(rear_left)
