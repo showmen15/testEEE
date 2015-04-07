@@ -59,12 +59,11 @@ class Hokuyo(object):
 
         self.__is_active = True
         self.__scanning_allowed = False
-        self.__controller = None
 
         runtime.add_shutdown_hook(self.terminate)
 
-    def set_controller(self, controller):
-        self.__controller = controller
+    def set_controller(self, _):
+        pass
 
     def __flush(self):
         self.__port_lock.acquire()

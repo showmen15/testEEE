@@ -9,6 +9,8 @@ import time
 import serial
 import os
 
+from ambercommon.common import runtime
+
 from amberdriver.common.message_handler import MessageHandler
 from amberdriver.null.null import NullController
 from amberdriver.roboclaw import roboclaw_pb2
@@ -119,8 +121,6 @@ def to_qpps(val):
 
 class RoboclawDriver(object):
     def __init__(self, front, rear):
-        self.__controller = None
-
         self.__front, self.__rear = front, rear
         self.__roboclaw_lock = threading.Lock()
 
@@ -135,13 +135,23 @@ class RoboclawDriver(object):
         self.__overheated = False
         self.__roboclaw_disabled = False
 
+        self.__is_active = True
+
         self.__logger = logging.getLogger(LOGGER_NAME)
+
+        runtime.add_shutdown_hook(self.terminate)
 
         self.__led1_gpio.write('1')
         self.__led2_gpio.write('0')
 
-    def set_controller(self, controller):
-        self.__controller = controller
+    def set_controller(self, _):
+        pass
+
+    def terminate(self):
+        self.__is_active = False
+        self.__reset_gpio.close()
+        self.__led1_gpio.close()
+        self.__led2_gpio.close()
 
     def get_measured_speeds(self):
         if self.__roboclaw_disabled:
@@ -222,7 +232,7 @@ class RoboclawDriver(object):
 
     def timeout_monitor_loop(self):
         self.__reset_timeouts()
-        while not self.__battery_low and self.__controller.is_alive():
+        while not self.__battery_low and self.__is_active:
             act_time = time.time()
             self.__timeout_lock.acquire()
             try:
@@ -253,7 +263,7 @@ class RoboclawDriver(object):
             self.__roboclaw_lock.release()
 
     def battery_monitor_loop(self):
-        while self.__controller.is_alive():
+        while self.__is_active:
             time.sleep(BATTERY_MONITOR_INTERVAL / 1000.0)
             if not self.__roboclaw_disabled:
                 front_battery_voltage_level, rear_battery_voltage_level = self.__read_main_battery_voltage_level()
@@ -270,7 +280,7 @@ class RoboclawDriver(object):
             self.__roboclaw_lock.release()
 
     def error_monitor_loop(self):
-        while self.__controller.is_alive():
+        while self.__is_active:
             time.sleep(ERROR_MONITOR_INTERVAL / 1000.0)
             front_error_status, rear_error_status = self.__read_error_state()
             if front_error_status != 0 or rear_error_status != 0:
@@ -304,7 +314,7 @@ class RoboclawDriver(object):
             self.__roboclaw_lock.release()
 
     def temperature_monitor_loop(self):
-        while not self.__battery_low and self.__controller.is_alive():
+        while not self.__battery_low and self.__is_active:
             time.sleep(TEMPERATURE_MONITOR_INTERVAL)
             if not self.__roboclaw_disabled:
                 front_temp, rear_temp = self.__read_temperature()
