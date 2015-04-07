@@ -318,24 +318,31 @@ class RoboclawDriver(object):
             time.sleep(TEMPERATURE_MONITOR_INTERVAL / 1000.0)
             if not self.__roboclaw_disabled:
                 front_temp, rear_temp = self.__read_temperature()
+                self.__logger.info('Temperature: front %fC, rear: %fC', front_temp, rear_temp)
                 if self.__overheated:
                     if front_temp < TEMPERATURE_DROP and rear_temp < TEMPERATURE_DROP:
                         for _ in range(CRITICAL_READ_REPEATS):
                             front_temp, rear_temp = self.__read_temperature()
+                            self.__logger.info('Temperature: front %fC, rear: %fC', front_temp, rear_temp)
                             if front_temp > TEMPERATURE_DROP or rear_temp > TEMPERATURE_DROP:
+                                self.__logger.error('Roboclaw overheated')
                                 self.__overheated = True
                                 break
-                        if self.__overheated:
+                        if not self.__overheated:
+                            self.__logger.warn('Roboclaw cooled down, reset')
                             self.__reset_and_wait()
                 else:
                     if front_temp > TEMPERATURE_CRITICAL or rear_temp > TEMPERATURE_CRITICAL:
                         self.__overheated = True
                         for _ in range(CRITICAL_READ_REPEATS):
                             front_temp, rear_temp = self.__read_temperature()
+                            self.__logger.info('Temperature: front %fC, rear: %fC', front_temp, rear_temp)
                             if front_temp < TEMPERATURE_CRITICAL and rear_temp < TEMPERATURE_CRITICAL:
+                                self.__logger.warn('Roboclaw not overheated')
                                 self.__overheated = False
                                 break
                         if self.__overheated:
+                            self.__logger.error('Roboclaw overheated, waiting for cool down to %fC', TEMPERATURE_DROP)
                             self.stop()
 
     def __reset_timeouts(self):
