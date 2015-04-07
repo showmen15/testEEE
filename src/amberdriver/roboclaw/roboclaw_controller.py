@@ -188,7 +188,7 @@ class RoboclawDriver(object):
 
     def __reset_and_wait(self):
         if not self.__battery_low:
-            self.__logger('Reset Roboclaw and wait for %f ms', RESET_DELAY)
+            self.__logger.info('Reset Roboclaw and wait for %f ms', RESET_DELAY)
             self.__roboclaw_disabled = True
             self.__reset()
             time.sleep(RESET_DELAY / 1000.0)
@@ -224,8 +224,8 @@ class RoboclawDriver(object):
             if not self.__roboclaw_disabled:
                 front_battery_voltage_level = self.__front.read_main_battery_voltage_level()
                 rear_battery_voltage_level = self.__rear.read_main_battery_voltage_level()
-                self.__logger('Main battery voltage level: front: %f, rear: %f',
-                              front_battery_voltage_level / 10.0, rear_battery_voltage_level / 10.0)
+                self.__logger.info('Main battery voltage level: front: %f, rear: %f',
+                                   front_battery_voltage_level / 10.0, rear_battery_voltage_level / 10.0)
 
     def error_monitor_loop(self):
         while self.__controller.is_alive():
@@ -244,9 +244,9 @@ class RoboclawDriver(object):
                         break
                 if same_errors:
                     if front_error_status != 0:
-                        self.__logger('Front error: %f', front_error_status)
+                        self.__logger.warn('Front error: %f', front_error_status)
                     if rear_error_status != 0:
-                        self.__logger('Rear error: %f', rear_error_status)
+                        self.__logger.warn('Rear error: %f', rear_error_status)
                     if front_error_status in [0x01, 0x02] or rear_error_status in [0x01, 0x02]:
                         self.__reset_and_wait()
                     elif front_error_status == 0x20 or rear_error_status == 0x20:
