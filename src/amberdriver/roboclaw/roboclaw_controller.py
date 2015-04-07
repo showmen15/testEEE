@@ -4,6 +4,7 @@ import sys
 import threading
 import traceback
 import math
+import time
 
 import serial
 import os
@@ -36,6 +37,20 @@ MOTORS_D_CONST = int(config.ROBOCLAW_D_CONST)
 
 WHEEL_RADIUS = float(config.ROBOCLAW_WHEEL_RADIUS)
 PULSES_PER_REVOLUTION = float(config.ROBOCLAW_PULSES_PER_REVOLUTION)
+
+STOP_IDLE_TIMEOUT = float(config.ROBOCLAW_STOP_IDLE_TIMEOUT)
+RESET_IDLE_TIMEOUT = float(config.ROBOCLAW_RESET_IDLE_TIMEOUT)
+
+BATTERY_MONITOR_INTERVAL = float(config.ROBOCLAW_BATTERY_MONITOR_INTERVAL)
+ERROR_MONITOR_INTERVAL = float(config.ROBOCLAW_ERROR_MONITOR_INTERVAL)
+CRITICAL_READ_REPEATS = float(config.ROBOCLAW_CRITICAL_READ_REPEATS)
+
+RESET_DELAY = float(config.ROBOCLAW_RESET_DELAY)
+RESET_GPIO_PATH = float(config.ROBOCLAW_RESET_GPIO_PATH)
+
+TEMPERATURE_MONITOR_INTERVAL = float(config.ROBOCLAW_TEMPERATURE_MONITOR_INTERVAL)
+TEMPERATURE_CRITICAL = float(config.ROBOCLAW_TEMPERATURE_CRITICAL)
+TEMPERATURE_DROP = float(config.ROBOCLAW_TEMPERATURE_DROP)
 
 TIMEOUT = 0.3
 
@@ -102,8 +117,18 @@ def to_qpps(val):
 
 class RoboclawDriver(object):
     def __init__(self, front, rear):
+        self.__controller = None
         self.__front, self.__rear = front, rear
         self.__roboclaw_lock = threading.Lock()
+        self.__timeout_lock = threading.Lock()
+        self.__motors_stop_timer_enabled, self.__battery_low = False, False
+        self.__reset_time, self.__motors_stop_time = 0.0, 0.0
+        self.__logger = logging.getLogger(LOGGER_NAME)
+        self.__reset_gpio = open(RESET_GPIO_PATH, mode='w')
+        self.__overheated = False
+
+    def set_controller(self, controller):
+        self.__controller = controller
 
     def get_measured_speeds(self):
         self.__roboclaw_lock.acquire()
@@ -145,6 +170,129 @@ class RoboclawDriver(object):
         finally:
             self.__roboclaw_lock.release()
 
+    def __reset(self):
+        self.__reset_gpio.write(str('\0'))
+        time.sleep(0.5)
+        self.__reset_gpio.write(str('\1'))
+
+    def setup(self):
+        self.__front.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        self.__front.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        self.__rear.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+        self.__rear.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
+
+        self.__front.set_m1_encoder_mode(0)
+        self.__front.set_m2_encoder_mode(0)
+        self.__rear.set_m1_encoder_mode(0)
+        self.__rear.set_m2_encoder_mode(0)
+
+    def __reset_and_wait(self):
+        if not self.__battery_low:
+            self.__logger('Reset Roboclaw and wait for %f ms', RESET_DELAY)
+            self.__roboclaw_disabled = True
+            self.__reset()
+            time.sleep(RESET_DELAY / 1000.0)
+            self.setup()
+            self.__roboclaw_disabled = True
+
+    def timeout_monitor_loop(self):
+        self.__reset_timeouts()
+        while not self.__battery_low or self.__controller.is_active():
+            act_time = time.time()
+            self.__timeout_lock.acquire()
+            try:
+                do_stop = False
+                if self.__motors_stop_timer_enabled and self.__motors_stop_time < act_time:
+                    do_stop = True
+                    self.__motors_stop_timer_enabled = False
+
+                do_reset = False
+                if self.__reset_time < act_time:
+                    do_reset = True
+                    self.__reset_time = act_time + RESET_IDLE_TIMEOUT / 1000.0
+            finally:
+                self.__timeout_lock.release()
+            if do_stop:
+                self.stop()
+            if do_reset:
+                self.__reset_and_wait()
+            time.sleep(0.1)
+
+    def battery_monitor_loop(self):
+        while self.__controller.is_active():
+            time.sleep(BATTERY_MONITOR_INTERVAL / 1000.0)
+            if not self.__roboclaw_disabled:
+                front_battery_voltage_level = self.__front.read_main_battery_voltage_level()
+                rear_battery_voltage_level = self.__rear.read_main_battery_voltage_level()
+                self.__logger('Main battery voltage level: front: %f, rear: %f',
+                              front_battery_voltage_level / 10.0, rear_battery_voltage_level / 10.0)
+
+    def error_monitor_loop(self):
+        while self.__controller.is_active():
+            time.sleep(ERROR_MONITOR_INTERVAL / 1000.0)
+            front_error_status = self.__front.read_error_state()
+            rear_error_status = self.__rear.read_error_state()
+            if front_error_status != 0 or rear_error_status != 0:
+                front_error_status_tmp = front_error_status
+                rear_error_status_tmp = rear_error_status
+                same_errors = True
+                for _ in range(CRITICAL_READ_REPEATS):
+                    front_error_status = self.__front.read_error_state()
+                    rear_error_status = self.__rear.read_error_state()
+                    if front_error_status != front_error_status_tmp or rear_error_status != rear_error_status_tmp:
+                        same_errors = False
+                        break
+                if same_errors:
+                    if front_error_status != 0:
+                        self.__logger('Front error: %f', front_error_status)
+                    if rear_error_status != 0:
+                        self.__logger('Rear error: %f', rear_error_status)
+                    if front_error_status in [0x01, 0x02] or rear_error_status in [0x01, 0x02]:
+                        self.__reset_and_wait()
+                    elif front_error_status == 0x20 or rear_error_status == 0x20:
+                        self.__battery_low = True
+                        return
+
+    def temperature_monitor_loop(self):
+        while not self.__battery_low or self.__controller.is_active():
+            time.sleep(TEMPERATURE_MONITOR_INTERVAL)
+            if not self.__roboclaw_disabled:
+                front_temp = self.__front.read_temperature() / 10.0
+                rear_temp = self.__rear.read_temperature() / 10.0
+
+                if self.__overheated:
+                    if front_temp < TEMPERATURE_DROP and rear_temp < TEMPERATURE_DROP:
+                        for _ in range(CRITICAL_READ_REPEATS):
+                            front_temp = self.__front.read_temperature() / 10.0
+                            rear_temp = self.__rear.read_temperature() / 10.0
+                            if front_temp > TEMPERATURE_DROP or rear_temp > TEMPERATURE_DROP:
+                                self.__overheated = True
+                                break
+                        if self.__overheated:
+                            self.__reset_and_wait()
+                else:
+                    if front_temp > TEMPERATURE_CRITICAL or rear_temp > TEMPERATURE_CRITICAL:
+                        self.__overheated = True
+                        for _ in range(CRITICAL_READ_REPEATS):
+                            front_temp = self.__front.read_temperature() / 10.0
+                            rear_temp = self.__rear.read_temperature() / 10.0
+                            if front_temp < TEMPERATURE_CRITICAL and rear_temp < TEMPERATURE_CRITICAL:
+                                self.__overheated = False
+                                break
+                        if self.__overheated:
+                            self.stop()
+
+    def __reset_timeouts(self):
+        act_time = time.time()
+
+        self.__timeout_lock.acquire()
+        try:
+            self.__reset_time = act_time + RESET_IDLE_TIMEOUT / 1000.0
+            self.__motors_stop_time = act_time + STOP_IDLE_TIMEOUT / 1000.0
+            self.__motors_stop_timer_enabled = True
+        finally:
+            self.__timeout_lock.release()
+
 
 if __name__ == '__main__':
     try:
@@ -154,15 +302,8 @@ if __name__ == '__main__':
         roboclaw_front = Roboclaw(_serial_port, FRONT_RC_ADDRESS)
         roboclaw_rear = Roboclaw(_serial_port, REAR_RC_ADDRESS)
 
-        roboclaw_front.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_front.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_rear.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_rear.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-
-        roboclaw_front.set_m1_encoder_mode(0)
-        roboclaw_front.set_m2_encoder_mode(0)
-        roboclaw_rear.set_m1_encoder_mode(0)
-        roboclaw_rear.set_m2_encoder_mode(0)
+        roboclaw_driver = RoboclawDriver(roboclaw_front, roboclaw_rear)
+        roboclaw_driver.setup()
 
         sys.stderr.write('FIRMWARE VERSION, FRONT:\n%s\n' % str(roboclaw_front.read_firmware_version()))
         sys.stderr.write('FIRMWARE VERSION, REAR:\n%s\n' % str(roboclaw_rear.read_firmware_version()))
@@ -178,8 +319,14 @@ if __name__ == '__main__':
         sys.stderr.write('ENCODER MODE, FRONT:\n%s\n' % str(roboclaw_front.read_encoder_mode()))
         sys.stderr.write('ENCODER MODE, REAR:\n%s\n' % str(roboclaw_rear.read_encoder_mode()))
 
-        roboclaw_driver = RoboclawDriver(roboclaw_front, roboclaw_rear)
         controller = RoboclawController(sys.stdin, sys.stdout, roboclaw_driver)
+        roboclaw_driver.set_controller(controller)
+
+        timeout_monitor_thread = threading.Thread(target=roboclaw_driver.timeout_monitor_loop)
+        battery_monitor_thread = threading.Thread(target=roboclaw_driver.battery_monitor_loop)
+        error_monitor_thread = threading.Thread(target=roboclaw_driver.error_monitor_loop)
+        temperature_monitor_thread = threading.Thread(target=roboclaw_driver.temperature_monitor_loop)
+
         controller.run()
 
     except BaseException as e:
