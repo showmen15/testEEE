@@ -211,7 +211,7 @@ class RoboclawDriver(object):
 
     def timeout_monitor_loop(self):
         self.__reset_timeouts()
-        while not self.__battery_low or self.__controller.is_alive():
+        while not self.__battery_low and self.__controller.is_alive():
             act_time = time.time()
             self.__timeout_lock.acquire()
             try:
@@ -292,7 +292,7 @@ class RoboclawDriver(object):
             self.__roboclaw_lock.release()
 
     def temperature_monitor_loop(self):
-        while not self.__battery_low or self.__controller.is_alive():
+        while not self.__battery_low and self.__controller.is_alive():
             time.sleep(TEMPERATURE_MONITOR_INTERVAL)
             if not self.__roboclaw_disabled:
                 front_temp, rear_temp = self.__read_temperature()
