@@ -356,10 +356,14 @@ if __name__ == '__main__':
         controller = RoboclawController(sys.stdin, sys.stdout, roboclaw_driver)
         roboclaw_driver.set_controller(controller)
 
-        timeout_monitor_thread = threading.Thread(target=roboclaw_driver.timeout_monitor_loop)
-        battery_monitor_thread = threading.Thread(target=roboclaw_driver.battery_monitor_loop)
-        error_monitor_thread = threading.Thread(target=roboclaw_driver.error_monitor_loop)
-        temperature_monitor_thread = threading.Thread(target=roboclaw_driver.temperature_monitor_loop)
+        timeout_monitor_thread = threading.Thread(target=roboclaw_driver.timeout_monitor_loop,
+                                                  name='timeout-monitor-thread')
+        battery_monitor_thread = threading.Thread(target=roboclaw_driver.battery_monitor_loop,
+                                                  name='battery-monitor-thread')
+        error_monitor_thread = threading.Thread(target=roboclaw_driver.error_monitor_loop,
+                                                name='error-monitor-thread')
+        temperature_monitor_thread = threading.Thread(target=roboclaw_driver.temperature_monitor_loop,
+                                                      name='temperature-monitor-thread')
 
         timeout_monitor_thread.start()
         battery_monitor_thread.start()
