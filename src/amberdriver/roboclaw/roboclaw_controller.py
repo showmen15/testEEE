@@ -118,8 +118,10 @@ def to_qpps(val):
 class RoboclawDriver(object):
     def __init__(self, front, rear):
         self.__controller = None
+
         self.__front, self.__rear = front, rear
         self.__roboclaw_lock = threading.Lock()
+
         self.__timeout_lock = threading.Lock()
         self.__motors_stop_timer_enabled, self.__battery_low = False, False
         self.__reset_time, self.__motors_stop_time = 0.0, 0.0
@@ -218,27 +220,42 @@ class RoboclawDriver(object):
                 self.__reset_and_wait()
             time.sleep(0.1)
 
+    def __read_main_battery_voltage_level(self):
+        self.__roboclaw_lock.acquire()
+        try:
+            front_battery_voltage_level = self.__front.read_main_battery_voltage_level()
+            rear_battery_voltage_level = self.__rear.read_main_battery_voltage_level()
+            return front_battery_voltage_level, rear_battery_voltage_level
+        finally:
+            self.__roboclaw_lock.release()
+
     def battery_monitor_loop(self):
         while self.__controller.is_alive():
             time.sleep(BATTERY_MONITOR_INTERVAL / 1000.0)
             if not self.__roboclaw_disabled:
-                front_battery_voltage_level = self.__front.read_main_battery_voltage_level()
-                rear_battery_voltage_level = self.__rear.read_main_battery_voltage_level()
+                front_battery_voltage_level, rear_battery_voltage_level = self.__read_main_battery_voltage_level()
                 self.__logger.info('Main battery voltage level: front: %f, rear: %f',
                                    front_battery_voltage_level / 10.0, rear_battery_voltage_level / 10.0)
+
+    def __read_error_state(self):
+        self.__roboclaw_lock.acquire()
+        try:
+            front_error_status = self.__front.read_error_state()
+            rear_error_status = self.__rear.read_error_state()
+            return front_error_status, rear_error_status
+        finally:
+            self.__roboclaw_lock.release()
 
     def error_monitor_loop(self):
         while self.__controller.is_alive():
             time.sleep(ERROR_MONITOR_INTERVAL / 1000.0)
-            front_error_status = self.__front.read_error_state()
-            rear_error_status = self.__rear.read_error_state()
+            front_error_status, rear_error_status = self.__read_error_state()
             if front_error_status != 0 or rear_error_status != 0:
                 front_error_status_tmp = front_error_status
                 rear_error_status_tmp = rear_error_status
                 same_errors = True
                 for _ in range(CRITICAL_READ_REPEATS):
-                    front_error_status = self.__front.read_error_state()
-                    rear_error_status = self.__rear.read_error_state()
+                    front_error_status, rear_error_status = self.__read_error_state()
                     if front_error_status != front_error_status_tmp or rear_error_status != rear_error_status_tmp:
                         same_errors = False
                         break
@@ -253,18 +270,24 @@ class RoboclawDriver(object):
                         self.__battery_low = True
                         return
 
+    def __read_temperature(self):
+        self.__roboclaw_lock.acquire()
+        try:
+            front_temp = self.__front.read_temperature() / 10.0
+            rear_temp = self.__rear.read_temperature() / 10.0
+            return front_temp, rear_temp
+        finally:
+            self.__roboclaw_lock.release()
+
     def temperature_monitor_loop(self):
         while not self.__battery_low or self.__controller.is_alive():
             time.sleep(TEMPERATURE_MONITOR_INTERVAL)
             if not self.__roboclaw_disabled:
-                front_temp = self.__front.read_temperature() / 10.0
-                rear_temp = self.__rear.read_temperature() / 10.0
-
+                front_temp, rear_temp = self.__read_temperature()
                 if self.__overheated:
                     if front_temp < TEMPERATURE_DROP and rear_temp < TEMPERATURE_DROP:
                         for _ in range(CRITICAL_READ_REPEATS):
-                            front_temp = self.__front.read_temperature() / 10.0
-                            rear_temp = self.__rear.read_temperature() / 10.0
+                            front_temp, rear_temp = self.__read_temperature()
                             if front_temp > TEMPERATURE_DROP or rear_temp > TEMPERATURE_DROP:
                                 self.__overheated = True
                                 break
@@ -274,8 +297,7 @@ class RoboclawDriver(object):
                     if front_temp > TEMPERATURE_CRITICAL or rear_temp > TEMPERATURE_CRITICAL:
                         self.__overheated = True
                         for _ in range(CRITICAL_READ_REPEATS):
-                            front_temp = self.__front.read_temperature() / 10.0
-                            rear_temp = self.__rear.read_temperature() / 10.0
+                            front_temp, rear_temp = self.__read_temperature()
                             if front_temp < TEMPERATURE_CRITICAL and rear_temp < TEMPERATURE_CRITICAL:
                                 self.__overheated = False
                                 break
