@@ -315,7 +315,7 @@ class RoboclawDriver(object):
 
     def temperature_monitor_loop(self):
         while not self.__battery_low and self.__is_active:
-            time.sleep(TEMPERATURE_MONITOR_INTERVAL)
+            time.sleep(TEMPERATURE_MONITOR_INTERVAL / 1000.0)
             if not self.__roboclaw_disabled:
                 front_temp, rear_temp = self.__read_temperature()
                 if self.__overheated:
