@@ -327,6 +327,11 @@ if __name__ == '__main__':
         error_monitor_thread = threading.Thread(target=roboclaw_driver.error_monitor_loop)
         temperature_monitor_thread = threading.Thread(target=roboclaw_driver.temperature_monitor_loop)
 
+        timeout_monitor_thread.start()
+        battery_monitor_thread.start()
+        error_monitor_thread.start()
+        temperature_monitor_thread.start()
+
         controller.run()
 
     except BaseException as e:
