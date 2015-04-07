@@ -47,6 +47,8 @@ CRITICAL_READ_REPEATS = int(config.ROBOCLAW_CRITICAL_READ_REPEATS)
 
 RESET_DELAY = float(config.ROBOCLAW_RESET_DELAY)
 RESET_GPIO_PATH = str(config.ROBOCLAW_RESET_GPIO_PATH)
+LED1_GPIO_PATH = str(config.ROBOCLAW_LED1_GPIO_PATH)
+LED2_GPIO_PATH = str(config.ROBOCLAW_LED2_GPIO_PATH)
 
 TEMPERATURE_MONITOR_INTERVAL = float(config.ROBOCLAW_TEMPERATURE_MONITOR_INTERVAL)
 TEMPERATURE_CRITICAL = float(config.ROBOCLAW_TEMPERATURE_CRITICAL)
@@ -127,11 +129,16 @@ class RoboclawDriver(object):
         self.__reset_time, self.__motors_stop_time = 0.0, 0.0
 
         self.__reset_gpio = open(RESET_GPIO_PATH, mode='w')
+        self.__led1_gpio = open(LED1_GPIO_PATH, mode='w')
+        self.__led2_gpio = open(LED2_GPIO_PATH, mode='w')
 
         self.__overheated = False
         self.__roboclaw_disabled = False
 
         self.__logger = logging.getLogger(LOGGER_NAME)
+
+        self.__led1_gpio.write('1')
+        self.__led2_gpio.write('0')
 
     def set_controller(self, controller):
         self.__controller = controller
@@ -160,6 +167,8 @@ class RoboclawDriver(object):
         if self.__roboclaw_disabled:
             return
 
+        self.__led1_gpio.write('1')
+
         front_left = to_qpps(front_left)
         front_right = to_qpps(front_right)
         rear_left = to_qpps(rear_left)
@@ -175,6 +184,8 @@ class RoboclawDriver(object):
             self.__rear.drive_m2_with_signed_speed(rear_left)
         finally:
             self.__roboclaw_lock.release()
+
+        self.__led1_gpio.write('0')
 
     def stop(self):
         self.__roboclaw_lock.acquire()
@@ -279,6 +290,7 @@ class RoboclawDriver(object):
                     if front_error_status in [0x01, 0x02] or rear_error_status in [0x01, 0x02]:
                         self.__reset_and_wait()
                     elif front_error_status == 0x20 or rear_error_status == 0x20:
+                        self.__led2_gpio.write('1')
                         self.__battery_low = True
                         return
 
