@@ -8,6 +8,7 @@ import time
 
 import serial
 import os
+
 from ambercommon.common import runtime
 
 from amberdriver.common.message_handler import MessageHandler
@@ -144,9 +145,6 @@ class RoboclawDriver(object):
         self.__led1_gpio.flush()
         self.__led2_gpio.write('1')
         self.__led2_gpio.flush()
-
-    def set_controller(self, _):
-        pass
 
     def terminate(self):
         self.__is_active = False
@@ -389,7 +387,6 @@ if __name__ == '__main__':
         sys.stderr.write('ENCODER MODE, REAR:\n%s\n' % str(roboclaw_rear.read_encoder_mode()))
 
         controller = RoboclawController(sys.stdin, sys.stdout, roboclaw_driver)
-        roboclaw_driver.set_controller(controller)
 
         timeout_monitor_thread = threading.Thread(target=roboclaw_driver.timeout_monitor_loop,
                                                   name='timeout-monitor-thread')

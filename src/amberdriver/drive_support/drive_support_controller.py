@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import sys
+import threading
 import traceback
 
 from amberclient.common.amber_client import AmberClient
@@ -23,16 +24,12 @@ config.add_config_ini('%s/drive_support.ini' % pwd)
 
 LOGGER_NAME = 'DriverSupportController'
 
-MOTORS_MAX_QPPS = int(config.ROBOCLAW_MAX_QPPS)
-MOTORS_P_CONST = int(config.ROBOCLAW_P)
-MOTORS_I_CONST = int(config.ROBOCLAW_I)
-MOTORS_D_CONST = int(config.ROBOCLAW_D)
+SERIAL_PORT = config.ROBOCLAW_SERIAL_PORT
+BAUD_RATE = config.ROBOCLAW_BAUD_RATE
 
 REAR_RC_ADDRESS = int(config.ROBOCLAW_REAR_RC_ADDRESS)
 FRONT_RC_ADDRESS = int(config.ROBOCLAW_FRONT_RC_ADDRESS)
 
-SERIAL_PORT = config.ROBOCLAW_SERIAL_PORT
-BAUD_RATE = config.ROBOCLAW_BAUD_RATE
 TIMEOUT = 0.3
 
 if __name__ == '__main__':
@@ -43,15 +40,8 @@ if __name__ == '__main__':
         roboclaw_front = Roboclaw(_serial_port, FRONT_RC_ADDRESS)
         roboclaw_rear = Roboclaw(_serial_port, REAR_RC_ADDRESS)
 
-        roboclaw_front.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_front.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_rear.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-        roboclaw_rear.set_pid_constants_m2(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
-
-        roboclaw_front.set_m1_encoder_mode(0)
-        roboclaw_front.set_m2_encoder_mode(0)
-        roboclaw_rear.set_m1_encoder_mode(0)
-        roboclaw_rear.set_m2_encoder_mode(0)
+        roboclaw_driver = RoboclawDriver(roboclaw_front, roboclaw_rear)
+        roboclaw_driver.setup()
 
         sys.stderr.write('FIRMWARE VERSION, FRONT:\n%s\n' % str(roboclaw_front.read_firmware_version()))
         sys.stderr.write('FIRMWARE VERSION, REAR:\n%s\n' % str(roboclaw_rear.read_firmware_version()))
@@ -67,13 +57,26 @@ if __name__ == '__main__':
         sys.stderr.write('ENCODER MODE, FRONT:\n%s\n' % str(roboclaw_front.read_encoder_mode()))
         sys.stderr.write('ENCODER MODE, REAR:\n%s\n' % str(roboclaw_rear.read_encoder_mode()))
 
+        timeout_monitor_thread = threading.Thread(target=roboclaw_driver.timeout_monitor_loop,
+                                                  name='timeout-monitor-thread')
+        battery_monitor_thread = threading.Thread(target=roboclaw_driver.battery_monitor_loop,
+                                                  name='battery-monitor-thread')
+        error_monitor_thread = threading.Thread(target=roboclaw_driver.error_monitor_loop,
+                                                name='error-monitor-thread')
+        temperature_monitor_thread = threading.Thread(target=roboclaw_driver.temperature_monitor_loop,
+                                                      name='temperature-monitor-thread')
+
         client_for_hokuyo = AmberClient('127.0.0.1', name='hokuyo')
         hokuyo_proxy = HokuyoProxy(client_for_hokuyo, 0)
 
-        roboclaw_driver = RoboclawDriver(roboclaw_front, roboclaw_rear)
-        driver_support = DriveSupport(roboclaw_driver, hokuyo_proxy)
+        drive_support = DriveSupport(roboclaw_driver, hokuyo_proxy)
+        controller = RoboclawController(sys.stdin, sys.stdout, drive_support)
 
-        controller = RoboclawController(sys.stdin, sys.stdout, driver_support)
+        timeout_monitor_thread.start()
+        battery_monitor_thread.start()
+        error_monitor_thread.start()
+        temperature_monitor_thread.start()
+
         controller.run()
 
     except BaseException as e:
