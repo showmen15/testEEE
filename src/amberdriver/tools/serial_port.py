@@ -14,6 +14,9 @@ class SerialPort(object):
     def get_checksum(self):
         return self.__checksum
 
+    def reset_checksum(self):
+        self.__checksum = 0
+
     def read(self, size):
         return self.__port.read(size)
 

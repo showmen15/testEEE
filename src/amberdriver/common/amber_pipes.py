@@ -4,7 +4,6 @@ import struct
 import threading
 import traceback
 import signal
-import sys
 
 from ambercommon.common import runtime
 import os
@@ -55,12 +54,9 @@ class AmberPipes(object):
                 header, message = self.__read_header_and_message_from_pipe()
                 self.__handle_header_and_message(header, message)
         except BaseException:
-            self.__logger.fatal('amber_pipes: stop due to error on pipe with mediator')
-            sys.stderr.write('amber_pipes: stop due to error on pipe with mediator\n')
+            self.__logger.fatal('Stop due to error on pipe with mediator')
             self.__is_alive = False
             os.kill(os.getpid(), signal.SIGTERM)
-
-        self.__logger.warning('amber_pipes: stop')
 
     def __read_header_and_message_from_pipe(self):
         """
