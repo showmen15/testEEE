@@ -4,10 +4,11 @@ import sys
 import threading
 import traceback
 
-from amberclient.hokuyo.hokuyo import HokuyoProxy
 import os
+from amberclient.hokuyo.hokuyo import HokuyoProxy
 from amberclient.common.amber_client import AmberClient
 from amberclient.location.location import LocationProxy
+
 from amberclient.roboclaw.roboclaw import RoboclawProxy
 
 from amberdriver.common.message_handler import MessageHandler

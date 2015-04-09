@@ -4,10 +4,11 @@ import sys
 import threading
 import traceback
 
-from amberclient.common.amber_client import AmberClient
-from amberclient.hokuyo.hokuyo import HokuyoProxy
 import os
 import serial
+from amberclient.common.amber_client import AmberClient
+
+from amberclient.hokuyo.hokuyo import HokuyoProxy
 
 from amberdriver.drive_support.drive_support import DriveSupport
 from amberdriver.null.null import NullController
