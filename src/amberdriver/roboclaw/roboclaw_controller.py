@@ -303,13 +303,14 @@ class RoboclawDriver(object):
                         self.__logger.warn('Front error: %f', front_error_status)
                     if rear_error_status != 0:
                         self.__logger.warn('Rear error: %f', rear_error_status)
-                    if front_error_status in [0x01, 0x02] or rear_error_status in [0x01, 0x02]:
-                        self.__reset_and_wait()
-                    elif front_error_status == 0x20 or rear_error_status == 0x20:
+                    if front_error_status == 0x20 or rear_error_status == 0x20:
                         self.__led2_gpio.write('0')
                         self.__led2_gpio.flush()
                         self.__battery_low = True
                         return
+                    else:
+                        self.__reset_and_wait()
+
 
     def __read_temperature(self):
         self.__roboclaw_lock.acquire()
