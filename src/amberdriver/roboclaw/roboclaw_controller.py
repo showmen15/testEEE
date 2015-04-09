@@ -210,7 +210,7 @@ class RoboclawDriver(object):
         self.__roboclaw_lock.acquire()
         try:
             current_time = time.time()
-            if self.__last_reset_time < current_time - RESET_IDLE_TIMEOUT * 0.8:
+            if self.__last_reset_time < current_time - RESET_IDLE_TIMEOUT / 10000.0 * 8.0:
                 self.__last_reset_time = current_time
                 self.__reset_gpio.write('1')
                 self.__reset_gpio.flush()
