@@ -311,7 +311,6 @@ class RoboclawDriver(object):
                     else:
                         self.__reset_and_wait()
 
-
     def __read_temperature(self):
         self.__roboclaw_lock.acquire()
         try:
