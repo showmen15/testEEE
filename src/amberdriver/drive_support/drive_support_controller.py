@@ -57,6 +57,12 @@ if __name__ == '__main__':
         sys.stderr.write('ENCODER MODE, FRONT:\n%s\n' % str(roboclaw_front.read_encoder_mode()))
         sys.stderr.write('ENCODER MODE, REAR:\n%s\n' % str(roboclaw_rear.read_encoder_mode()))
 
+        client_for_hokuyo = AmberClient('127.0.0.1', name='hokuyo')
+        hokuyo_proxy = HokuyoProxy(client_for_hokuyo, 0)
+        drive_support = DriveSupport(roboclaw_driver, hokuyo_proxy)
+
+        controller = RoboclawController(sys.stdin, sys.stdout, drive_support)
+
         timeout_monitor_thread = threading.Thread(target=roboclaw_driver.timeout_monitor_loop,
                                                   name='timeout-monitor-thread')
         battery_monitor_thread = threading.Thread(target=roboclaw_driver.battery_monitor_loop,
@@ -65,12 +71,6 @@ if __name__ == '__main__':
                                                 name='error-monitor-thread')
         temperature_monitor_thread = threading.Thread(target=roboclaw_driver.temperature_monitor_loop,
                                                       name='temperature-monitor-thread')
-
-        client_for_hokuyo = AmberClient('127.0.0.1', name='hokuyo')
-        hokuyo_proxy = HokuyoProxy(client_for_hokuyo, 0)
-
-        drive_support = DriveSupport(roboclaw_driver, hokuyo_proxy)
-        controller = RoboclawController(sys.stdin, sys.stdout, drive_support)
 
         timeout_monitor_thread.start()
         battery_monitor_thread.start()
