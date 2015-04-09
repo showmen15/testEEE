@@ -8,7 +8,6 @@ import time
 
 import serial
 import os
-
 from ambercommon.common import runtime
 
 from amberdriver.common.message_handler import MessageHandler
@@ -207,11 +206,11 @@ class RoboclawDriver(object):
             self.__roboclaw_lock.release()
 
     def __reset(self):
-        if self.__reset_gpio.write('0') < 0:
-            self.__logger.error('reset gpio set to up failed!')
+        self.__reset_gpio.write('0')
+        self.__reset_gpio.flush()
         time.sleep(0.5)
-        if self.__reset_gpio.write('1') < 0:
-            self.__logger.error('reset gpio set to down failed!')
+        self.__reset_gpio.write('1')
+        self.__reset_gpio.flush()
 
     def setup(self):
         self.__front.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
