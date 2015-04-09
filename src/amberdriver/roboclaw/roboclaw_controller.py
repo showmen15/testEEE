@@ -308,6 +308,8 @@ class RoboclawDriver(object):
                         self.__led2_gpio.flush()
                         self.__battery_low = True
                         return
+                    elif front_error_status < 0 or rear_error_status < 0:
+                        self.__logger.warn('Bad feelings: error status(es) less than zero. It looks that CRC is wrong.')
                     else:
                         self.__reset_and_wait()
 
