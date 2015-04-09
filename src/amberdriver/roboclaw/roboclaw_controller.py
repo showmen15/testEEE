@@ -317,6 +317,7 @@ class RoboclawDriver(object):
                         return
                     elif front_error_status < 0 or rear_error_status < 0:
                         self.__logger.warn('Bad feelings: error status(es) less than zero. It looks that CRC is wrong.')
+                        self.__reset_and_wait()
                     else:
                         self.__reset_and_wait()
 
