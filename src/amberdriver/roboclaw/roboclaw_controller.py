@@ -8,6 +8,7 @@ import time
 
 import serial
 import os
+
 from ambercommon.common import runtime
 
 from amberdriver.common.message_handler import MessageHandler
@@ -23,7 +24,7 @@ pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/roboclaw.ini' % pwd)
 config.add_config_ini('%s/roboclaw.ini' % pwd)
 
-LOGGER_NAME = 'RoboclawController'
+LOGGER_NAME = 'Roboclaw'
 
 SERIAL_PORT = str(config.ROBOCLAW_SERIAL_PORT)
 BAUD_RATE = int(config.ROBOCLAW_BAUD_RATE)

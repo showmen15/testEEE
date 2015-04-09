@@ -20,7 +20,7 @@ pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/dummy.ini' % pwd)
 config.add_config_ini('%s/dummy.ini' % pwd)
 
-LOGGER_NAME = 'DummyController'
+LOGGER_NAME = 'Dummy'
 
 
 class DummyController(MessageHandler):

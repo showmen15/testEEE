@@ -22,7 +22,7 @@ pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/drive_support.ini' % pwd)
 config.add_config_ini('%s/drive_support.ini' % pwd)
 
-LOGGER_NAME = 'DriverSupportController'
+LOGGER_NAME = 'DriverSupport'
 
 SERIAL_PORT = config.ROBOCLAW_SERIAL_PORT
 BAUD_RATE = config.ROBOCLAW_BAUD_RATE

@@ -23,7 +23,7 @@ pwd = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig('%s/drive_to_point.ini' % pwd)
 config.add_config_ini('%s/drive_to_point.ini' % pwd)
 
-LOGGER_NAME = 'DriveToPointController'
+LOGGER_NAME = 'DriveToPoint'
 
 
 class DriveToPointController(MessageHandler):
