@@ -126,7 +126,7 @@ class RoboclawDriver(object):
 
         self.__timeout_lock = threading.Lock()
         self.__motors_stop_timer_enabled, self.__battery_low = False, False
-        self.__reset_time, self.__motors_stop_time = 0.0, 0.0
+        self.__reset_time, self.__motors_stop_time, self.__last_reset_time = 0.0, 0.0, 0.0
 
         self.__reset_gpio = open(RESET_GPIO_PATH, mode='ab')
         self.__led1_gpio = open(LED1_GPIO_PATH, mode='ab')
@@ -207,14 +207,21 @@ class RoboclawDriver(object):
             self.__roboclaw_lock.release()
 
     def __reset(self):
-        self.__reset_gpio.write('1')
-        self.__reset_gpio.flush()
-        time.sleep(0.0001)
-        self.__reset_gpio.write('0')
-        self.__reset_gpio.flush()
-        time.sleep(0.0001)
-        self.__reset_gpio.write('1')
-        self.__reset_gpio.flush()
+        self.__roboclaw_lock.acquire()
+        try:
+            current_time = time.time()
+            if self.__last_reset_time < current_time - 5.0:
+                self.__last_reset_time = current_time
+                self.__reset_gpio.write('1')
+                self.__reset_gpio.flush()
+                time.sleep(0.0001)
+                self.__reset_gpio.write('0')
+                self.__reset_gpio.flush()
+                time.sleep(0.0001)
+                self.__reset_gpio.write('1')
+                self.__reset_gpio.flush()
+        finally:
+            self.__roboclaw_lock.release()
 
     def setup(self):
         self.__front.set_pid_constants_m1(MOTORS_P_CONST, MOTORS_I_CONST, MOTORS_D_CONST, MOTORS_MAX_QPPS)
