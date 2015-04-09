@@ -206,9 +206,12 @@ class RoboclawDriver(object):
             self.__roboclaw_lock.release()
 
     def __reset(self):
+        self.__reset_gpio.write('1')
+        self.__reset_gpio.flush()
+        time.sleep(0.0001)
         self.__reset_gpio.write('0')
         self.__reset_gpio.flush()
-        time.sleep(0.5)
+        time.sleep(0.0001)
         self.__reset_gpio.write('1')
         self.__reset_gpio.flush()
 
